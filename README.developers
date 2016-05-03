@@ -1,0 +1,30 @@
+
+
+This file provides developer notes.
+
+
+Install Alternatives
+--------------------
+
+To install the most recent sources from github using pip:
+
+    # pip install git+https://github.com/tomduck/pandocfiltering.git
+
+(to upgrade use the --upgrade flag).
+
+
+Preparing a Release
+-------------------
+    
+Tagging:
+
+    $ git tag -a <tag> -m <message>
+    $ git push origin <tag>
+
+
+Uploading to pypi:
+
+    $ python setup.py register -r pypi
+    $ python setup.py sdist upload -r pypi
+
+(from http://peterdowns.com/posts/first-time-with-pypi.html)
