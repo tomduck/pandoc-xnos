@@ -2,7 +2,7 @@
 pandocfiltering 0.1
 ===================
 
-*pandocfiltering* provides constants and functions to be used in tandem with the [pandocfilters] module.  It was written for use by the pandoc-[fignos]/[eqnos]/[tablenos] filters but may be of interest to others.  It is available for installation from [pypi].
+*pandocfiltering* provides constants and functions to be used in tandem with the [pandocfilters] module.  It was written to support the pandoc-[fignos]/[eqnos]/[tablenos] filters but may be of interest to others.  It is available for installation from [pypi].
 
 I am pleased to receive bug reports and feature requests on the project's [Issues tracker].
 
