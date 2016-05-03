@@ -14,6 +14,14 @@ I am pleased to receive bug reports and feature requests on the project's [Issue
 [Issues tracker]: https://github.com/tomduck/pandoc-fignos/issues
 
 
+Initialization
+--------------
+
+### init(pandocversion=None) ###
+
+Initializes the module.  Set pandocversion to manually set the pandoc version.  Otherwise the module will try to determine the version for itself.
+
+
 Constants
 ---------
 

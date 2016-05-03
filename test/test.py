@@ -20,10 +20,11 @@
 import sys
 import unittest
 
+import pandocfiltering
 from pandocfiltering import quotify, dollarfy, pandocify
 from pandocfiltering import extract_attrs, repair_refs, filter_null
 
-PANDOCVERSION = '1.17.0.2'  # Version for the testing
+pandocfiltering.init('1.17.0.2')
 
 #-----------------------------------------------------------------------------
 # Documents and expected results after processing.
@@ -89,10 +90,8 @@ class TestModule(unittest.TestCase):
 
     def test_repair_refs(self):
         """Tests repair_refs()."""
-        self.assertEqual(repair_refs(INPUT7, pandocversion=PANDOCVERSION),
-                         EXPECTED7)
-        self.assertEqual(repair_refs(INPUT8, pandocversion=PANDOCVERSION),
-                         EXPECTED8)
+        self.assertEqual(repair_refs(INPUT7), EXPECTED7)
+        self.assertEqual(repair_refs(INPUT8), EXPECTED8)
 
 
 #-----------------------------------------------------------------------------

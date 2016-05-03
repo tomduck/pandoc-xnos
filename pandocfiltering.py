@@ -37,8 +37,9 @@ from pandocattributes import PandocAttributes
 
 PANDOCVERSION = None
 
-def _get_pandoc_version():
-    """Get the pandoc version.  This requires some care because we can't be
+def init(pandocversion=None):
+    """Sets the pandoc version.  If pandocversion == None then automatic
+    detection is attempted.   This requires some care because we can't be
     sure that a call to 'pandoc' will work.  It could be 'pandoc-1.17.0.2' or
     some other name.  Try checking the parent process first, and only make a
     call to 'pandoc' as a last resort.
@@ -49,8 +50,9 @@ def _get_pandoc_version():
 
     global PANDOCVERSION  # pylint: disable=global-statement
 
-    if PANDOCVERSION:
-        return PANDOCVERSION
+    if pandocversion:
+        PANDOCVERSION = pandocversion
+        return
 
     # Get the command
     try:  # Get the path for the parent process
@@ -83,9 +85,6 @@ def _get_pandoc_version():
         msg = """Cannot determine pandoc version.  Please file an issue at
               https://github.com/tomduck/pandocfiltering/issues"""
         raise RuntimeError(textwrap.dedent(msg))
-
-_get_pandoc_version()
-
 
 
 #-----------------------------------------------------------------------------
@@ -281,9 +280,11 @@ def extract_attrs(value, n):
 #-----------------------------------------------------------------------------
 # repair_refs()
 
-def _is_broken_ref(key1, value1, key2, value2, pandocversion=PANDOCVERSION):
+def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""
-    if pandocversion < '1.16':
+    if not PANDOCVERSION:
+        raise RuntimeError('Module uninitialized.  Please call init().')
+    if PANDOCVERSION < '1.16':
         return key1 == 'Link' and value1[0][0]['t'] == 'Str' and \
           value1[0][0]['c'].endswith('{@') \
             and key2 == 'Str' and '}' in value2
@@ -291,15 +292,16 @@ def _is_broken_ref(key1, value1, key2, value2, pandocversion=PANDOCVERSION):
         return key1 == 'Link' and value1[1][0]['t'] == 'Str' and \
           '{@' in value1[1][0]['c'] and key2 == 'Str' and '}' in value2
 
-
 @_repeat_until_successful
 @filter_null
-def repair_refs(value, pandocversion=PANDOCVERSION):
+def repair_refs(value):
     """Repairs broken references.  Using -f markdown+autolink_bare_uris
     splits braced references like {@label:id} at the ':' into Link and Str
     elements.  This function replaces the mess with the Cite and Str
     elements we normally expect.  The updated value is returned.
     """
+    if not PANDOCVERSION:
+        raise RuntimeError('Module uninitialized.  Please call init().')
     flag = False  # Flags that a change has been made
     for i in range(len(value)-1):
         if value[i] == None:
@@ -307,7 +309,7 @@ def repair_refs(value, pandocversion=PANDOCVERSION):
         if _is_broken_ref(value[i]['t'], value[i]['c'],
                           value[i+1]['t'], value[i+1]['c']):
             flag = True  # Found broken reference
-            if pandocversion < '1.16':
+            if PANDOCVERSION < '1.16':
                 s1 = value[i]['c'][0][0]['c']  # Get the first half of the ref
             else:
                 s1 = value[i]['c'][1][0]['c']  # Get the first half of the ref
