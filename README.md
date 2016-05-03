@@ -40,12 +40,19 @@ Pandoc uses UTF-8 for both input and output; so must we.  Python's strings and s
 Actions
 -------
 
-Preprocessing and postprocessing functions.
+Preprocessing and postprocessing functions, and the factories that make them.
 
 
 ### repair_refs() ###
 
-Repairs broken references.  Using `-f markdown+autolink_bare_uris` splits braced references like `{@label:id}` at the ':' into `Link` and `Str` elements.  This function replaces the mess with the `Cite` and `Str` elements we normally expect.
+Repairs broken references.  Using `-f markdown+autolink_bare_uris` splits braced references like `{@label:id}` at the `:` into `Link` and `Str` elements.  This function replaces the mess with the `Cite` and `Str` elements normally found.  Call this action before any reference processing.
+
+### use_refs_factory(references) ###
+
+Processing references like `{+@eq:einstein}` can be difficult.  We need an action -- call it `use_refs()` -- that we can apply to a document to parse the json and substitute `Ref` elements instead.  `Ref` elements aren't understood by pandoc, but are easily identified and processed by a filter.
+
+This factory function returns a function that substitutes `Ref` elements for the given references.  Note that all `Ref` elements must be removed before the json is output.
+
 
 ### use_attrimages() ###
 

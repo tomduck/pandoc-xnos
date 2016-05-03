@@ -26,6 +26,7 @@ import pandocfiltering
 from pandocfiltering import quotify, dollarfy, pandocify
 from pandocfiltering import extract_attrs, repair_refs, filter_null
 from pandocfiltering import use_attrimages, filter_attrimages
+from pandocfiltering import use_refs_factory
 
 pandocfiltering.init('1.17.0.2')
 
@@ -106,7 +107,7 @@ class TestModule(unittest.TestCase):
 
         self.assertEqual(filter_null(extract_attrs)(input, 2), expected)
 
-        # Command: pandoc test.md -filter savejson.py -o test.pdf
+        # Command: pandoc test.md -filter savejson.py -o test.tex
         input = eval(r'''[{"c": "Test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "{#eq:id", "t": "Str"}, {"c": [], "t": "Space"}, {"c": ".class", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "tag=", "t": "Str"}, {"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "foo", "t": "Str"}]], "t": "Quoted"}, {"c": "}.", "t": "Str"}]''')
 
         self.assertEqual(filter_null(extract_attrs)(input, 2), expected)
@@ -135,6 +136,16 @@ class TestModule(unittest.TestCase):
 
         self.assertEqual(walk(input, repair_refs, {}, ''), expected)
 
+        # test.md: See {+@eq:1}.
+
+        # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
+        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{+@eq"}],["mailto:%7B+@eq",""]]},{"t":"Str","c":":1}."}]}]]''')
+
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}."}]}]]''')
+
+        self.assertEqual(walk(input, repair_refs, {}, ''), expected)
+        
 
     def test_use_attrimage(self):
         """Tests use_attrimage()."""
@@ -167,7 +178,44 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(input, filter_attrimages, '', {}), expected)
         pandocfiltering.init('1.17.0.2')
 
-                
+
+    def test_use_refs(self):
+
+        # test.md: As shown in @fig:one.
+
+        # Command: pandoc test.md -t json
+        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}]]''')
+
+        # Hand-coded
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Ref","c":[['',[],[]],[],'fig:one',[]]},{"t":"Str","c":"."}]}]]''')
+
+        use_refs = use_refs_factory(['fig:one'])
+        self.assertEqual(walk(input, use_refs, '', {}), expected)
+        
+        # test.md: See {+@eq:1}.
+
+        # Command: pandoc test.md -t json
+        input = [{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}."}]}]]
+
+        # Hand-coded
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Ref","c":[['',[],[['cref','On']]],[],'eq:1',[]]},{"t":"Str","c":"."}]}]]''')
+        
+        use_refs = use_refs_factory(['eq:1'])
+        self.assertEqual(walk(input, use_refs, '', {}), expected)
+
+        # test.md: {+@tbl:one{.Cref}}-{@tbl:four} provide the data.
+
+        # Command: pandoc test.md -t json
+        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"{.Cref}}-{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Str","c":"}"},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
+
+        # Hand-coded
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[['',['Cref'],[["cref","On"]]],[],"tbl:one",[]]},{"t":"Str","c":"-"},{"t":"Ref","c":[['',[],[]],[],"tbl:four",[]]},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
+
+        use_refs = use_refs_factory(['tbl:one', 'tbl:four'])
+        output = walk(input, use_refs, '', {})
+        self.assertEqual(output, expected)
+
+            
 #-----------------------------------------------------------------------------
 # main()
 

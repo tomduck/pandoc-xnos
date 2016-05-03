@@ -121,9 +121,12 @@ else:
 
 # Pandoc elements ------------------------------------------------------------
 
+# Note: These elements are not recognized by pandoc!  You must be sure to
+# remove them before sending the json back to pandoc.
+
 # pylint: disable=invalid-name
 AttrImage = elt('Image', 3)  # Same as Image for pandoc>=1.16
-
+Ref = elt('Ref', 4)          # attrs, prefix, label, suffix
 
 # Decorators -----------------------------------------------------------------
 
@@ -261,13 +264,9 @@ def extract_attrs(value, n):
             for j, c in enumerate(v['c']):
                 if c == quotechar:  # This is an end quote
                     quotechar = None
-                    continue
-                if quotechar:  # We are still inside the quote
-                    continue
-                if c in ['"', "'"]:  # This is an open quote
+                elif c in ['"', "'"]:  # This is an open quote
                     quotechar = c
-                    continue
-                if c == '}':  # The attributes end here
+                elif c == '}' and quotechar is None:  # The attributes end here
                     head, tail = v['c'][:j+1], v['c'][j+1:]
                     value[n+i] = copy.deepcopy(v)
                     value[n+i]['c'] = tail
@@ -293,9 +292,14 @@ def extract_attrs(value, n):
                 attrs[2][i][1] = attrs[2][i][1][1:-1]
         return attrs
 
+    else:
+        raise RuntimeError('Attributes not found.')
+
 
 #-----------------------------------------------------------------------------
 # repair_refs() action
+
+_PRE = re.compile(r'{[\+-]?@')
 
 def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""
@@ -303,10 +307,10 @@ def _is_broken_ref(key1, value1, key2, value2):
         raise RuntimeError('Module uninitialized.  Please call init().')
     if PANDOCVERSION < '1.16':
         return key1 == 'Link' and value1[0][0]['t'] == 'Str' and \
-          '{@' in value1[0][0]['c'] and key2 == 'Str' and '}' in value2
+          _PRE.search(value1[0][0]['c']) and key2 == 'Str' and '}' in value2
     else:
         return key1 == 'Link' and value1[1][0]['t'] == 'Str' and \
-          '{@' in value1[1][0]['c'] and key2 == 'Str' and '}' in value2
+          _PRE.search(value1[1][0]['c']) and key2 == 'Str' and '}' in value2
 
 @_repeat_until_successful
 @filter_null
@@ -327,9 +331,10 @@ def _repair_refs(value):
                 s1 = value[i]['c'][1][0]['c']  # Get the first half of the ref
             s2 = value[i+1]['c']               # Get the second half of the ref
             # Form the reference
-            ref = s1[s1.index('{@')+1:] + s2[:s2.index('}')]
-            prefix = s1[:s1.index('{@')+1]     # Get the prefix
-            suffix = s2[s2.index('}'):]        # Get the suffix
+            x = _PRE.search(s1).group()
+            ref = s1[s1.index(x)+len(x)-1:] + s2[:s2.index('}')]
+            prefix = s1[:s1.index(x)+len(x)-1]  # Get the prefix
+            suffix = s2[s2.index('}'):]  # Get the suffix
             # We need to be careful with the prefix string because it might be
             # part of another broken reference.  Simply put it back into the
             # value list and repeat the repair_broken_refs() call.
@@ -357,11 +362,115 @@ def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
     """Repairs broken references.  Using -f markdown+autolink_bare_uris
     splits braced references like {@label:id} at the ':' into Link and Str
     elements.  This function replaces the mess with the Cite and Str
-    elements we normally expect.
+    elements we normally expect.  Call this before any reference processing.
     """
 
     if key in ('Para', 'Plain'):
         _repair_refs(value)
+
+#-----------------------------------------------------------------------------
+# use_refs_factory()
+
+def _is_ref(key, value, references):
+    """True if Cite element is a reference; False otherwise.
+    references - a list containing known references.
+    """
+    return key == 'Cite' and value[1][0]['c'][1:] in references
+
+def _parse_ref(key, value):
+    """Parses a reference.  Returns the label."""
+    assert key == 'Cite'
+    prefix = value[0][0]['citationPrefix']
+    label = value[1][0]['c'][1:]
+    suffix = value[0][0]['citationSuffix']
+    return prefix, label, suffix
+
+def use_refs_factory(references):
+    """Processing references like {+@eq:einstein} can be difficult.  We need
+    an action -- call it use_refs() -- that we can apply to a document to
+    parse the json and substitute Ref elements instead.  Ref elements aren't
+    understood by pandoc, but are easily identified and processed by a filter.
+
+    This factory function returns a function that substitutes Ref elements
+    for the given references.  Note that all Ref elements must be removed
+    before the json is output.
+    """
+
+    # pylint: disable=unused-argument
+    def use_refs_action(key, value, fmt, meta):
+        """Replaces known references with Ref elements."""
+
+        def _process_modifier(value, i, attrs):
+            """Trims +/- in front of reference and adds cref attribute.
+            Sets empty values to None."""
+            if value[i-1]['t'] == 'Str':
+                flag = False  # Flags that a modifier was found
+                if value[i-1]['c'].endswith('+'):
+                    attrs[2].append(['cref', 'On'])
+                    flag = True
+                elif value[i-1]['c'].endswith('-'):
+                    attrs[2].append(['cref', 'Off'])
+                    flag = True
+                if flag:  # Trim off the modifier
+                    if len(value[i-1]['c']) > 1:
+                        value[i-1]['c'] = value[i-1]['c'][:-1]
+                    else:
+                        value[i-1] = None
+
+        def _remove_brackets(value, i):
+            """Removes curly brackets surrounding value at index i.  Sets
+            empty values to None.
+            """
+            # Check to see if the surrounding elements are strings
+            if value[i-1] is None or value[i+1] is None:
+                return
+            if not value[i-1]['t'] == value[i+1]['t'] == 'Str':
+                return
+            # Check for the curly brackets
+            if value[i-1]['c'].endswith('{') and \
+              value[i+1]['c'].startswith('}'):
+                # Trim off the brackets and set empty values to None
+                if len(value[i-1]['c']) > 1:
+                    value[i-1]['c'] = value[i-1]['c'][:-1]
+                else:
+                    value[i-1] = None
+                if len(value[i+1]['c']) > 1:
+                    value[i+1]['c'] = value[i+1]['c'][1:]
+                else:
+                    value[i+1] = None
+
+        @filter_null
+        def _use_refs(value):
+            """Extracts attributes appends them to the reference."""
+            for i, v in enumerate(value):
+                if v and _is_ref(v['t'], v['c'], references):
+
+                    # Extract the attributes
+                    attrs = ['', [], []]  # Initialized to empty
+                    if i+1 < len(value):
+                        try: # Look for attributes in { ... }
+                            # extract_attrs() sets extracted values to None
+                            # in the value list.
+                            attrs = extract_attrs(value, i+1)
+                        except AssertionError:
+                            pass
+
+                     # Process any +/- modifier
+                    if i > 0:
+                        _process_modifier(value, i, attrs)
+
+                    # Remove surrounding brackets
+                    if i > 0 and i+1 < len(value):
+                        _remove_brackets(value, i)
+
+                    # Insert the Ref element
+                    value[i] = Ref(attrs, *_parse_ref(v['t'], v['c']))
+                    value[i]['c'] = list(value[i]['c'])  # Needed for unit tests
+
+        if key in ['Para', 'Plain']:
+            _use_refs(value)
+
+    return use_refs_action
 
 
 #-----------------------------------------------------------------------------
