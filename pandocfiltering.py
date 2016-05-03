@@ -21,6 +21,7 @@ import subprocess
 import re
 import textwrap
 import functools
+import itertools
 import copy
 
 import psutil
@@ -213,6 +214,21 @@ def dollarfy(x):
             return Str('$' + value[1] + '$')
 
     return walk(x, _dollarfy, '', {})
+
+
+#-----------------------------------------------------------------------------
+# pandocify()
+
+def pandocify(s):
+    """Returns a representation of the string s using pandoc elements.
+    Like stringify(), all formatting is ignored.
+    """
+    toks = [Str(tok) for tok in s.split()]
+    spaces = [Space()]*len(toks)
+    ret = list(itertools.chain(*zip(toks, spaces)))
+    if s[0] == ' ':
+        ret = [Space()] + ret
+    return ret if s[-1] == ' ' else ret[:-1]
 
 
 #-----------------------------------------------------------------------------

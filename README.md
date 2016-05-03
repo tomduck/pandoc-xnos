@@ -59,6 +59,12 @@ Replaces Math elements with a $-enclosed string.
 Returns `x`.
 
 
+### pandocify(s) ###
+
+Returns a representation of the string `s` using pandoc elements.
+Like `stringify()`, all formatting is ignored.
+
+
 ### extract_attrs(value, n) ###
 
 Extracts attributes from a `value` list.  The `value` list is changed.  `n` is the index where the attributes start.  Returns the attributes in pandoc format.

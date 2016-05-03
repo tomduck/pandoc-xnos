@@ -20,7 +20,7 @@
 import sys
 import unittest
 
-from pandocfiltering import quotify, dollarfy, stringify
+from pandocfiltering import quotify, dollarfy, pandocify
 from pandocfiltering import extract_attrs, repair_refs
 
 PANDOCVERSION = '1.17.0.2'  # Version for the testing
@@ -42,21 +42,26 @@ EXPECTED2 = eval(r'''[{"t": "Para", "c": [{"t": "Str", "c": "This"}, {"t": "Spac
 INPUT3 = eval(r'''[{"t": "Para", "c": [{"t": "Math", "c": [{"t": "InlineMath", "c": []}, "\\frac{1}{2}"]}]}]''')
 EXPECTED3 = eval(r'''[{"t": "Para", "c": [{"t": "Str", "c": "$\\frac{1}{2}$"}]}]''')
 
-# Markdown: Test {#eq:id .class tag="foo"}.
-INPUT4 = eval(r'''[{"t": "Str", "c": "Test"}, {"t": "Space", "c": []}, {"t": "Str", "c": "{#eq:id"}, {"t": "Space", "c": []}, {"t": "Str", "c": ".class"}, {"t": "Space", "c": []}, {"t": "Str", "c": "tag=\"foo\"}."}]''')
-EXPECTED4 = ['eq:id', ['class'], [['tag', 'foo']]]
+# Markdown: This is a test.
+INPUT4 = 'This is a test.'
+EXPECTED4 = eval(r'''[{"t":"Str","c":"This"},{"t":"Space","c":[]},{"t":"Str","c":"is"},{"t":"Space","c":[]},{"t":"Str","c":"a"},{"t":"Space","c":[]},{"t":"Str","c":"test."}]''')
 
 # Markdown: Test {#eq:id .class tag="foo"}.
-INPUT5 = eval(r'''[{"c": "Test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "{#eq:id", "t": "Str"}, {"c": [], "t": "Space"}, {"c": ".class", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "tag=", "t": "Str"}, {"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "foo", "t": "Str"}]], "t": "Quoted"}, {"c": "}.", "t": "Str"}]''')
-EXPECTED5 = EXPECTED4
+INPUT5 = eval(r'''[{"t": "Str", "c": "Test"}, {"t": "Space", "c": []}, {"t": "Str", "c": "{#eq:id"}, {"t": "Space", "c": []}, {"t": "Str", "c": ".class"}, {"t": "Space", "c": []}, {"t": "Str", "c": "tag=\"foo\"}."}]''')
+EXPECTED5 = ['eq:id', ['class'], [['tag', 'foo']]]
+
+# Markdown: Test {#eq:id .class tag="foo"}.
+INPUT6 = eval(r'''[{"c": "Test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "{#eq:id", "t": "Str"}, {"c": [], "t": "Space"}, {"c": ".class", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "tag=", "t": "Str"}, {"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "foo", "t": "Str"}]], "t": "Quoted"}, {"c": "}.", "t": "Str"}]''')
+EXPECTED6 = EXPECTED5
 
 # Markdown: {@doe:1999}
-INPUT6 = eval(r'''[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@doe"}],["mailto:%7B@doe",""]]},{"t":"Str","c":":1999}"}]''')
-EXPECTED6 = eval(r'''[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"doe:1999","citationHash":0}],[{"t":"Str","c":"@doe:1999"}]]},{"t":"Str","c":"}"}]''')
+INPUT7 = eval(r'''[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@doe"}],["mailto:%7B@doe",""]]},{"t":"Str","c":":1999}"}]''')
+EXPECTED7 = eval(r'''[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"doe:1999","citationHash":0}],[{"t":"Str","c":"@doe:1999"}]]},{"t":"Str","c":"}"}]''')
 
 # Markdown: Eqs. {@eq:1}a and {@eq:1}b.
-INPUT7 = eval(r'''[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}b"}]''')
-EXPECTED7 = eval(r'''[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}b"}]''')
+INPUT8 = eval(r'''[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}b"}]''')
+EXPECTED8 = eval(r'''[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}b"}]''')
+
 
 #-----------------------------------------------------------------------------
 # Test class
@@ -73,17 +78,21 @@ class TestModule(unittest.TestCase):
         """Tests dollarfy()."""
         self.assertEqual(dollarfy(INPUT3), EXPECTED3)
 
+    def test_pandocify(self):
+        """Tests pandocify()."""
+        self.assertEqual(pandocify(INPUT4), EXPECTED4)
+
     def test_extract_attrs(self):
         """Tests extract_attrs()."""
-        self.assertEqual(extract_attrs(INPUT4, 2), EXPECTED4)
         self.assertEqual(extract_attrs(INPUT5, 2), EXPECTED5)
+        self.assertEqual(extract_attrs(INPUT6, 2), EXPECTED6)
 
     def test_repair_refs(self):
         """Tests repair_refs()."""
-        self.assertEqual(repair_refs(INPUT6, pandocversion=PANDOCVERSION),
-                         EXPECTED6)
         self.assertEqual(repair_refs(INPUT7, pandocversion=PANDOCVERSION),
                          EXPECTED7)
+        self.assertEqual(repair_refs(INPUT8, pandocversion=PANDOCVERSION),
+                         EXPECTED8)
 
 
 #-----------------------------------------------------------------------------
