@@ -281,7 +281,7 @@ def extract_attrs(value, n):
             value[n+i] = None
 
         # Process the attrs and return them
-        attrstr = stringify(quotify(seq)).strip()
+        attrstr = stringify(dollarfy(quotify(seq))).strip()
         attrs = PandocAttributes(attrstr, 'markdown').to_pandoc()
         for i, (k, v) in enumerate(attrs[2]):  # pylint: disable=unused-variable
             if v[0] == v[-1] == '"' or v[0] == "'" == v[-1] == "'":
