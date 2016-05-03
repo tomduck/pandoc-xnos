@@ -50,9 +50,15 @@ def init(pandocversion=None):
 
     global PANDOCVERSION  # pylint: disable=global-statement
 
-    if pandocversion:
-        PANDOCVERSION = pandocversion
-        return
+    pattern = re.compile(r'^1\.[0-9]+(?:\.[0-9]+)?(?:\.[0-9]+)?$')
+
+    if not pandocversion is None:
+        if pattern.match(pandocversion):
+            PANDOCVERSION = pandocversion
+            return
+        else:
+            msg = 'Cannot understand pandocversion=%s'%pandocversion
+            raise RuntimeError(msg)
 
     # Get the command
     try:  # Get the path for the parent process
@@ -77,7 +83,6 @@ def init(pandocversion=None):
         pandocversion = ''
 
     # Test the result
-    pattern = re.compile(r'^1\.[0-9]+(?:\.[0-9]+)?(?:\.[0-9]+)?$')
     if pattern.match(pandocversion):
         PANDOCVERSION = pandocversion
 
@@ -282,12 +287,11 @@ def extract_attrs(value, n):
 
 def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""
-    if not PANDOCVERSION:
+    if PANDOCVERSION is None:
         raise RuntimeError('Module uninitialized.  Please call init().')
     if PANDOCVERSION < '1.16':
         return key1 == 'Link' and value1[0][0]['t'] == 'Str' and \
-          value1[0][0]['c'].endswith('{@') \
-            and key2 == 'Str' and '}' in value2
+          '{@' in value1[0][0]['c'] and key2 == 'Str' and '}' in value2
     else:
         return key1 == 'Link' and value1[1][0]['t'] == 'Str' and \
           '{@' in value1[1][0]['c'] and key2 == 'Str' and '}' in value2
@@ -300,7 +304,7 @@ def repair_refs(value):
     elements.  This function replaces the mess with the Cite and Str
     elements we normally expect.  The updated value is returned.
     """
-    if not PANDOCVERSION:
+    if PANDOCVERSION is None:
         raise RuntimeError('Module uninitialized.  Please call init().')
     flag = False  # Flags that a change has been made
     for i in range(len(value)-1):
