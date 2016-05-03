@@ -20,9 +20,12 @@
 import sys
 import unittest
 
+from pandocfilters import walk
+
 import pandocfiltering
 from pandocfiltering import quotify, dollarfy, pandocify
 from pandocfiltering import extract_attrs, repair_refs, filter_null
+from pandocfiltering import use_attrimages, filter_attrimages
 
 pandocfiltering.init('1.17.0.2')
 
@@ -31,38 +34,8 @@ pandocfiltering.init('1.17.0.2')
 
 # pylint: disable=line-too-long, eval-used
 
-# Markdown: "test"
-INPUT1 = eval(r'''[{"c": [{"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "test", "t": "Str"}]], "t": "Quoted"}], "t": "Para"}]''')
-EXPECTED1 = eval(r'''[{"c": [{"c": "\"test\"", "t": "Str"}], "t": "Para"}]''')
 
-# Markdown: This is 'test 2'.
-INPUT2 = eval(r'''[{"c": [{"c": "This", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "is", "t": "Str"}, {"c": [], "t": "Space"}, {"c": [{"c": [], "t": "SingleQuote"}, [{"c": "test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "2", "t": "Str"}]], "t": "Quoted"}, {"c": ".", "t": "Str"}], "t": "Para"}]''')
-EXPECTED2 = eval(r'''[{"t": "Para", "c": [{"t": "Str", "c": "This"}, {"t": "Space", "c": []}, {"t": "Str", "c": "is"}, {"t": "Space", "c": []}, {"t": "Str", "c": "'test"}, {"t": "Space", "c": []}, {"t": "Str", "c": "2'."}]}]''')
-
-# Markdown: $\frac{1}{2}$
-INPUT3 = eval(r'''[{"t": "Para", "c": [{"t": "Math", "c": [{"t": "InlineMath", "c": []}, "\\frac{1}{2}"]}]}]''')
-EXPECTED3 = eval(r'''[{"t": "Para", "c": [{"t": "Str", "c": "$\\frac{1}{2}$"}]}]''')
-
-# Markdown: This is a test.
-INPUT4 = 'This is a test.'
-EXPECTED4 = eval(r'''[{"t":"Str","c":"This"},{"t":"Space","c":[]},{"t":"Str","c":"is"},{"t":"Space","c":[]},{"t":"Str","c":"a"},{"t":"Space","c":[]},{"t":"Str","c":"test."}]''')
-
-# Markdown: Test {#eq:id .class tag="foo"}.
-INPUT5 = eval(r'''[{"t": "Str", "c": "Test"}, {"t": "Space", "c": []}, {"t": "Str", "c": "{#eq:id"}, {"t": "Space", "c": []}, {"t": "Str", "c": ".class"}, {"t": "Space", "c": []}, {"t": "Str", "c": "tag=\"foo\"}."}]''')
-EXPECTED5 = ['eq:id', ['class'], [['tag', 'foo']]]
-
-# Markdown: Test {#eq:id .class tag="foo"}.
-INPUT6 = eval(r'''[{"c": "Test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "{#eq:id", "t": "Str"}, {"c": [], "t": "Space"}, {"c": ".class", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "tag=", "t": "Str"}, {"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "foo", "t": "Str"}]], "t": "Quoted"}, {"c": "}.", "t": "Str"}]''')
-EXPECTED6 = EXPECTED5
-
-# Markdown: {@doe:1999}
-INPUT7 = eval(r'''[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@doe"}],["mailto:%7B@doe",""]]},{"t":"Str","c":":1999}"}]''')
-EXPECTED7 = eval(r'''[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"doe:1999","citationHash":0}],[{"t":"Str","c":"@doe:1999"}]]},{"t":"Str","c":"}"}]''')
-
-# Markdown: Eqs. {@eq:1}a and {@eq:1}b.
-INPUT8 = eval(r'''[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}b"}]''')
-EXPECTED8 = eval(r'''[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}b"}]''')
-
+# Markdown (pandoc 1.16):
 
 #-----------------------------------------------------------------------------
 # Test class
@@ -72,28 +45,129 @@ class TestModule(unittest.TestCase):
 
     def test_quotify(self):
         """Tests quotify()."""
-        self.assertEqual(quotify(INPUT1), EXPECTED1)
-        self.assertEqual(quotify(INPUT2), EXPECTED2)
+
+        # test.md: "test"
+
+        # Command: pandoc test.md --filter savejson.py -o test.tex
+        input = eval(r'''[{"c": [{"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "test", "t": "Str"}]], "t": "Quoted"}], "t": "Para"}]''')
+
+        # Command: pandoc test.md --filter savejson.py -o test.html
+        expected = eval(r'''[{"c": [{"c": "\"test\"", "t": "Str"}], "t": "Para"}]''')
+
+        self.assertEqual(quotify(input), expected)
+
+        # test.md: This is 'test 2'.
+        
+        # Command: pandoc test.md --filter savejson.py -o test.tex
+        input = eval(r'''[{"c": [{"c": "This", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "is", "t": "Str"}, {"c": [], "t": "Space"}, {"c": [{"c": [], "t": "SingleQuote"}, [{"c": "test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "2", "t": "Str"}]], "t": "Quoted"}, {"c": ".", "t": "Str"}], "t": "Para"}]''')
+
+        # Command: pandoc test.md --filter savejson.py -o test.html
+        expected = eval(r'''[{"t": "Para", "c": [{"t": "Str", "c": "This"}, {"t": "Space", "c": []}, {"t": "Str", "c": "is"}, {"t": "Space", "c": []}, {"t": "Str", "c": "'test"}, {"t": "Space", "c": []}, {"t": "Str", "c": "2'."}]}]''')
+
+        self.assertEqual(quotify(input), expected)
+
 
     def test_dollarfy(self):
         """Tests dollarfy()."""
-        self.assertEqual(dollarfy(INPUT3), EXPECTED3)
+
+        # test.md: $\frac{1}{2}$
+        
+        # Command: pandoc test.md -t json
+        input = eval(r'''[{"t": "Math", "c": [{"t": "InlineMath", "c": []}, "\\frac{1}{2}"]}]''')
+
+        # Hand-coded replacement
+        expected = eval(r'''[{"t": "Str", "c": "$\\frac{1}{2}$"}]''')
+
+        self.assertEqual(dollarfy(input), expected)
+
 
     def test_pandocify(self):
         """Tests pandocify()."""
-        self.assertEqual(pandocify(INPUT4), EXPECTED4)
+
+        # test.md: This is a test.
+        input = 'This is a test.'
+
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"t":"Str","c":"This"},{"t":"Space","c":[]},{"t":"Str","c":"is"},{"t":"Space","c":[]},{"t":"Str","c":"a"},{"t":"Space","c":[]},{"t":"Str","c":"test."}]''')
+
+        self.assertEqual(pandocify(input), expected)
+
 
     def test_extract_attrs(self):
         """Tests extract_attrs()."""
-        self.assertEqual(filter_null(extract_attrs)(INPUT5, 2), EXPECTED5)
-        self.assertEqual(filter_null(extract_attrs)(INPUT6, 2), EXPECTED6)
+
+        # test.md: Test {#eq:id .class tag="foo"}.
+
+        # Command: pandoc test.md -filter savejson.py -o test.html
+        input = eval(r'''[{"t": "Str", "c": "Test"}, {"t": "Space", "c": []}, {"t": "Str", "c": "{#eq:id"}, {"t": "Space", "c": []}, {"t": "Str", "c": ".class"}, {"t": "Space", "c": []}, {"t": "Str", "c": "tag=\"foo\"}."}]''')
+
+        # Hand-coded
+        expected = ['eq:id', ['class'], [['tag', 'foo']]]
+
+        self.assertEqual(filter_null(extract_attrs)(input, 2), expected)
+
+        # Command: pandoc test.md -filter savejson.py -o test.pdf
+        input = eval(r'''[{"c": "Test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "{#eq:id", "t": "Str"}, {"c": [], "t": "Space"}, {"c": ".class", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "tag=", "t": "Str"}, {"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "foo", "t": "Str"}]], "t": "Quoted"}, {"c": "}.", "t": "Str"}]''')
+
+        self.assertEqual(filter_null(extract_attrs)(input, 2), expected)
+
 
     def test_repair_refs(self):
         """Tests repair_refs()."""
-        self.assertEqual(repair_refs(INPUT7), EXPECTED7)
-        self.assertEqual(repair_refs(INPUT8), EXPECTED8)
+
+        # test.md: {@doe:1999}
+
+        # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
+        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@doe"}],["mailto:%7B@doe",""]]},{"t":"Str","c":":1999}"}]}]]''')
+
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"doe:1999","citationHash":0}],[{"t":"Str","c":"@doe:1999"}]]},{"t":"Str","c":"}"}]}]]''')
+
+        self.assertEqual(walk(input, repair_refs, '', {}), expected)
+
+        # test.md: Eqs. {@eq:1}a and {@eq:1}b.
+
+        # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
+        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"Eqs."},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}b."}]}]]''')
+
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"Eqs."},{"t":"Space","c":[]},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}b."}]}]]''')
+
+        self.assertEqual(walk(input, repair_refs, {}, ''), expected)
 
 
+    def test_use_attrimage(self):
+        """Tests use_attrimage()."""
+
+        # test.md: ![Caption](img.png){#fig:id}
+
+        # Command: pandoc-1.15.2 test.md -t json
+        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[[{"t":"Str","c":"Caption"}],["img.png",""]]},{"t":"Str","c":"{#fig:id}"}]}]]''')
+
+        # Command: pandoc-1.17.0.2 test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[["fig:id",[],[]],[{"t":"Str","c":"Caption"}],["img.png","fig:"]]}]}]]''')
+
+        pandocfiltering.init('1.15.0.2')
+        self.assertEqual(walk(input, use_attrimages, '', {}), expected)
+        pandocfiltering.init('1.17.0.2')
+
+
+    def test_filter_attrimage(self):
+        """Tests filter_attrimage()."""
+
+        # test.md: ![Caption](img.png){#fig:id}
+
+        # Command: pandoc-1.17.0.2 test.md -t json
+        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[["fig:id",[],[]],[{"t":"Str","c":"Caption"}],["img.png","fig:"]]}]}]]''')
+
+        # Hand-coded
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[[{"t":"Str","c":"Caption"}],["img.png","fig:"]]}]}]]''')
+
+        pandocfiltering.init('1.15.2')
+        self.assertEqual(walk(input, filter_attrimages, '', {}), expected)
+        pandocfiltering.init('1.17.0.2')
+
+                
 #-----------------------------------------------------------------------------
 # main()
 

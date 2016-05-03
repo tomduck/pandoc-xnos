@@ -28,9 +28,15 @@ import copy
 import psutil
 
 from pandocfilters import Str, Para, Plain, Space, Cite
-from pandocfilters import walk, stringify
+from pandocfilters import elt, walk, stringify
 
 from pandocattributes import PandocAttributes
+
+if sys.version_info > (3,):
+    from urllib.request import unquote  # pylint: disable=no-name-in-module
+else:
+    from urllib import unquote  # pylint: disable=no-name-in-module
+
 
 #-----------------------------------------------------------------------------
 # PANDOCVERSION
@@ -111,6 +117,12 @@ else:
     STDIN = sys.stdin
     STDOUT = sys.stdout
     STDERR = sys.stdout
+
+
+# Pandoc elements ------------------------------------------------------------
+
+# pylint: disable=invalid-name
+AttrImage = elt('Image', 3)  # Same as Image for pandoc>=1.16
 
 
 # Decorators -----------------------------------------------------------------
@@ -283,7 +295,7 @@ def extract_attrs(value, n):
 
 
 #-----------------------------------------------------------------------------
-# repair_refs()
+# repair_refs() action
 
 def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""
@@ -298,12 +310,8 @@ def _is_broken_ref(key1, value1, key2, value2):
 
 @_repeat_until_successful
 @filter_null
-def repair_refs(value):
-    """Repairs broken references.  Using -f markdown+autolink_bare_uris
-    splits braced references like {@label:id} at the ':' into Link and Str
-    elements.  This function replaces the mess with the Cite and Str
-    elements we normally expect.  The updated value is returned.
-    """
+def _repair_refs(value):
+    """Performs the repair."""
     if PANDOCVERSION is None:
         raise RuntimeError('Module uninitialized.  Please call init().')
     flag = False  # Flags that a change has been made
@@ -344,4 +352,74 @@ def repair_refs(value):
             value.insert(i+2, Str(suffix))
     if not flag:  # No more broken refs left to process
         return value
+
+def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
+    """Repairs broken references.  Using -f markdown+autolink_bare_uris
+    splits braced references like {@label:id} at the ':' into Link and Str
+    elements.  This function replaces the mess with the Cite and Str
+    elements we normally expect.
+    """
+
+    if key in ('Para', 'Plain'):
+        _repair_refs(value)
+
+
+#-----------------------------------------------------------------------------
+# use_attrimages() and filter_attrimages() actions
+
+def _extract_imageattrs(value, n):
+    """Extracts attributes from a list of values.  n is the index of the image.
+    Extracted elements are set to None in the value list.  Attrs are returned
+    in pandoc format.
+    """
+    assert value[n]['t'] == 'Image'
+
+    # Notes: No space between an image and its attributes;
+    # extract_attrs() sets extracted values to None in the value list.
+    try:
+        return extract_attrs(value, n+1)
+    except AssertionError:
+        # Look for attributes attached to the image path, as occurs with
+        # reference links.  Remove the encoding.
+        image = value[n]
+        try:
+            seq = unquote(image['c'][1][0]).split()
+            path, s = seq[0], ' '.join(seq[1:])
+        except ValueError:
+            pass
+        else:
+            image['c'][1][0] = path  # Remove attr string from the path
+            return PandocAttributes(s.strip(), 'markdown').to_pandoc()
+
+def use_attrimages(key, value, fmt, meta):  # pylint: disable=unused-argument
+    """Substitutes AttrImage elements for all attributed images (pandoc<1.16).
+    AttrImage is the same as Image for pandoc>=1.16.  Unattributed images are
+    left untouched.
+    """
+
+    @filter_null
+    def _use_attrimages(value):
+        """Performs the substitution."""
+        # Seach for attributed images and replace them with an AttrImage
+        for i, v in enumerate(value):
+            if v and v['t'] == 'Image':
+                # Extracted values get set to None in values list
+                attrs = _extract_imageattrs(value, i)
+                if attrs:
+                    value[i] = AttrImage(attrs, *v['c'])
+                    value[i]['c'] = list(value[i]['c'])  # Needed for unit tests
+
+    if PANDOCVERSION < '1.16' and (key == 'Para' or key == 'Plain'):
+        _use_attrimages(value)
+        # Add the figure marker
+        if len(value) == 1 and value[0]['t'] == 'Image' and \
+          len(value[0]['c']) == 3:
+            value[0]['c'][2][1] = 'fig:'  # Pandoc uses this as a figure marker
+
+def filter_attrimages(key, value, fmt, meta):  # pylint: disable=unused-argument
+    """Replaces all AttrImage elements with Image elements (pandoc<1.16)."""
+    if PANDOCVERSION < '1.16' and key == 'Image' and len(value) == 3:
+        image = elt('Image', 2)(*value[1:])
+        image['c'] = list(image['c'])  # Needed for unit tests
+        return image
 

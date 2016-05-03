@@ -37,6 +37,26 @@ Pandoc [does not provide] version information in its json syntax tree.  This is 
 Pandoc uses UTF-8 for both input and output; so must we.  Python's strings and sys.stdin/stdout/stderr behaviour differ between versions 3 and 4.  Use these instead.
 
 
+Actions
+-------
+
+Preprocessing and postprocessing functions.
+
+
+### repair_refs() ###
+
+Repairs broken references.  Using `-f markdown+autolink_bare_uris` splits braced references like `{@label:id}` at the ':' into `Link` and `Str` elements.  This function replaces the mess with the `Cite` and `Str` elements we normally expect.
+
+### use_attrimages() ###
+
+Substitutes `AttrImage` elements for all attributed images (pandoc<1.16).  `AttrImage` is the same as `Image` for pandoc>=1.16.  Unattributed images are left untouched.
+
+
+### filter_attrimages() ###
+
+Replaces all AttrImage elements with Image elements (pandoc<1.16).
+
+
 Functions
 ---------
 
@@ -70,14 +90,10 @@ Like `stringify()`, all formatting is ignored.
 
 Extracts attributes from a `value` list.  `n` is the index where the attributes start.  Extracted elements are set to `None` in the value list.  Returns the attributes in pandoc format.
 
-### repair_refs(value, pandocversion=PANDOCVERSION) ###
-
-Repairs broken references.  Using `-f markdown+autolink_bare_uris` splits braced references like `{@label:id}` at the ':' into `Link` and `Str` elements.  This function replaces the mess with `Cite` and `Str` elements we normally expect.  The updated value is returned.
-
 
 Decorators
 ----------
 
 ### @filter_null ###
 
-Wraps `func(value, ...)`.  Removes None values from the value list after modified by `func()`.  The filtering is done *in place*.  Returns the results from `func()`.
+Wraps `func(value, ...)`.  Removes `None` values from the value list after modified by `func()`.  The filtering is done *in place*.  Returns the results from `func()`.
