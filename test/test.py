@@ -21,14 +21,14 @@ import sys
 import unittest
 
 from pandocfiltering import quotify, dollarfy, pandocify
-from pandocfiltering import extract_attrs, repair_refs
+from pandocfiltering import extract_attrs, repair_refs, filter_null
 
 PANDOCVERSION = '1.17.0.2'  # Version for the testing
 
 #-----------------------------------------------------------------------------
 # Documents and expected results after processing.
 
-# pylint: disable=line-too-long, exec-used
+# pylint: disable=line-too-long, eval-used
 
 # Markdown: "test"
 INPUT1 = eval(r'''[{"c": [{"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "test", "t": "Str"}]], "t": "Quoted"}], "t": "Para"}]''')
@@ -84,8 +84,8 @@ class TestModule(unittest.TestCase):
 
     def test_extract_attrs(self):
         """Tests extract_attrs()."""
-        self.assertEqual(extract_attrs(INPUT5, 2), EXPECTED5)
-        self.assertEqual(extract_attrs(INPUT6, 2), EXPECTED6)
+        self.assertEqual(filter_null(extract_attrs)(INPUT5, 2), EXPECTED5)
+        self.assertEqual(filter_null(extract_attrs)(INPUT6, 2), EXPECTED6)
 
     def test_repair_refs(self):
         """Tests repair_refs()."""

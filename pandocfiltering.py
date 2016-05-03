@@ -224,11 +224,10 @@ def pandocify(s):
 #-----------------------------------------------------------------------------
 # extract_attrs()
 
-@filter_null
 def extract_attrs(value, n):
-    """Extracts attributes from a value list.  The value list is changed.
-    n is the index where the attributes start.  Returns the attributes in
-    pandoc format.
+    """Extracts attributes from a value list.  n is the index where the
+    attributes start.  Extracted elements are set to None in the value list.
+    Returns the attributes in pandoc format.
     """
     assert value[n:] and value[n]['t'] == 'Str' and \
       value[n]['c'].startswith('{')
