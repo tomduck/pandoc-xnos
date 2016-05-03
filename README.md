@@ -2,9 +2,7 @@
 pandocfiltering 0.1
 ===================
 
-*pandocfiltering* is an enhanced [pandocfilters] module.  It was written for use by the pandoc-[fignos]/[eqnos]/[tablenos] filters but may be of interest to other pandoc filter authors.  It is available for installation from [pypi].
-
-Pandocfiltering provides facilities to help filters support multiple versions of pandoc, and includes a variety of additional niceties.  All of the symbols from pandocfilters are imported, so you can use pandocfiltering as a drop-in replacement.  The documentation below assumes that you are already familiar with the pandocfilters module.
+*pandocfiltering* provides constants and functions to be used in tandem with the [pandocfilters] module.  It was written for use by the pandoc-[fignos]/[eqnos]/[tablenos] filters but may be of interest to others.  It is available for installation from [pypi].
 
 I am pleased to receive bug reports and feature requests on the project's [Issues tracker].
 
@@ -29,11 +27,6 @@ Pandoc [does not provide] version information in its json syntax tree.  This is 
 ### STDIN/STDOUT/STDERR ###
 
 Pandoc uses UTF-8 for both input and output; so must we.  Python's strings and sys.stdin/stdout/stderr behaviour differ between versions 3 and 4.  Use these instead.
-
-
-### Image, Link ###
-
-Pandoc's `Image` and `Link` elements changed with version 1.16.  The versions corresponding to `PANDOCVERSION` are provided.
 
 
 Functions

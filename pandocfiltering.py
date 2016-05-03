@@ -1,4 +1,4 @@
-"""pandocfiltering: an enhanced pandocfilters module."""
+"""pandocfiltering: constants and functions for pandoc filters."""
 
 # Copyright 2015, 2016 Thomas J. Duck.
 # All rights reserved.
@@ -17,6 +17,7 @@
 
 import os
 import sys
+import io
 import subprocess
 import re
 import textwrap
@@ -26,8 +27,8 @@ import copy
 
 import psutil
 
-# pylint: disable=wildcard-import, unused-wildcard-import
-from pandocfilters import *
+from pandocfilters import Str, Para, Plain, Space, Cite
+from pandocfilters import walk, stringify
 
 from pandocattributes import PandocAttributes
 
@@ -106,17 +107,6 @@ else:
     STDIN = sys.stdin
     STDOUT = sys.stdout
     STDERR = sys.stdout
-
-#-----------------------------------------------------------------------------
-# Pandoc elements
-
-# Make Image version dependent
-if PANDOCVERSION < '1.16':
-    Image = elt('Image', 2)  # pylint: disable=invalid-name
-    Link = elt('Link', 2)  # pylint: disable=invalid-name
-else:
-    Image = elt('Image', 3)  # pylint: disable=invalid-name
-    Link = elt('Link', 3)  # pylint: disable=invalid-name
 
 
 # Decorators -----------------------------------------------------------------

@@ -20,7 +20,7 @@ ez_setup.use_setuptools()
 
 from setuptools import setup
 
-DESCRIPTION = 'An enhanced pandocfilters module.'
+DESCRIPTION = 'Constants and functions for pandoc filters.'
 
 VERSION = '0.1'
 
