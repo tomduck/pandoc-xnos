@@ -32,6 +32,9 @@ Pandoc [does not provide] version information in its json syntax tree.  This is 
 [does not provide]: https://github.com/jgm/pandoc/issues/2640
 
 
+Streams
+-------
+
 ### STDIN/STDOUT/STDERR ###
 
 Pandoc uses UTF-8 for both input and output; so must we.  Python's strings and sys.stdin/stdout/stderr behaviour differ between versions 3 and 4.  Use these instead.
