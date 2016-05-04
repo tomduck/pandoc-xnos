@@ -50,22 +50,22 @@ class TestModule(unittest.TestCase):
         # test.md: "test"
 
         # Command: pandoc test.md --filter savejson.py -o test.tex
-        input = eval(r'''[{"c": [{"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "test", "t": "Str"}]], "t": "Quoted"}], "t": "Para"}]''')
+        src = eval(r'''[{"c": [{"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "test", "t": "Str"}]], "t": "Quoted"}], "t": "Para"}]''')
 
         # Command: pandoc test.md --filter savejson.py -o test.html
         expected = eval(r'''[{"c": [{"c": "\"test\"", "t": "Str"}], "t": "Para"}]''')
 
-        self.assertEqual(quotify(input), expected)
+        self.assertEqual(quotify(src), expected)
 
         # test.md: This is 'test 2'.
         
         # Command: pandoc test.md --filter savejson.py -o test.tex
-        input = eval(r'''[{"c": [{"c": "This", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "is", "t": "Str"}, {"c": [], "t": "Space"}, {"c": [{"c": [], "t": "SingleQuote"}, [{"c": "test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "2", "t": "Str"}]], "t": "Quoted"}, {"c": ".", "t": "Str"}], "t": "Para"}]''')
+        src = eval(r'''[{"c": [{"c": "This", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "is", "t": "Str"}, {"c": [], "t": "Space"}, {"c": [{"c": [], "t": "SingleQuote"}, [{"c": "test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "2", "t": "Str"}]], "t": "Quoted"}, {"c": ".", "t": "Str"}], "t": "Para"}]''')
 
         # Command: pandoc test.md --filter savejson.py -o test.html
         expected = eval(r'''[{"t": "Para", "c": [{"t": "Str", "c": "This"}, {"t": "Space", "c": []}, {"t": "Str", "c": "is"}, {"t": "Space", "c": []}, {"t": "Str", "c": "'test"}, {"t": "Space", "c": []}, {"t": "Str", "c": "2'."}]}]''')
 
-        self.assertEqual(quotify(input), expected)
+        self.assertEqual(quotify(src), expected)
 
 
     def test_dollarfy(self):
@@ -74,24 +74,24 @@ class TestModule(unittest.TestCase):
         # test.md: $\frac{1}{2}$
         
         # Command: pandoc test.md -t json
-        input = eval(r'''[{"t": "Math", "c": [{"t": "InlineMath", "c": []}, "\\frac{1}{2}"]}]''')
+        src = eval(r'''[{"t": "Math", "c": [{"t": "InlineMath", "c": []}, "\\frac{1}{2}"]}]''')
 
         # Hand-coded replacement
         expected = eval(r'''[{"t": "Str", "c": "$\\frac{1}{2}$"}]''')
 
-        self.assertEqual(dollarfy(input), expected)
+        self.assertEqual(dollarfy(src), expected)
 
 
     def test_pandocify(self):
         """Tests pandocify()."""
 
         # test.md: This is a test.
-        input = 'This is a test.'
+        src = 'This is a test.'
 
         # Command: pandoc test.md -t json
         expected = eval(r'''[{"t":"Str","c":"This"},{"t":"Space","c":[]},{"t":"Str","c":"is"},{"t":"Space","c":[]},{"t":"Str","c":"a"},{"t":"Space","c":[]},{"t":"Str","c":"test."}]''')
 
-        self.assertEqual(pandocify(input), expected)
+        self.assertEqual(pandocify(src), expected)
 
 
     def test_extract_attrs(self):
@@ -100,17 +100,17 @@ class TestModule(unittest.TestCase):
         # test.md: Test {#eq:id .class tag="foo"}.
 
         # Command: pandoc test.md -filter savejson.py -o test.html
-        input = eval(r'''[{"t": "Str", "c": "Test"}, {"t": "Space", "c": []}, {"t": "Str", "c": "{#eq:id"}, {"t": "Space", "c": []}, {"t": "Str", "c": ".class"}, {"t": "Space", "c": []}, {"t": "Str", "c": "tag=\"foo\"}."}]''')
+        src = eval(r'''[{"t": "Str", "c": "Test"}, {"t": "Space", "c": []}, {"t": "Str", "c": "{#eq:id"}, {"t": "Space", "c": []}, {"t": "Str", "c": ".class"}, {"t": "Space", "c": []}, {"t": "Str", "c": "tag=\"foo\"}."}]''')
 
         # Hand-coded
         expected = ['eq:id', ['class'], [['tag', 'foo']]]
 
-        self.assertEqual(filter_null(extract_attrs)(input, 2), expected)
+        self.assertEqual(filter_null(extract_attrs)(src, 2), expected)
 
         # Command: pandoc test.md -filter savejson.py -o test.tex
-        input = eval(r'''[{"c": "Test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "{#eq:id", "t": "Str"}, {"c": [], "t": "Space"}, {"c": ".class", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "tag=", "t": "Str"}, {"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "foo", "t": "Str"}]], "t": "Quoted"}, {"c": "}.", "t": "Str"}]''')
+        src = eval(r'''[{"c": "Test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "{#eq:id", "t": "Str"}, {"c": [], "t": "Space"}, {"c": ".class", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "tag=", "t": "Str"}, {"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "foo", "t": "Str"}]], "t": "Quoted"}, {"c": "}.", "t": "Str"}]''')
 
-        self.assertEqual(filter_null(extract_attrs)(input, 2), expected)
+        self.assertEqual(filter_null(extract_attrs)(src, 2), expected)
 
 
     def test_repair_refs(self):
@@ -119,33 +119,43 @@ class TestModule(unittest.TestCase):
         # test.md: {@doe:1999}
 
         # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
-        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@doe"}],["mailto:%7B@doe",""]]},{"t":"Str","c":":1999}"}]}]]''')
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@doe"}],["mailto:%7B@doe",""]]},{"t":"Str","c":":1999}"}]}]]''')
 
         # Command: pandoc test.md -t json
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"doe:1999","citationHash":0}],[{"t":"Str","c":"@doe:1999"}]]},{"t":"Str","c":"}"}]}]]''')
 
-        self.assertEqual(walk(input, repair_refs, '', {}), expected)
+        self.assertEqual(walk(src, repair_refs, '', {}), expected)
 
         # test.md: Eqs. {@eq:1}a and {@eq:1}b.
 
         # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
-        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"Eqs."},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}b."}]}]]''')
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"Eqs."},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@eq"}],["mailto:%7B@eq",""]]},{"t":"Str","c":":1}b."}]}]]''')
 
         # Command: pandoc test.md -t json
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"Eqs."},{"t":"Space","c":[]},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}b."}]}]]''')
 
-        self.assertEqual(walk(input, repair_refs, {}, ''), expected)
+        self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
         # test.md: See {+@eq:1}.
 
         # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
-        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{+@eq"}],["mailto:%7B+@eq",""]]},{"t":"Str","c":":1}."}]}]]''')
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{+@eq"}],["mailto:%7B+@eq",""]]},{"t":"Str","c":":1}."}]}]]''')
 
         # Command: pandoc test.md -t json
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}."}]}]]''')
 
-        self.assertEqual(walk(input, repair_refs, {}, ''), expected)
+        self.assertEqual(walk(src, repair_refs, {}, ''), expected)
+
+        # test.md: *@fig:plot1 and {+@fig:plot3}a.
         
+        # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"*@fig"}],["mailto:*@fig",""]]},{"t":"Str","c":":plot1"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{+@fig"}],["mailto:%7B+@fig",""]]},{"t":"Str","c":":plot3}a."}]}]]''')
+
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"*"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:plot1","citationHash":0}],[{"t":"Str","c":"@fig:plot1"}]]},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:plot3","citationHash":0}],[{"t":"Str","c":"@fig:plot3"}]]},{"t":"Str","c":"}a."}]}]]''')
+
+        self.assertEqual(walk(src, repair_refs, {}, ''), expected)
+
 
     def test_use_attrimage(self):
         """Tests use_attrimage()."""
@@ -153,13 +163,13 @@ class TestModule(unittest.TestCase):
         # test.md: ![Caption](img.png){#fig:id}
 
         # Command: pandoc-1.15.2 test.md -t json
-        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[[{"t":"Str","c":"Caption"}],["img.png",""]]},{"t":"Str","c":"{#fig:id}"}]}]]''')
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[[{"t":"Str","c":"Caption"}],["img.png",""]]},{"t":"Str","c":"{#fig:id}"}]}]]''')
 
         # Command: pandoc-1.17.0.2 test.md -t json
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[["fig:id",[],[]],[{"t":"Str","c":"Caption"}],["img.png","fig:"]]}]}]]''')
 
         pandocfiltering.init('1.15.0.2')
-        self.assertEqual(walk(input, use_attrimages, '', {}), expected)
+        self.assertEqual(walk(src, use_attrimages, '', {}), expected)
         pandocfiltering.init('1.17.0.2')
 
 
@@ -169,53 +179,54 @@ class TestModule(unittest.TestCase):
         # test.md: ![Caption](img.png){#fig:id}
 
         # Command: pandoc-1.17.0.2 test.md -t json
-        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[["fig:id",[],[]],[{"t":"Str","c":"Caption"}],["img.png","fig:"]]}]}]]''')
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[["fig:id",[],[]],[{"t":"Str","c":"Caption"}],["img.png","fig:"]]}]}]]''')
 
         # Hand-coded
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[[{"t":"Str","c":"Caption"}],["img.png","fig:"]]}]}]]''')
 
         pandocfiltering.init('1.15.2')
-        self.assertEqual(walk(input, filter_attrimages, '', {}), expected)
+        self.assertEqual(walk(src, filter_attrimages, '', {}), expected)
         pandocfiltering.init('1.17.0.2')
 
 
-    def test_use_refs(self):
+    def test_use_refs_factory(self):
+        """Tests use_refs_factory()."""
 
         # test.md: As shown in @fig:one.
 
         # Command: pandoc test.md -t json
-        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}]]''')
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}]]''')
 
         # Hand-coded
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Ref","c":[['',[],[]],[],'fig:one',[]]},{"t":"Str","c":"."}]}]]''')
 
         use_refs = use_refs_factory(['fig:one'])
-        self.assertEqual(walk(input, use_refs, '', {}), expected)
+        self.assertEqual(walk(src, use_refs, '', {}), expected)
         
         # test.md: See {+@eq:1}.
 
         # Command: pandoc test.md -t json
-        input = [{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}."}]}]]
+        src = [{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}."}]}]]
 
         # Hand-coded
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Ref","c":[['',[],[['cref','On']]],[],'eq:1',[]]},{"t":"Str","c":"."}]}]]''')
-        
-        use_refs = use_refs_factory(['eq:1'])
-        self.assertEqual(walk(input, use_refs, '', {}), expected)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Ref","c":[['',[],[['modifier','+']]],[],'eq:1',[]]},{"t":"Str","c":"."}]}]]''')
 
-        # test.md: {+@tbl:one{.Cref}}-{@tbl:four} provide the data.
+        use_refs = use_refs_factory(['eq:1'])
+        self.assertEqual(walk(src, use_refs, '', {}), expected)
+
+        # test.md: {+@tbl:one{.test}}-{@tbl:four} provide the data.
 
         # Command: pandoc test.md -t json
-        input = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"{.Cref}}-{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Str","c":"}"},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"{.test}}-{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Str","c":"}"},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
 
         # Hand-coded
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[['',['Cref'],[["cref","On"]]],[],"tbl:one",[]]},{"t":"Str","c":"-"},{"t":"Ref","c":[['',[],[]],[],"tbl:four",[]]},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[['',['test'],[["modifier","+"]]],[],"tbl:one",[]]},{"t":"Str","c":"-"},{"t":"Ref","c":[['',[],[]],[],"tbl:four",[]]},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
 
         use_refs = use_refs_factory(['tbl:one', 'tbl:four'])
-        output = walk(input, use_refs, '', {})
+        output = walk(src, use_refs, '', {})
         self.assertEqual(output, expected)
 
-            
+
 #-----------------------------------------------------------------------------
 # main()
 

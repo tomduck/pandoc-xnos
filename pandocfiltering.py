@@ -299,18 +299,26 @@ def extract_attrs(value, n):
 #-----------------------------------------------------------------------------
 # repair_refs() action
 
-_PRE = re.compile(r'{[\+-]?@')
+_PRE = re.compile(r'{?[\*\+-]?@')
 
 def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""
+
+    # This is complicated because we need to be able to detect broken
+    # references like *@eq:one and {+@eq:two}a.
+
     if PANDOCVERSION is None:
         raise RuntimeError('Module uninitialized.  Please call init().')
     if PANDOCVERSION < '1.16':
         return key1 == 'Link' and value1[0][0]['t'] == 'Str' and \
-          _PRE.search(value1[0][0]['c']) and key2 == 'Str' and '}' in value2
+          _PRE.search(value1[0][0]['c']) and \
+          key2 == 'Str' and ('}' in value2 if \
+          _PRE.search(value1[0][0]['c']).group().startswith('{') else True)
     else:
         return key1 == 'Link' and value1[1][0]['t'] == 'Str' and \
-          _PRE.search(value1[1][0]['c']) and key2 == 'Str' and '}' in value2
+          _PRE.search(value1[1][0]['c']) and \
+          key2 == 'Str' and ('}' in value2 if \
+          _PRE.search(value1[1][0]['c']).group().startswith('{') else True)
 
 @_repeat_until_successful
 @filter_null
@@ -332,9 +340,10 @@ def _repair_refs(value):
             s2 = value[i+1]['c']               # Get the second half of the ref
             # Form the reference
             x = _PRE.search(s1).group()
-            ref = s1[s1.index(x)+len(x)-1:] + s2[:s2.index('}')]
-            prefix = s1[:s1.index(x)+len(x)-1]  # Get the prefix
-            suffix = s2[s2.index('}'):]  # Get the suffix
+            ref = s1[s1.index(x)+len(x)-1:] + \
+              (s2[:s2.index('}')] if '{' in x and '}' in s2 else s2)
+            prefix = s1[:s1.index(x)+len(x)-1]
+            suffix = s2[s2.index('}'):] if '{' in x and '}' in s2 else ''
             # We need to be careful with the prefix string because it might be
             # part of another broken reference.  Simply put it back into the
             # value list and repeat the repair_broken_refs() call.
@@ -353,8 +362,9 @@ def _repair_refs(value):
                   "citationHash":0}],
                 [Str(ref)])
             value[i+1]['c'] = list(value[i+1]['c'])  # Needed for unit tests
-            # Insert the suffix
-            value.insert(i+2, Str(suffix))
+            if len(suffix):
+                value.insert(i+2, Str(suffix))
+            break  # The value length might be change; bail and try again
     if not flag:  # No more broken refs left to process
         return value
 
@@ -404,14 +414,8 @@ def use_refs_factory(references):
             """Trims +/- in front of reference and adds cref attribute.
             Sets empty values to None."""
             if value[i-1]['t'] == 'Str':
-                flag = False  # Flags that a modifier was found
-                if value[i-1]['c'].endswith('+'):
-                    attrs[2].append(['cref', 'On'])
-                    flag = True
-                elif value[i-1]['c'].endswith('-'):
-                    attrs[2].append(['cref', 'Off'])
-                    flag = True
-                if flag:  # Trim off the modifier
+                if value[i-1]['c'][-1] in ['*', '+', '-']:
+                    attrs[2].append(['modifier', value[i-1]['c'][-1]])
                     if len(value[i-1]['c']) > 1:
                         value[i-1]['c'] = value[i-1]['c'][:-1]
                     else:
