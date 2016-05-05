@@ -82,6 +82,13 @@ Replaces all AttrImage elements with Image elements (pandoc<1.16).
 Functions
 ---------
 
+### Metadata Processing ###
+
+#### get_meta(doc, name) ####
+
+Retrieves the metadata variable `name` from the `doc`.
+
+
 ### Attribute Processing ###
 
 These functions provide support for processing of attributes strings that are otherwise ignored by pandoc.  See also the [pandoc-attributes] module by @aaren.

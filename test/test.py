@@ -24,6 +24,7 @@ import subprocess
 from pandocfilters import walk
 
 import pandocfiltering
+from pandocfiltering import get_meta
 from pandocfiltering import quotify, dollarfy, pandocify
 from pandocfiltering import extract_attrs, repair_refs, filter_null
 from pandocfiltering import use_attrimages, filter_attrimages
@@ -47,8 +48,69 @@ pandocfiltering.init(PANDOCVERSION)
 class TestModule(unittest.TestCase):
     """Test the pandocfiltering module."""
 
+    def test_get_meta_1(self):
+        """Tests quotify() #1."""
+
+        ## test.md empty
+
+        # Command: pandoc test.md -t json -M foo=bar
+        src = eval(r'''[{"unMeta":{"foo":{"t":"MetaString","c":"bar"}}},[]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', ''), stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json -M foo=bar'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        expected = 'bar'
+
+        # Make the comparison
+        self.assertEqual(get_meta(src, 'foo'), expected)
+        
+            
+    def test_get_meta_2(self):
+        """Tests quotify() #2."""
+
+        ## test.md: ---\nfoo: bar\n... ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{"foo":{"t":"MetaInlines","c":[{"t":"Str","c":"bar"}]}}},[]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '---\nfoo: bar\n...'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        expected = 'bar'
+
+        # Make the comparison
+        self.assertEqual(get_meta(src, 'foo'), expected)
+
+    def test_get_meta_3(self):
+        """Tests quotify() #3."""
+
+        ## test.md: ---\nfoo:\n  - bar\n  - baz\n... ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{"foo":{"t":"MetaList","c":[{"t":"MetaInlines","c":[{"t":"Str","c":"bar"}]},{"t":"MetaInlines","c":[{"t":"Str","c":"baz"}]}]}}},[]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '---\nfoo:\n  - bar\n  - baz\n...'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        expected = ['bar', 'baz']
+
+        # Make the comparison
+        self.assertEqual(get_meta(src, 'foo'), expected)
+
+        
     def test_quotify_1(self):
-        """Tests quotify() -- 1."""
+        """Tests quotify() #1."""
 
         ## test.md: "test" ##
         
@@ -75,7 +137,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_quotify_2(self):
-        """Tests quotify() -- 2."""
+        """Tests quotify() #2."""
 
         ## test.md: This is 'test 2'. ##
         
@@ -147,7 +209,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_extract_attrs_1(self):
-        """Tests extract_attrs() -- 1."""
+        """Tests extract_attrs() #1."""
 
         ## test.md: Test {#eq:id .class tag="foo"}. ##
 
@@ -170,7 +232,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_extract_attrs_2(self):
-        """Tests extract_attrs() -- 2."""
+        """Tests extract_attrs() #2."""
         
         ## test.md: Test {#eq:id .class tag="foo"}. ##
         
@@ -193,7 +255,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_repair_refs_1(self):
-        """Tests repair_refs() -- 1."""
+        """Tests repair_refs() #1."""
 
         ## test.md: {@doe:1999} ##
 
@@ -223,7 +285,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_repair_refs_2(self):
-        """Tests repair_refs() -- 2."""
+        """Tests repair_refs() #2."""
 
         ## test.md: Eqs. {@eq:1}a and {@eq:1}b. ##
 
@@ -253,7 +315,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_repair_refs_3(self):
-        """Tests repair_refs() -- 3."""
+        """Tests repair_refs() #3."""
 
         ## test.md: See {+@eq:1}. ##
 
@@ -283,7 +345,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_repair_refs_4(self):
-        """Tests repair_refs() -- 4."""
+        """Tests repair_refs() #4."""
 
         ## test.md: *@fig:plot1 and {+@fig:plot3}a. ##
         
@@ -362,7 +424,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_use_refs_factory_1(self):
-        """Tests use_refs_factory() -- 1."""
+        """Tests use_refs_factory() #1."""
 
         ## test.md: As shown in @fig:one. ##
 
@@ -386,7 +448,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_use_refs_factory_2(self):
-        """Tests use_refs_factory() -- 2."""
+        """Tests use_refs_factory() #2."""
 
         ## test.md: See {+@eq:1}. ##
 
@@ -409,7 +471,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_use_refs_factory_3(self):
-        """Tests use_refs_factory() -- 3."""
+        """Tests use_refs_factory() #3."""
 
         ## test.md: {+@tbl:one{.test}}-{@tbl:four} provide the data. ##
 
@@ -433,7 +495,7 @@ class TestModule(unittest.TestCase):
 
     @unittest.skip('Known issue for pandoc-1.15.2')
     def test_use_refs_factory_4(self):
-        """Tests use_refs_factory() -- 4."""
+        """Tests use_refs_factory() #4."""
 
         ## test.md: @fig:1:
 
@@ -455,7 +517,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_use_refs_factory_5(self):
-        """Tests use_refs_factory() -- 5."""
+        """Tests use_refs_factory() #5."""
 
         ## test.md: {@fig:1}:
 

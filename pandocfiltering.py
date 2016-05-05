@@ -32,7 +32,9 @@ from pandocfilters import elt, walk, stringify
 
 from pandocattributes import PandocAttributes
 
-if sys.version_info > (3,):
+PY3 = sys.version_info > (3,)
+
+if PY3:
     from urllib.request import unquote  # pylint: disable=no-name-in-module
 else:
     from urllib import unquote  # pylint: disable=no-name-in-module
@@ -104,7 +106,7 @@ def init(pandocversion=None):
 # STDIN, STDOUT and STDERR
 
 # Pandoc uses UTF-8 for both input and output; so must we.
-if sys.version_info > (3,):
+if PY3:
     # Py3 strings are unicode: https://docs.python.org/3.5/howto/unicode.html.
     # Character encoding/decoding is performed automatically at stream
     # interfaces: https://stackoverflow.com/questions/16549332/.
@@ -150,6 +152,21 @@ def filter_null(func):
             value.remove(None)
         return ret
     return wrapper
+
+
+# getmeta(doc, name) ---------------------------------------------------------
+
+def get_meta(doc, name):
+    """Retrieves the metadata variable name from the doc."""
+    data = doc[0]['unMeta'][name]
+    if data['t'] == 'MetaString':
+        return data['c']
+    elif data['t'] == 'MetaInlines':
+        return stringify(data['c'])
+    elif data['t'] == 'MetaList':
+        return [stringify(v['c']) for v in data['c']]
+    else:
+        raise RuntimeError("Could not parse metadata variable '%s'.", name)
 
 
 # quotify() ------------------------------------------------------------------
