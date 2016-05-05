@@ -49,21 +49,21 @@ class TestModule(unittest.TestCase):
 
         # test.md: "test"
 
-        # Command: pandoc test.md --filter savejson.py -o test.tex
-        src = eval(r'''[{"c": [{"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "test", "t": "Str"}]], "t": "Quoted"}], "t": "Para"}]''')
+        # Command: pandoc test.md --smart -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Quoted","c":[{"t":"DoubleQuote","c":[]},[{"t":"Str","c":"test"}]]}]}]]''')[1]
 
-        # Command: pandoc test.md --filter savejson.py -o test.html
-        expected = eval(r'''[{"c": [{"c": "\"test\"", "t": "Str"}], "t": "Para"}]''')
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"\"test\""}]}]]''')[1]
 
         self.assertEqual(quotify(src), expected)
 
         # test.md: This is 'test 2'.
         
-        # Command: pandoc test.md --filter savejson.py -o test.tex
-        src = eval(r'''[{"c": [{"c": "This", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "is", "t": "Str"}, {"c": [], "t": "Space"}, {"c": [{"c": [], "t": "SingleQuote"}, [{"c": "test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "2", "t": "Str"}]], "t": "Quoted"}, {"c": ".", "t": "Str"}], "t": "Para"}]''')
+        # Command: pandoc test.md --smart -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"This"},{"t":"Space","c":[]},{"t":"Str","c":"is"},{"t":"Space","c":[]},{"t":"Quoted","c":[{"t":"SingleQuote","c":[]},[{"t":"Str","c":"test"},{"t":"Space","c":[]},{"t":"Str","c":"2"}]]},{"t":"Str","c":"."}]}]]''')[1]
 
-        # Command: pandoc test.md --filter savejson.py -o test.html
-        expected = eval(r'''[{"t": "Para", "c": [{"t": "Str", "c": "This"}, {"t": "Space", "c": []}, {"t": "Str", "c": "is"}, {"t": "Space", "c": []}, {"t": "Str", "c": "'test"}, {"t": "Space", "c": []}, {"t": "Str", "c": "2'."}]}]''')
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"This"},{"t":"Space","c":[]},{"t":"Str","c":"is"},{"t":"Space","c":[]},{"t":"Str","c":"'test"},{"t":"Space","c":[]},{"t":"Str","c":"2'."}]}]]''')[1]
 
         self.assertEqual(quotify(src), expected)
 
@@ -74,7 +74,7 @@ class TestModule(unittest.TestCase):
         # test.md: $\frac{1}{2}$
         
         # Command: pandoc test.md -t json
-        src = eval(r'''[{"t": "Math", "c": [{"t": "InlineMath", "c": []}, "\\frac{1}{2}"]}]''')
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Math","c":[{"t":"InlineMath","c":[]},"\\frac{1}{2}"]}]}]]''')[1][0]['c']
 
         # Hand-coded replacement
         expected = eval(r'''[{"t": "Str", "c": "$\\frac{1}{2}$"}]''')
@@ -89,7 +89,7 @@ class TestModule(unittest.TestCase):
         src = 'This is a test.'
 
         # Command: pandoc test.md -t json
-        expected = eval(r'''[{"t":"Str","c":"This"},{"t":"Space","c":[]},{"t":"Str","c":"is"},{"t":"Space","c":[]},{"t":"Str","c":"a"},{"t":"Space","c":[]},{"t":"Str","c":"test."}]''')
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"This"},{"t":"Space","c":[]},{"t":"Str","c":"is"},{"t":"Space","c":[]},{"t":"Str","c":"a"},{"t":"Space","c":[]},{"t":"Str","c":"test."}]}]]''')[1][0]['c']
 
         self.assertEqual(pandocify(src), expected)
 
@@ -99,16 +99,16 @@ class TestModule(unittest.TestCase):
 
         # test.md: Test {#eq:id .class tag="foo"}.
 
-        # Command: pandoc test.md -filter savejson.py -o test.html
-        src = eval(r'''[{"t": "Str", "c": "Test"}, {"t": "Space", "c": []}, {"t": "Str", "c": "{#eq:id"}, {"t": "Space", "c": []}, {"t": "Str", "c": ".class"}, {"t": "Space", "c": []}, {"t": "Str", "c": "tag=\"foo\"}."}]''')
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"Test"},{"t":"Space","c":[]},{"t":"Str","c":"{#eq:id"},{"t":"Space","c":[]},{"t":"Str","c":".class"},{"t":"Space","c":[]},{"t":"Str","c":"tag=\"foo\"}."}]}]]''')[1][0]['c']
 
         # Hand-coded
         expected = ['eq:id', ['class'], [['tag', 'foo']]]
 
         self.assertEqual(filter_null(extract_attrs)(src, 2), expected)
 
-        # Command: pandoc test.md -filter savejson.py -o test.tex
-        src = eval(r'''[{"c": "Test", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "{#eq:id", "t": "Str"}, {"c": [], "t": "Space"}, {"c": ".class", "t": "Str"}, {"c": [], "t": "Space"}, {"c": "tag=", "t": "Str"}, {"c": [{"c": [], "t": "DoubleQuote"}, [{"c": "foo", "t": "Str"}]], "t": "Quoted"}, {"c": "}.", "t": "Str"}]''')
+        # Command: pandoc test.md --smart -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"Test"},{"t":"Space","c":[]},{"t":"Str","c":"{#eq:id"},{"t":"Space","c":[]},{"t":"Str","c":".class"},{"t":"Space","c":[]},{"t":"Str","c":"tag="},{"t":"Quoted","c":[{"t":"DoubleQuote","c":[]},[{"t":"Str","c":"foo"}]]},{"t":"Str","c":"}."}]}]]''')[1][0]['c']
 
         self.assertEqual(filter_null(extract_attrs)(src, 2), expected)
 
