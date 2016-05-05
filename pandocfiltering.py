@@ -486,7 +486,7 @@ def _use_refs(value, references):
              # Process modifiers
             if i > 0:
                 _process_modifier(value, i, attrs)
-                
+
             # Remove surrounding brackets
             if i > 0 and i+1 < len(value):
                 _remove_brackets(value, i)
