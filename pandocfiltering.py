@@ -527,7 +527,7 @@ def _extract_imageattrs(value, n):
     # extract_attrs() sets extracted values to None in the value list.
     try:
         return extract_attrs(value, n+1)
-    except AssertionError:
+    except (ValueError, IndexError):
         # Look for attributes attached to the image path, as occurs with
         # reference links.  Remove the encoding.
         image = value[n]
