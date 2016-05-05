@@ -198,7 +198,7 @@ class TestModule(unittest.TestCase):
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}]]''')
 
         # Hand-coded
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Ref","c":[['',[],[]],[],'fig:one',[]]},{"t":"Str","c":"."}]}]]''')
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Ref","c":[['',[],[]],'fig:one']},{"t":"Str","c":"."}]}]]''')
 
         use_refs = use_refs_factory(['fig:one'])
         self.assertEqual(walk(src, use_refs, '', {}), expected)
@@ -209,7 +209,7 @@ class TestModule(unittest.TestCase):
         src = [{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}."}]}]]
 
         # Hand-coded
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Ref","c":[['',[],[['modifier','+']]],[],'eq:1',[]]},{"t":"Str","c":"."}]}]]''')
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Ref","c":[["",[],[["modifier","+"]]],"eq:1"]},{"t":"Str","c":"."}]}]]''')
 
         use_refs = use_refs_factory(['eq:1'])
         self.assertEqual(walk(src, use_refs, '', {}), expected)
@@ -220,7 +220,7 @@ class TestModule(unittest.TestCase):
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"{.test}}-{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Str","c":"}"},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
 
         # Hand-coded
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[['',['test'],[["modifier","+"]]],[],"tbl:one",[]]},{"t":"Str","c":"-"},{"t":"Ref","c":[['',[],[]],[],"tbl:four",[]]},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[['',['test'],[["modifier","+"]]],"tbl:one"]},{"t":"Str","c":"-"},{"t":"Ref","c":[['',[],[]],"tbl:four"]},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
 
         use_refs = use_refs_factory(['tbl:one', 'tbl:four'])
         output = walk(src, use_refs, '', {})
