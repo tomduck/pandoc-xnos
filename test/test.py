@@ -47,8 +47,8 @@ pandocfiltering.init(PANDOCVERSION)
 class TestModule(unittest.TestCase):
     """Test the pandocfiltering module."""
 
-    def test_quotify(self):
-        """Tests quotify()."""
+    def test_quotify_1(self):
+        """Tests quotify() -- 1."""
 
         ## test.md: "test" ##
         
@@ -73,7 +73,10 @@ class TestModule(unittest.TestCase):
         # Make the comparison
         self.assertEqual(quotify(src[1]), expected[1])
 
-        
+
+    def test_quotify_2(self):
+        """Tests quotify() -- 2."""
+
         ## test.md: This is 'test 2'. ##
         
         # Command: pandoc test.md --smart -t json
@@ -143,8 +146,8 @@ class TestModule(unittest.TestCase):
         self.assertEqual(pandocify(src), expected[1][0]['c'])
 
 
-    def test_extract_attrs(self):
-        """Tests extract_attrs()."""
+    def test_extract_attrs_1(self):
+        """Tests extract_attrs() -- 1."""
 
         ## test.md: Test {#eq:id .class tag="foo"}. ##
 
@@ -165,8 +168,11 @@ class TestModule(unittest.TestCase):
         self.assertEqual(filter_null(extract_attrs)(src[1][0]['c'], 2),
                          expected)
 
+
+    def test_extract_attrs_2(self):
+        """Tests extract_attrs() -- 2."""
         
-        ## Same test.md ##
+        ## test.md: Test {#eq:id .class tag="foo"}. ##
         
         # Command: pandoc test.md --smart -t json
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"Test"},{"t":"Space","c":[]},{"t":"Str","c":"{#eq:id"},{"t":"Space","c":[]},{"t":"Str","c":".class"},{"t":"Space","c":[]},{"t":"Str","c":"tag="},{"t":"Quoted","c":[{"t":"DoubleQuote","c":[]},[{"t":"Str","c":"foo"}]]},{"t":"Str","c":"}."}]}]]''')
@@ -178,13 +184,16 @@ class TestModule(unittest.TestCase):
             'pandoc --smart -t json'.split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
+        # Hand-coded
+        expected = ['eq:id', ['class'], [['tag', 'foo']]]
+
         # Make the comparison
         self.assertEqual(filter_null(extract_attrs)(src[1][0]['c'], 2),
                          expected)
 
 
-    def test_repair_refs(self):
-        """Tests repair_refs()."""
+    def test_repair_refs_1(self):
+        """Tests repair_refs() -- 1."""
 
         ## test.md: {@doe:1999} ##
 
@@ -213,6 +222,9 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, repair_refs, '', {}), expected)
 
 
+    def test_repair_refs_2(self):
+        """Tests repair_refs() -- 2."""
+
         ## test.md: Eqs. {@eq:1}a and {@eq:1}b. ##
 
         # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
@@ -240,6 +252,9 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
+    def test_repair_refs_3(self):
+        """Tests repair_refs() -- 3."""
+
         ## test.md: See {+@eq:1}. ##
 
         # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
@@ -266,6 +281,9 @@ class TestModule(unittest.TestCase):
         # Make the comparison
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
+
+    def test_repair_refs_4(self):
+        """Tests repair_refs() -- 4."""
 
         ## test.md: *@fig:plot1 and {+@fig:plot3}a. ##
         
@@ -343,8 +361,8 @@ class TestModule(unittest.TestCase):
         pandocfiltering.init(PANDOCVERSION)
 
 
-    def test_use_refs_factory(self):
-        """Tests use_refs_factory()."""
+    def test_use_refs_factory_1(self):
+        """Tests use_refs_factory() -- 1."""
 
         ## test.md: As shown in @fig:one. ##
 
@@ -367,6 +385,9 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, use_refs, '', {}), expected)
 
 
+    def test_use_refs_factory_2(self):
+        """Tests use_refs_factory() -- 2."""
+
         ## test.md: See {+@eq:1}. ##
 
         # Command: pandoc test.md -t json
@@ -387,6 +408,9 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, use_refs, '', {}), expected)
 
 
+    def test_use_refs_factory_3(self):
+        """Tests use_refs_factory() -- 3."""
+
         ## test.md: {+@tbl:one{.test}}-{@tbl:four} provide the data. ##
 
         # Command: pandoc test.md -t json
@@ -406,6 +430,46 @@ class TestModule(unittest.TestCase):
         # Make the comparison
         use_refs = use_refs_factory(['tbl:one', 'tbl:four'])
         self.assertEqual(walk(src, use_refs, '', {}), expected)
+
+    @unittest.skip('Known issue for pandoc-1.15.2')
+    def test_use_refs_factory_4(self):
+        """Tests use_refs_factory() -- 4."""
+
+        ## test.md: @fig:1:
+
+        # pandoc-1.15.2 doesn't detect references that end in a colon.  This
+        # was fixed in subsequent versions of pandoc.  There is a trivial
+        # workaround; use "{@fig:1}:" instead.  This is demonstrated in the
+        # next unit test.  Given that there is a trivial work-around, this is
+        # probably not worth fixing.
+
+        # Command: pandoc-1.15.2 test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"@fig:1:"}]}]]''')
+
+        # Hand-coded (Ref inserted)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[['',[],[]],"fig:1"]},{"t":"Str","c":":"}]}]]''')
+
+        # Make the comparison
+        use_refs = use_refs_factory(['fig:1'])
+        self.assertEqual(walk(src, use_refs, {}, ''), expected)
+
+
+    def test_use_refs_factory_5(self):
+        """Tests use_refs_factory() -- 5."""
+
+        ## test.md: {@fig:1}:
+
+        # See previous unit test
+
+        # Command: pandoc-1.15.2 test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"}:"}]}]]''')
+
+        # Hand-coded (Ref inserted)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[['',[],[]],"fig:1"]},{"t":"Str","c":":"}]}]]''')
+
+        # Make the comparison
+        use_refs = use_refs_factory(['fig:1'])
+        self.assertEqual(walk(src, use_refs, {}, ''), expected)
 
 
 #-----------------------------------------------------------------------------
