@@ -31,11 +31,6 @@ Pandoc [does not provide] version information in its json syntax tree.  This is 
 [does not provide]: https://github.com/jgm/pandoc/issues/2640
 
 
-#### STRTYPES ####
-
-Python 2 has two different string types whereas python 3 has one.  `STRTYPES` is a list of what is available for the python version being used.
-
-
 Streams
 -------
 
