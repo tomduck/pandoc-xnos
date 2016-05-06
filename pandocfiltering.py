@@ -173,7 +173,7 @@ def get_meta(meta, name):
     elif data['t'] == 'MetaList':
         return [stringify(v['c']) for v in data['c']]
     else:
-        raise RuntimeError("Could not parse metadata variable '%s'.", name)
+        raise RuntimeError("Could not parse metadata variable '%s'." % name)
 
 
 # quotify() ------------------------------------------------------------------
