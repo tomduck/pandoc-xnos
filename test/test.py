@@ -65,7 +65,7 @@ class TestModule(unittest.TestCase):
         expected = 'bar'
 
         # Make the comparison
-        self.assertEqual(get_meta(src, 'foo'), expected)
+        self.assertEqual(get_meta(src[0]['unMeta'], 'foo'), expected)
         
             
     def test_get_meta_2(self):
@@ -86,7 +86,8 @@ class TestModule(unittest.TestCase):
         expected = 'bar'
 
         # Make the comparison
-        self.assertEqual(get_meta(src, 'foo'), expected)
+        self.assertEqual(get_meta(src[0]['unMeta'], 'foo'), expected)
+
 
     def test_get_meta_3(self):
         """Tests quotify() #3."""
@@ -106,7 +107,7 @@ class TestModule(unittest.TestCase):
         expected = ['bar', 'baz']
 
         # Make the comparison
-        self.assertEqual(get_meta(src, 'foo'), expected)
+        self.assertEqual(get_meta(src[0]['unMeta'], 'foo'), expected)
 
         
     def test_quotify_1(self):

@@ -84,9 +84,9 @@ Functions
 
 ### Metadata Processing ###
 
-#### get_meta(doc, name) ####
+#### get_meta(meta, name) ####
 
-Retrieves the metadata variable `name` from the `doc`.
+Retrieves the metadata variable `name` from the dict `meta`.
 
 
 ### Attribute Processing ###

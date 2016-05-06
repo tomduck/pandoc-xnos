@@ -156,9 +156,9 @@ def filter_null(func):
 
 # getmeta(doc, name) ---------------------------------------------------------
 
-def get_meta(doc, name):
-    """Retrieves the metadata variable name from the doc."""
-    data = doc[0]['unMeta'][name]
+def get_meta(meta, name):
+    """Retrieves the metadata variable name from the dict meta."""
+    data = meta[name]
     if data['t'] == 'MetaString':
         return data['c']
     elif data['t'] == 'MetaInlines':
