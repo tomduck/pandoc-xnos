@@ -328,9 +328,8 @@ def extract_attrs(value, n):
 
 # repair_refs() --------------------------------------------------------------
 
-# Reference regexes.  Having two versions is easier than using lookaround.
-_REF1 = re.compile(r'^({[\*\+!]?)(@[^:]*:[\w/-]+)(}(?:.*)?)')
-_REF2 = re.compile(r'^([\*\+!]?)(@[^:]*:[\w/-]+)(.*)?')
+# Reference regex
+_REF = re.compile(r'^({?[\*\+!]?)(@[^:]*:[\w/-]+)(.*)?')
 
 def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""
@@ -343,7 +342,7 @@ def _is_broken_ref(key1, value1, key2, value2):
     n = 0 if PANDOCVERSION < '1.16' else 1
     s = value1[n][0]['c'] + value2
     # Check if this matches the reference regexes and return
-    return True if _REF1.match(s) or _REF2.match(s) else False
+    return True if _REF.match(s) else False
 
 def _repeat_until_successful(func):
     """Repeats func(value, ...) call until something other than None is
@@ -382,10 +381,7 @@ def _repair_refs(value):
 
             # Chop it into pieces.  Note that the prefix and suffix may be
             # parts of other broken references.
-            if _REF1.match(s):
-                prefix, ref, suffix = _REF1.match(s).groups()
-            else:
-                prefix, ref, suffix = _REF2.match(s).groups()
+            prefix, ref, suffix = _REF.match(s).groups()
 
             # Put the extra parts back into the value list for reprocessing
             if len(prefix):

@@ -427,6 +427,66 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
+    def test_repair_refs_6(self):
+        """Tests repair_refs() #6."""
+
+        ## test.md: {@fig:1{baz=bat}}a ##
+
+        # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@fig"}],["mailto:%7B@fig",""]]},{"t":"Str","c":":1{baz=bat}}a"}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '{@fig:1{baz=bat}}a'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -f markdown+autolink_bare_uris -t json'.split(),
+            stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"{baz=bat}}a"}]}]]''')
+
+        # Check expected against current pandoc
+        md = subprocess.Popen(('echo', '{@fig:1{baz=bat}}a'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(expected, output)
+
+        # Make the comparison
+        self.assertEqual(walk(src, repair_refs, {}, ''), expected)
+
+
+    def test_repair_refs_7(self):
+        """Tests repair_refs() #7."""
+
+        ## test.md: {@fig:1{baz=bat foo=bar}}a ##
+
+        # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@fig"}],["mailto:%7B@fig",""]]},{"t":"Str","c":":1{baz=bat"},{"t":"Space","c":[]},{"t":"Str","c":"foo=bar}}a"}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '{@fig:1{baz=bat foo=bar}}a'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -f markdown+autolink_bare_uris -t json'.split(),
+            stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"{baz=bat"},{"t":"Space","c":[]},{"t":"Str","c":"foo=bar}}a"}]}]]''')
+
+        # Check expected against current pandoc
+        md = subprocess.Popen(('echo', '{@fig:1{baz=bat foo=bar}}a'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(expected, output)
+
+        # Make the comparison
+        self.assertEqual(walk(src, repair_refs, {}, ''), expected)
+
+
     def test_use_attrimage(self):
         """Tests use_attrimage()."""
 
