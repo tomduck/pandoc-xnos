@@ -20,7 +20,7 @@ I am pleased to receive bug reports and feature requests on the project's [Issue
 Initialization
 --------------
 
-#### `init(pandocversion=None)` ####
+###### `init(pandocversion=None)` ######
 
 Initializes the module.  You may call this at any time to manually set the pandoc version.  Otherwise the module will try to determine pandoc's version for itself.
 
