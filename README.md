@@ -20,7 +20,7 @@ I am pleased to receive bug reports and feature requests on the project's [Issue
 Initialization
 --------------
 
-#### init(pandocversion=None) ####
+#### `init(pandocversion=None)` ####
 
 Initializes the module.  You may call this at any time to manually set the pandoc version.  Otherwise the module will try to determine pandoc's version for itself.
 
@@ -28,7 +28,7 @@ Initializes the module.  You may call this at any time to manually set the pando
 Constants
 ---------
 
-#### PANDOCVERSION  ####
+#### `PANDOCVERSION`  ####
 
 Pandoc [does not provide] version information in its json syntax tree.  This is needed by filters to provide support for multiple pandoc versions.
 
@@ -38,7 +38,7 @@ Pandoc [does not provide] version information in its json syntax tree.  This is 
 Streams
 -------
 
-#### STDIN/STDOUT/STDERR ####
+#### `STDIN`/`STDOUT`/`STDERR` ####
 
 Pandoc uses UTF-8 for both input and output; so must we.  Python's  sys.stdin/stdout/stderr behaviours differ between versions 3 and 4.  Use these instead.
 
@@ -56,12 +56,12 @@ pandocfiltering provides support for reading and processing references like `{+@
 [pandoc-fignos]: https://github.com/tomduck/pandoc-fignos
 
 
-#### repair_refs(key, value, fmt, meta) ####
+#### `repair_refs(key, value, fmt, meta)` ####
 
 Repairs broken references.  Using `-f markdown+autolink_bare_uris` splits braced references like `{@label:id}` at the `:` into `Link` and `Str` elements.  This function replaces the mess with the `Cite` and `Str` elements normally found.  Call this action before any reference processing.
 
 
-#### use_refs_factory(references) ####
+#### `use_refs_factory(references)` ####
 
 Returns `use_refs(key, value, fmt, meta)` function that replaces known `references` with `Ref` elements.  `Ref` elements aren't understood by pandoc, but are easily identified for further processing by a filter.
 
@@ -73,12 +73,12 @@ The `Ref` element has four values: the attributes, prefix, reference string, and
 The `Image` element became attributed in pandoc 1.16.  These functions help support earlier versions of pandoc.
 
 
-#### use_attrimages(key, value, fmt, meta) ####
+#### `use_attrimages(key, value, fmt, meta)` ####
 
 Substitutes `AttrImage` elements for all attributed images (pandoc<1.16).  `AttrImage` is the same as `Image` for pandoc>=1.16.  Unattributed images are left untouched.
 
 
-#### filter_attrimages(key, value, fmt, meta) ####
+#### `filter_attrimages(key, value, fmt, meta)` ####
 
 Replaces all AttrImage elements with Image elements (pandoc<1.16).
 
@@ -88,7 +88,7 @@ Functions
 
 ### Metadata Processing ###
 
-#### get_meta(meta, name) ####
+#### `get_meta(meta, name)` ####
 
 Retrieves the metadata variable `name` from the dict `meta`.
 
@@ -100,7 +100,7 @@ These functions provide support for processing of attributes strings that are ot
 [pandoc-attributes]: https://github.com/aaren/pandoc-attributes
 
 
-#### extract_attrs(value, n) ####
+#### `extract_attrs(value, n)` ####
 
 Extracts attributes from a `value` list beginning at index `n`.
 
@@ -114,7 +114,7 @@ Returns the attributes in pandoc format.  A `ValueError` is raised if attributes
 The following functions are intended to be used together with `stringify()` from pandocfilters.
 
 
-#### quotify(x) ####
+#### `quotify(x)` ####
 
 Replaces `Quoted` elements with quoted strings.
 
@@ -125,7 +125,7 @@ Pandoc uses the `Quoted` element in its json when `--smart` is enabled.  Output 
 Returns `x`.
 
 
-#### dollarfy(x) ####
+#### `dollarfy(x)` ####
 
 Replaces Math elements with a $-enclosed string.
 
@@ -134,7 +134,7 @@ Replaces Math elements with a $-enclosed string.
 Returns `x`.
 
 
-#### pandocify(s) ####
+#### `pandocify(s)` ####
 
 Returns a representation of the string `s` using pandoc elements.
 Like `stringify()`, all formatting is ignored.
@@ -143,7 +143,7 @@ Like `stringify()`, all formatting is ignored.
 Decorators
 ----------
 
-#### @filter_null ####
+#### `@filter_null` ####
 
 Removes `None` values from the value list.
 
