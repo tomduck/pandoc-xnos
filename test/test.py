@@ -45,6 +45,7 @@ pandocfiltering.init(PANDOCVERSION)
 #-----------------------------------------------------------------------------
 # Test class
 
+# pylint: disable=too-many-public-methods
 class TestModule(unittest.TestCase):
     """Test the pandocfiltering module."""
 
