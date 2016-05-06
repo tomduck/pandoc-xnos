@@ -637,6 +637,29 @@ class TestModule(unittest.TestCase):
     def test_use_refs_factory_4(self):
         """Tests use_refs_factory() #4."""
 
+        ## test.md: {@fig:1{baz=bat foo=bar}}a. ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"{baz=bat"},{"t":"Space","c":[]},{"t":"Str","c":"foo=bar}}a."}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '{@fig:1{baz=bat foo=bar}}a.'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded (Ref inserted)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[["",[],[["baz","bat"],["foo","bar"]]],"fig:1"]},{"t":"Str","c":"a."}]}]]''')
+
+        # Make the comparison
+        use_refs = use_refs_factory(['fig:1'])
+        self.assertEqual(walk(src, use_refs, '', {}), expected)
+
+
+    def test_use_refs_factory_5(self):
+        """Tests use_refs_factory() #5."""
+
         ## test.md: {+@tbl:one{.test}}-{@tbl:four} provide the data. ##
 
         # Command: pandoc test.md -t json
@@ -658,8 +681,8 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, use_refs, '', {}), expected)
 
     @unittest.skip('Known issue for pandoc-1.15.2')
-    def test_use_refs_factory_5(self):
-        """Tests use_refs_factory() #5."""
+    def test_use_refs_factory_6(self):
+        """Tests use_refs_factory() #6."""
 
         ## test.md: @fig:1:
 
@@ -680,8 +703,8 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, use_refs, {}, ''), expected)
 
 
-    def test_use_refs_factory_6(self):
-        """Tests use_refs_factory() #6."""
+    def test_use_refs_factory_7(self):
+        """Tests use_refs_factory() #7."""
 
         ## test.md: {@fig:1}:
 

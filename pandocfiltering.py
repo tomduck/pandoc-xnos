@@ -454,29 +454,35 @@ def _process_modifier(value, i, attrs):
                 value[i-1] = None
 
 def _remove_brackets(value, i):
-    """Removes curly brackets from Str elements surrounding the Cite element at
-    index i.  This assumes that the modifier has already been trimmed.  Sets
-    empty values to None.
+    """Removes curly brackets surrounding the Ref element at index i.  This
+    assumes that the modifier has already been trimmed.  Empty strings are
+    set to None.
     """
-    assert value[i]['t'] == 'Cite'
+    assert value[i]['t'] == 'Ref'
 
-    # Check to see if the surrounding elements are strings
-    if value[i-1] is None or value[i+1] is None:
+    # Find surrounding elements that are not None
+    j, k = i-1, i+1
+    while j > 0 and value[j] == None:
+        j -= 1
+    while k < len(value) and value[k] == None:
+        k += 1
+    if j < 0 or k >= len(value):
         return
-    if not value[i-1]['t'] == value[i+1]['t'] == 'Str':
+    
+    # Check to see if the surrounding elements are strings
+    if not value[j]['t'] == value[k]['t'] == 'Str':
         return
 
     # Trim off curly brackets and set empty values to None
-    if value[i-1]['c'].endswith('{') and \
-      value[i+1]['c'].startswith('}'):
-        if len(value[i-1]['c']) > 1:
-            value[i-1]['c'] = value[i-1]['c'][:-1]
+    if value[j]['c'].endswith('{') and value[k]['c'].startswith('}'):
+        if len(value[j]['c']) > 1:
+            value[j]['c'] = value[j]['c'][:-1]
         else:
-            value[i-1] = None
-        if len(value[i+1]['c']) > 1:
-            value[i+1]['c'] = value[i+1]['c'][1:]
+            value[j] = None
+        if len(value[k]['c']) > 1:
+            value[k]['c'] = value[k]['c'][1:]
         else:
-            value[i+1] = None
+            value[k] = None
 
 @filter_null
 def _use_refs(value, references):
@@ -500,13 +506,13 @@ def _use_refs(value, references):
             if i > 0:
                 _process_modifier(value, i, attrs)
 
-            # Remove surrounding brackets
-            if i > 0 and i+1 < len(value):
-                _remove_brackets(value, i)
-
             # Insert the Ref element
             value[i] = Ref(attrs, _parse_cite_ref(v['t'], v['c']))
             value[i]['c'] = list(value[i]['c'])  # Needed for unit tests
+
+            # Remove surrounding brackets
+            _remove_brackets(value, i)
+
 
 def use_refs_factory(references):
     """Returns use_refs(key, value, fmt, meta) function that replaces
