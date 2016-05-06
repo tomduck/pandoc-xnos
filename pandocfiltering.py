@@ -103,6 +103,13 @@ def init(pandocversion=None):
 
 
 #-----------------------------------------------------------------------------
+# STRTYPES
+
+# pylint: disable=undefined-variable
+STRTYPES = [str] if PY3 else [str, unicode]
+
+
+#-----------------------------------------------------------------------------
 # STDIN, STDOUT and STDERR
 
 # Pandoc uses UTF-8 for both input and output; so must we.
