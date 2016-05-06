@@ -16,7 +16,7 @@ I am pleased to receive bug reports and feature requests on the project's [Issue
 Initialization
 --------------
 
-### init(pandocversion=None) ###
+#### init(pandocversion=None) ####
 
 Initializes the module.  You may call this at any time to manually set the pandoc version.  Otherwise the module will try to determine pandoc's version for itself.
 
@@ -24,14 +24,14 @@ Initializes the module.  You may call this at any time to manually set the pando
 Constants
 ---------
 
-### PANDOCVERSION  ###
+#### PANDOCVERSION  ####
 
 Pandoc [does not provide] version information in its json syntax tree.  This is needed by filters to provide support for multiple pandoc versions.
 
 [does not provide]: https://github.com/jgm/pandoc/issues/2640
 
 
-### STRTYPES ###
+#### STRTYPES ####
 
 Python 2 has two different string types whereas python 3 has one.  `STRTYPES` is a list of what is available for the python version being used.
 
@@ -39,7 +39,7 @@ Python 2 has two different string types whereas python 3 has one.  `STRTYPES` is
 Streams
 -------
 
-### STDIN/STDOUT/STDERR ###
+#### STDIN/STDOUT/STDERR ####
 
 Pandoc uses UTF-8 for both input and output; so must we.  Python's  sys.stdin/stdout/stderr behaviours differ between versions 3 and 4.  Use these instead.
 
@@ -115,7 +115,7 @@ Returns the attributes in pandoc format.  A `ValueError` is raised if attributes
 The following functions are intended to be used together with `stringify()` from pandocfilters.
 
 
-### quotify(x) ###
+#### quotify(x) ####
 
 Replaces `Quoted` elements with quoted strings.
 
@@ -126,7 +126,7 @@ Pandoc uses the `Quoted` element in its json when `--smart` is enabled.  Output 
 Returns `x`.
 
 
-### dollarfy(x) ###
+#### dollarfy(x) ####
 
 Replaces Math elements with a $-enclosed string.
 
@@ -135,7 +135,7 @@ Replaces Math elements with a $-enclosed string.
 Returns `x`.
 
 
-### pandocify(s) ###
+#### pandocify(s) ####
 
 Returns a representation of the string `s` using pandoc elements.
 Like `stringify()`, all formatting is ignored.
@@ -144,7 +144,7 @@ Like `stringify()`, all formatting is ignored.
 Decorators
 ----------
 
-### @filter_null ###
+#### @filter_null ####
 
 Removes `None` values from the value list.
 
