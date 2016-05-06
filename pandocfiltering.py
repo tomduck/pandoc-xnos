@@ -32,7 +32,6 @@ from pandocfilters import elt, walk, stringify
 
 from pandocattributes import PandocAttributes
 
-
 PY3 = sys.version_info > (3,)
 
 if PY3:
@@ -101,6 +100,13 @@ def init(pandocversion=None):
         msg = """Cannot determine pandoc version.  Please file an issue at
               https://github.com/tomduck/pandocfiltering/issues"""
         raise RuntimeError(textwrap.dedent(msg))
+
+
+#-----------------------------------------------------------------------------
+# STRTYPES
+
+# pylint: disable=undefined-variable
+STRTYPES = [str] if PY3 else [str, unicode]
 
 
 #-----------------------------------------------------------------------------
