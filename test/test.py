@@ -66,8 +66,8 @@ class TestModule(unittest.TestCase):
 
         # Make the comparison
         self.assertEqual(get_meta(src[0]['unMeta'], 'foo'), expected)
-        
-            
+
+
     def test_get_meta_2(self):
         """Tests quotify() #2."""
 
@@ -109,12 +109,12 @@ class TestModule(unittest.TestCase):
         # Make the comparison
         self.assertEqual(get_meta(src[0]['unMeta'], 'foo'), expected)
 
-        
+
     def test_quotify_1(self):
         """Tests quotify() #1."""
 
         ## test.md: "test" ##
-        
+
         # Command: pandoc test.md --smart -t json
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Quoted","c":[{"t":"DoubleQuote","c":[]},[{"t":"Str","c":"test"}]]}]}]]''')
 
@@ -141,7 +141,7 @@ class TestModule(unittest.TestCase):
         """Tests quotify() #2."""
 
         ## test.md: This is 'test 2'. ##
-        
+
         # Command: pandoc test.md --smart -t json
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"This"},{"t":"Space","c":[]},{"t":"Str","c":"is"},{"t":"Space","c":[]},{"t":"Quoted","c":[{"t":"SingleQuote","c":[]},[{"t":"Str","c":"test"},{"t":"Space","c":[]},{"t":"Str","c":"2"}]]},{"t":"Str","c":"."}]}]]''')
 
@@ -170,7 +170,7 @@ class TestModule(unittest.TestCase):
         """Tests dollarfy()."""
 
         ## test.md: $\frac{1}{2}$ ##
-        
+
         # Command: pandoc test.md -t json
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Math","c":[{"t":"InlineMath","c":[]},"\\frac{1}{2}"]}]}]]''')
 
@@ -234,9 +234,7 @@ class TestModule(unittest.TestCase):
 
     def test_extract_attrs_2(self):
         """Tests extract_attrs() #2."""
-        
-        ## test.md: Test {#eq:id .class tag="foo"}. ##
-        
+
         # Command: pandoc test.md --smart -t json
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"Test"},{"t":"Space","c":[]},{"t":"Str","c":"{#eq:id"},{"t":"Space","c":[]},{"t":"Str","c":".class"},{"t":"Space","c":[]},{"t":"Str","c":"tag="},{"t":"Quoted","c":[{"t":"DoubleQuote","c":[]},[{"t":"Str","c":"foo"}]]},{"t":"Str","c":"}."}]}]]''')
 
@@ -349,7 +347,7 @@ class TestModule(unittest.TestCase):
         """Tests repair_refs() #4."""
 
         ## test.md: *@fig:plot1 and {+@fig:plot3}a. ##
-        
+
         # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"*@fig"}],["mailto:*@fig",""]]},{"t":"Str","c":":plot1"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{+@fig"}],["mailto:%7B+@fig",""]]},{"t":"Str","c":":plot3}a."}]}]]''')
 
@@ -454,7 +452,7 @@ class TestModule(unittest.TestCase):
         ## test.md: See {+@eq:1}. ##
 
         # Command: pandoc test.md -t json
-        src = [{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}."}]}]]
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}."}]}]]''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'See {+@eq:1}.'),
@@ -486,7 +484,7 @@ class TestModule(unittest.TestCase):
         output = eval(subprocess.check_output(
             'pandoc -t json'.split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
-        
+
         # Hand-coded (ref inserted)
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[['',['test'],[["modifier","+"]]],"tbl:one"]},{"t":"Str","c":"-"},{"t":"Ref","c":[['',[],[]],"tbl:four"]},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
 
