@@ -329,7 +329,7 @@ def extract_attrs(value, n):
 # repair_refs() --------------------------------------------------------------
 
 # regex to identify the start of a broken reference
-_PRE = re.compile(r'{?[\*\+-]?@')
+_PRE = re.compile(r'{?[\*\+!]?@')
 
 def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""
@@ -455,17 +455,17 @@ def _parse_cite_ref(key, value):
     return value[1][0]['c'][1:]
 
 def _process_modifier(value, i, attrs):
-    """Trims */+/- modifier in front of the Cite element at index i
+    """Trims */+/! modifier in front of the Cite element at index i
     and stores it as an attribute.  Sets empty values to None.
     """
     assert value[i]['t'] == 'Cite'
     if value[i-1]['t'] == 'Str':
-        if value[i-1]['c'][-1] in ['*', '+', '-']:
+        if value[i-1]['c'][-1] in ['*', '+', '!']:
             attrs[2].append(['modifier', value[i-1]['c'][-1]])
             if len(value[i-1]['c']) > 1:
                 value[i-1]['c'] = value[i-1]['c'][:-1]
             else:
-                value[i-1] = None
+                value[i-1] = None        
 
 def _remove_brackets(value, i):
     """Removes curly brackets from Str elements surrounding the Cite element at

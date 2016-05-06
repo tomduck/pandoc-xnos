@@ -257,6 +257,8 @@ class TestModule(unittest.TestCase):
     def test_extract_attrs_2(self):
         """Tests extract_attrs() #2."""
 
+        ## test.md: Test {#eq:id .class tag="foo"}. ##
+
         # Command: pandoc test.md --smart -t json
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"Test"},{"t":"Space","c":[]},{"t":"Str","c":"{#eq:id"},{"t":"Space","c":[]},{"t":"Str","c":".class"},{"t":"Space","c":[]},{"t":"Str","c":"tag="},{"t":"Quoted","c":[{"t":"DoubleQuote","c":[]},[{"t":"Str","c":"foo"}]]},{"t":"Str","c":"}."}]}]]''')
 
@@ -477,8 +479,7 @@ class TestModule(unittest.TestCase):
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}."}]}]]''')
 
         # Check src against current pandoc
-        md = subprocess.Popen(('echo', 'See {+@eq:1}.'),
-                              stdout=subprocess.PIPE)
+        md = subprocess.Popen(('echo', 'See {+@eq:1}.'), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
             'pandoc -t json'.split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
@@ -490,9 +491,30 @@ class TestModule(unittest.TestCase):
         use_refs = use_refs_factory(['eq:1'])
         self.assertEqual(walk(src, use_refs, '', {}), expected)
 
-
     def test_use_refs_factory_3(self):
         """Tests use_refs_factory() #3."""
+
+        ## test.md: !@eq:1 ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"!"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '!@eq:1'), stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded (Ref inserted)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[["",[],[["modifier","!"]]],"eq:1"]}]}]]''')
+
+        # Make the comparison
+        use_refs = use_refs_factory(['eq:1'])
+        self.assertEqual(walk(src, use_refs, '', {}), expected)
+
+
+    def test_use_refs_factory_4(self):
+        """Tests use_refs_factory() #4."""
 
         ## test.md: {+@tbl:one{.test}}-{@tbl:four} provide the data. ##
 
@@ -515,8 +537,8 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, use_refs, '', {}), expected)
 
     @unittest.skip('Known issue for pandoc-1.15.2')
-    def test_use_refs_factory_4(self):
-        """Tests use_refs_factory() #4."""
+    def test_use_refs_factory_5(self):
+        """Tests use_refs_factory() #5."""
 
         ## test.md: @fig:1:
 
@@ -537,8 +559,8 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, use_refs, {}, ''), expected)
 
 
-    def test_use_refs_factory_5(self):
-        """Tests use_refs_factory() #5."""
+    def test_use_refs_factory_6(self):
+        """Tests use_refs_factory() #6."""
 
         ## test.md: {@fig:1}:
 
