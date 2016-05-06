@@ -329,7 +329,7 @@ def extract_attrs(value, n):
 # repair_refs() --------------------------------------------------------------
 
 # Reference regex
-_REF = re.compile(r'^({?[\*\+!]?)(@[^:]*:[\w/-]+)(.*)?')
+_REF = re.compile(r'^((?:.*{)?[\*\+!]?)(@[^:]*:[\w/-]+)(.*)?')
 
 def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""

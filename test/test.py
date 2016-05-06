@@ -488,6 +488,36 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
+    def test_repair_refs_8(self):
+        """Tests repair_refs() #8."""
+
+        ## test.md: {@fig:1}-{@fig:3} ##
+
+        # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"{@fig"}],["mailto:%7B@fig",""]]},{"t":"Str","c":":"},{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"1}-{@fig"}],["mailto:1%7D-%7B@fig",""]]},{"t":"Str","c":":3}"}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '{@fig:1}-{@fig:3}'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -f markdown+autolink_bare_uris -t json'.split(),
+            stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"}-{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:3","citationHash":0}],[{"t":"Str","c":"@fig:3"}]]},{"t":"Str","c":"}"}]}]]''')
+
+        # Check expected against current pandoc
+        md = subprocess.Popen(('echo', '{@fig:1}-{@fig:3}'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(expected, output)
+
+        # Make the comparison
+        self.assertEqual(walk(src, repair_refs, {}, ''), expected)
+
+
     def test_use_attrimage(self):
         """Tests use_attrimage()."""
 
