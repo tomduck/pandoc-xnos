@@ -462,7 +462,7 @@ def _remove_brackets(value, i):
 
     # Find surrounding elements that are not None
     j, k = i-1, i+1
-    while j > 0 and value[j] == None:
+    while j >= 0 and value[j] == None:
         j -= 1
     while k < len(value) and value[k] == None:
         k += 1
