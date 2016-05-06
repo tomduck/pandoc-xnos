@@ -165,6 +165,7 @@ def filter_null(func):
 
 def get_meta(meta, name):
     """Retrieves the metadata variable name from the dict meta."""
+    assert name in meta
     data = meta[name]
     if data['t'] == 'MetaString':
         return data['c']
@@ -173,7 +174,8 @@ def get_meta(meta, name):
     elif data['t'] == 'MetaList':
         return [stringify(v['c']) for v in data['c']]
     else:
-        raise RuntimeError("Could not parse metadata variable '%s'." % name)
+        raise RuntimeError("Could not understand metadata variable '%s'." %
+                           name)
 
 
 # quotify() ------------------------------------------------------------------
