@@ -251,10 +251,10 @@ def pandocify(s):
     """
     toks = [Str(tok) for tok in s.split()]
     spaces = [Space()]*len(toks)
-    ret = list(itertools.chain(*zip(toks, spaces)))
-    if s[0] == ' ':
+    ret = list(itertools.chain(*zip(toks, spaces)))  # Leaves a space at the end
+    if s[0] == ' ':  # Add a space at the beginning if needed
         ret = [Space()] + ret
-    return ret if s[-1] == ' ' else ret[:-1]
+    return ret if s[-1] == ' ' else ret[:-1]  # Trim space at end if needed
 
 
 # extract_attrs() ------------------------------------------------------------
