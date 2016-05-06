@@ -1,4 +1,8 @@
 
+
+NOTE: This is a work in progress and not yet an official release.
+
+
 pandocfiltering 0.1
 ===================
 
