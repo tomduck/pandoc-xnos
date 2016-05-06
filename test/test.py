@@ -397,6 +397,36 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
+    def test_repair_refs_5(self):
+        """Tests repair_refs() #5."""
+
+        ## test.md: +@eq:1, ##
+
+        # Command: pandoc test.md -f markdown+autolink_bare_uris -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Link","c":[["",[],[]],[{"t":"Str","c":"+@eq"}],["mailto:+@eq",""]]},{"t":"Str","c":":1,"}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '+@eq:1,'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -f markdown+autolink_bare_uris -t json'.split(),
+            stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":","}]}]]''')
+
+        # Check expected against current pandoc
+        md = subprocess.Popen(('echo', '+@eq:1,'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(expected, output)
+
+        # Make the comparison
+        self.assertEqual(walk(src, repair_refs, {}, ''), expected)
+
+
     def test_use_attrimage(self):
         """Tests use_attrimage()."""
 

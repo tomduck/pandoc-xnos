@@ -328,27 +328,22 @@ def extract_attrs(value, n):
 
 # repair_refs() --------------------------------------------------------------
 
-# regex to identify the start of a broken reference
-_PRE = re.compile(r'{?[\*\+!]?@')
+# Reference regexes.  Having two versions is easier than using lookaround.
+_REF1 = re.compile(r'^({[\*\+!]?)(@[^:]*:[\w/-]+)(}(?:.*)?)')
+_REF2 = re.compile(r'^([\*\+!]?)(@[^:]*:[\w/-]+)(.*)?')
 
 def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""
-
-    # This is complicated because we need to be able to detect broken
-    # references like *@eq:one and {+@eq:two}a.
-
     if PANDOCVERSION is None:
         raise RuntimeError('Module uninitialized.  Please call init().')
-    if PANDOCVERSION < '1.16':
-        return key1 == 'Link' and value1[0][0]['t'] == 'Str' and \
-          _PRE.search(value1[0][0]['c']) and \
-          key2 == 'Str' and ('}' in value2 if \
-          _PRE.search(value1[0][0]['c']).group().startswith('{') else True)
-    else:
-        return key1 == 'Link' and value1[1][0]['t'] == 'Str' and \
-          _PRE.search(value1[1][0]['c']) and \
-          key2 == 'Str' and ('}' in value2 if \
-          _PRE.search(value1[1][0]['c']).group().startswith('{') else True)
+    # A link followed by a string may represent a broken reference
+    if key1 != 'Link' or key2 != 'Str':
+        return False
+    # Assemble the parts
+    n = 0 if PANDOCVERSION < '1.16' else 1
+    s = value1[n][0]['c'] + value2
+    # Check if this matches the reference regexes and return
+    return True if _REF1.match(s) or _REF2.match(s) else False
 
 def _repeat_until_successful(func):
     """Repeats func(value, ...) call until something other than None is
@@ -381,21 +376,16 @@ def _repair_refs(value):
                           value[i+1]['t'], value[i+1]['c']):
             flag = True  # Found broken reference
 
-            # Get the reference pieces
-            if PANDOCVERSION < '1.16':
-                s1 = value[i]['c'][0][0]['c']  # Get the first half of the ref
-            else:
-                s1 = value[i]['c'][1][0]['c']  # Get the first half of the ref
-            s2 = value[i+1]['c']               # Get the second half of the ref
+            # Get the reference string
+            n = 0 if PANDOCVERSION < '1.16' else 1
+            s = value[i]['c'][n][0]['c'] + value[i+1]['c']
 
-            # Assemble the reference, keeping careful track of any extra parts.
-            # The prefix string in particular may be part of another broken
-            # reference.
-            x = _PRE.search(s1).group()
-            ref = s1[s1.index(x)+len(x)-1:] + \
-              (s2[:s2.index('}')] if '{' in x and '}' in s2 else s2)
-            prefix = s1[:s1.index(x)+len(x)-1]
-            suffix = s2[s2.index('}'):] if '{' in x and '}' in s2 else ''
+            # Chop it into pieces.  Note that the prefix and suffix may be
+            # parts of other broken references.
+            if _REF1.match(s):
+                prefix, ref, suffix = _REF1.match(s).groups()
+            else:
+                prefix, ref, suffix = _REF2.match(s).groups()
 
             # Put the extra parts back into the value list for reprocessing
             if len(prefix):
@@ -465,7 +455,7 @@ def _process_modifier(value, i, attrs):
             if len(value[i-1]['c']) > 1:
                 value[i-1]['c'] = value[i-1]['c'][:-1]
             else:
-                value[i-1] = None        
+                value[i-1] = None
 
 def _remove_brackets(value, i):
     """Removes curly brackets from Str elements surrounding the Cite element at
