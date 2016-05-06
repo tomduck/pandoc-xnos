@@ -95,10 +95,10 @@ Retrieves the metadata variable `name` from the dict `meta`.
 
 ### Attribute Processing ###
 
-These functions provide support for processing of attributes strings that are otherwise ignored by pandoc.  See also the [pandoc-attributes] module by @aaren.
+These functions provide support for processing of attributes strings that are otherwise ignored by pandoc.  See also the [pandoc-attributes] module by [@aaren].
 
 [pandoc-attributes]: https://github.com/aaren/pandoc-attributes
-
+[@aaren]: https://github.com/aaren
 
 ##### `extract_attrs(value, n)` #####
 
