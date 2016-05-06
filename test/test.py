@@ -110,6 +110,28 @@ class TestModule(unittest.TestCase):
         self.assertEqual(get_meta(src[0]['unMeta'], 'foo'), expected)
 
 
+    def test_get_meta_4(self):
+        """Tests quotify() #4."""
+
+        ## test.md: ---\nfoo: True\n... ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{"foo":{"t":"MetaBool","c":True}}},[]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '---\nfoo: True\n...'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip()\
+            .decode("utf-8").replace('true', 'True'))
+        self.assertEqual(src, output)
+
+        expected = True
+
+        # Make the comparison
+        self.assertEqual(get_meta(src[0]['unMeta'], 'foo'), expected)
+
+
     def test_quotify_1(self):
         """Tests quotify() #1."""
 

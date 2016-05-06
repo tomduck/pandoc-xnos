@@ -167,10 +167,11 @@ def get_meta(meta, name):
     """Retrieves the metadata variable name from the dict meta."""
     assert name in meta
     data = meta[name]
-    if data['t'] == 'MetaString':
+    if data['t'] in ['MetaString', 'MetaBool']:
         return data['c']
     elif data['t'] == 'MetaInlines':
-        return stringify(data['c'])
+        if len(data['c']) == 1:
+            return stringify(data['c'])
     elif data['t'] == 'MetaList':
         return [stringify(v['c']) for v in data['c']]
     else:
