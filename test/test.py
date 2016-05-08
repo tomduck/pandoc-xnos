@@ -560,7 +560,6 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, filter_attrmath, '', {}), expected)
 
 
-
     def test_use_refs_factory_1(self):
         """Tests use_refs_factory() #1."""
 
