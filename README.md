@@ -75,16 +75,16 @@ The `Ref` element has four values: the attributes, prefix, reference string, and
 Pandoc only supports attributes for a select few elements.  The following actions allow attributes to be attached, and later filtered, for any element.
 
 
-##### `use_attr_factory(name, extract_attrs=extract_attrs, allow_space=False)` #####
+##### `use_attrs_factory(name, extract_attrs=extract_attrs, allow_space=False)` #####
 
-Returns `use_attr(key, value, fmt, meta)` action that attaches attributes found in the text to elements of type name.
+Returns `use_attrs(key, value, fmt, meta)` action that attaches attributes found in the text to elements of type name.
 
 The `extract_attrs()` function should read the attributes and raise a `ValueError` or `IndexError` if attributes are not found.
 
 
-##### `filter_attr_factory(name, n)` #####
+##### `filter_attrs_factory(name, n)` #####
 
-Returns `filter_attr(key, value, fmt, meta)` action that replaces named elements with unattributed versions of standard length `n`.
+Returns `filter_attrs(key, value, fmt, meta)` action that replaces named elements with unattributed versions of standard length `n`.
 
 
 Functions

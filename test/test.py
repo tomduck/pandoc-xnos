@@ -29,7 +29,7 @@ import pandocfiltering
 from pandocfiltering import get_meta
 from pandocfiltering import quotify, dollarfy, pandocify
 from pandocfiltering import extract_attrs, repair_refs
-from pandocfiltering import use_attr_factory, filter_attr_factory
+from pandocfiltering import use_attrs_factory, filter_attrs_factory
 from pandocfiltering import use_refs_factory
 
 PANDOCVERSION = '1.17.0.1'
@@ -511,10 +511,10 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
-    def test_use_attrmath(self):
-        """Tests use_attrmath()."""
+    def test_use_attrs_factory(self):
+        """Tests use_attrs_math()."""
 
-        use_attrmath = use_attr_factory('Math', allow_space=True)
+        use_attrs_math = use_attrs_factory('Math', allow_space=True)
 
         ## test.md: $$ y = f(x) $${#eq:1 tag="B.1"} ##
 
@@ -532,14 +532,14 @@ class TestModule(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Math","c":[["eq:1",[],[["tag","B.1"]]],{"t":"DisplayMath","c":[]}," y = f(x) "]}]}]]''')
 
         # Make the comparison
-        self.assertEqual(walk(src, use_attrmath, '', {}), expected)
+        self.assertEqual(walk(src, use_attrs_math, '', {}), expected)
 
-    def test_filter_attr_factory(self):
-        """Tests filter_attr_factory()."""
+    def test_filter_attrs_factory(self):
+        """Tests filter_attrs_factory()."""
 
-        filter_attrmath = filter_attr_factory('Math', 2)
+        filter_attrs_math = filter_attrs_factory('Math', 2)
 
-        ## Use expected result from test_use_attrmath() ##
+        ## Use expected result from test_use_attrs_math() ##
 
         # Command: pandoc test.md -t json
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Math","c":[["eq:1",[],[["tag","B.1"]]],{"t":"DisplayMath","c":[]}," y = f(x) "]}]}]]''')
@@ -557,7 +557,7 @@ class TestModule(unittest.TestCase):
         self.assertEqual(expected, output)
 
         # Make the comparison
-        self.assertEqual(walk(src, filter_attrmath, '', {}), expected)
+        self.assertEqual(walk(src, filter_attrs_math, '', {}), expected)
 
 
     def test_use_refs_factory_1(self):

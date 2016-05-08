@@ -510,18 +510,18 @@ def use_refs_factory(references):
     return use_refs
 
 
-# use_attr_factory() ---------------------------------------------------------
+# use_attrs_factory() ---------------------------------------------------------
 
 # pylint: disable=redefined-outer-name
-def use_attr_factory(name, extract_attrs=extract_attrs, allow_space=False):
-    """Returns use_attr(key, value, fmt, meta) action that attaches attributes
+def use_attrs_factory(name, extract_attrs=extract_attrs, allow_space=False):
+    """Returns use_attrs(key, value, fmt, meta) action that attaches attributes
     found in the text to elements of type name.
 
     The extract_attrs() function should read the attributes and raise a
     ValueError or IndexError if attributes are not found.
     """
 
-    def _use_attr(value):
+    def _use_attrs(value):
         """Extracts and attaches the attributes."""
         for i, v in enumerate(value):
             if v and v['t'] == name:
@@ -535,28 +535,28 @@ def use_attr_factory(name, extract_attrs=extract_attrs, allow_space=False):
                 except (ValueError, IndexError):
                     pass
 
-    def use_attr(key, value, fmt, meta):  # pylint: disable=unused-argument
+    def use_attrs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Extracts attributes and attaches them to element."""
         if key in ['Para', 'Plain']:
-            _use_attr(value)
+            _use_attrs(value)
 
             # Image: Add pandoc's figure marker if warranted
             if len(value) == 1 and value[0]['t'] == 'Image':
                 value[0]['c'][2][1] = 'fig:'
 
-    return use_attr
+    return use_attrs
 
 
-# filter_attr_factory() ------------------------------------------------------
+# filter_attrs_factory() ------------------------------------------------------
 
-def filter_attr_factory(name, n):
-    """Returns filter_attr(key, value, fmt, meta) action that replaces named
+def filter_attrs_factory(name, n):
+    """Returns filter_attrs(key, value, fmt, meta) action that replaces named
     elements with unattributed versions of standard length n.
     """
 
-    def filter_attr(key, value, fmt, meta):  # pylint: disable=unused-argument
+    def filter_attrs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces attributed elements with their unattributed counterparts."""
         if key == name and len(value) == n+1:
             del value[0]
 
-    return filter_attr
+    return filter_attrs
