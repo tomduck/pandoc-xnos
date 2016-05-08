@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# pylint: disable=eval-used, line-too-long
+
 import sys
 import unittest
 import subprocess
@@ -26,21 +28,14 @@ from pandocfilters import walk
 import pandocfiltering
 from pandocfiltering import get_meta
 from pandocfiltering import quotify, dollarfy, pandocify
-from pandocfiltering import extract_attrs, repair_refs, filter_null
-from pandocfiltering import use_attrimages, filter_attrimages
+from pandocfiltering import extract_attrs, repair_refs
+from pandocfiltering import use_attr_factory, filter_attr_factory
 from pandocfiltering import use_refs_factory
 
 PANDOCVERSION = '1.17.0.1'
 
 pandocfiltering.init(PANDOCVERSION)
 
-#-----------------------------------------------------------------------------
-# Documents and expected results after processing.
-
-# pylint: disable=line-too-long, eval-used
-
-
-# Markdown (pandoc 1.16):
 
 #-----------------------------------------------------------------------------
 # Test class
@@ -251,8 +246,7 @@ class TestModule(unittest.TestCase):
         expected = ['eq:id', ['class'], [['tag', 'foo']]]
 
         # Make the comparison
-        self.assertEqual(filter_null(extract_attrs)(src[1][0]['c'], 2),
-                         expected)
+        self.assertEqual(extract_attrs(src[1][0]['c'], 2), expected)
 
 
     def test_extract_attrs_2(self):
@@ -274,8 +268,7 @@ class TestModule(unittest.TestCase):
         expected = ['eq:id', ['class'], [['tag', 'foo']]]
 
         # Make the comparison
-        self.assertEqual(filter_null(extract_attrs)(src[1][0]['c'], 2),
-                         expected)
+        self.assertEqual(extract_attrs(src[1][0]['c'], 2), expected)
 
 
     def test_repair_refs_1(self):
@@ -518,53 +511,54 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
-    def test_use_attrimage(self):
-        """Tests use_attrimage()."""
+    def test_use_attrmath(self):
+        """Tests use_attrmath()."""
 
-        ## test.md: ![Caption](img.png){#fig:id} ##
+        use_attrmath = use_attr_factory('Math', allow_space=True)
 
-        # Command: pandoc-1.15.2 test.md -t json
-        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[[{"t":"Str","c":"Caption"}],["img.png",""]]},{"t":"Str","c":"{#fig:id}"}]}]]''')
+        ## test.md: $$ y = f(x) $${#eq:1 tag="B.1"} ##
 
         # Command: pandoc test.md -t json
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[["fig:id",[],[]],[{"t":"Str","c":"Caption"}],["img.png","fig:"]]}]}]]''')
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath","c":[]}," y = f(x) "]},{"t":"Str","c":"{#eq:1"},{"t":"Space","c":[]},{"t":"Str","c":"tag=\"B.1\"}"}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '$$ y = f(x) $${#eq:1 tag="B.1"}'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded (attributes deleted)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Math","c":[["eq:1",[],[["tag","B.1"]]],{"t":"DisplayMath","c":[]}," y = f(x) "]}]}]]''')
+
+        # Make the comparison
+        self.assertEqual(walk(src, use_attrmath, '', {}), expected)
+
+    def test_filter_attr_factory(self):
+        """Tests filter_attr_factory()."""
+
+        filter_attrmath = filter_attr_factory('Math', 2)
+
+        ## Use expected result from test_use_attrmath() ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Math","c":[["eq:1",[],[["tag","B.1"]]],{"t":"DisplayMath","c":[]}," y = f(x) "]}]}]]''')
+
+        # test.md: $$ y = f(x) $$
+
+        # Command: pandoc test.md -t json
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath","c":[]}," y = f(x) "]}]}]]''')
 
         # Check expected against current pandoc
-        md = subprocess.Popen(('echo', '![Caption](img.png){#fig:id}'),
+        md = subprocess.Popen(('echo', '$$ y = f(x) $$'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
             'pandoc -t json'.split(), stdin=md.stdout).strip())
         self.assertEqual(expected, output)
 
         # Make the comparison
-        pandocfiltering.init('1.15.0.2')
-        self.assertEqual(walk(src, use_attrimages, '', {}), expected)
-        pandocfiltering.init(PANDOCVERSION)
+        self.assertEqual(walk(src, filter_attrmath, '', {}), expected)
 
-
-    def test_filter_attrimage(self):
-        """Tests filter_attrimage()."""
-
-        ## test.md: ![Caption](img.png){#fig:id} ##
-
-        # Command: pandoc test.md -t json
-        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[["fig:id",[],[]],[{"t":"Str","c":"Caption"}],["img.png","fig:"]]}]}]]''')
-
-        # Check src against current pandoc
-        md = subprocess.Popen(('echo', '![Caption](img.png){#fig:id}'),
-                              stdout=subprocess.PIPE)
-        output = eval(subprocess.check_output(
-            'pandoc -f markdown+autolink_bare_uris -t json'.split(),
-            stdin=md.stdout).strip())
-        self.assertEqual(src, output)
-
-        # Hand-coded (attributes deleted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Image","c":[[{"t":"Str","c":"Caption"}],["img.png","fig:"]]}]}]]''')
-
-        # Make the comparison
-        pandocfiltering.init('1.15.2')
-        self.assertEqual(walk(src, filter_attrimages, '', {}), expected)
-        pandocfiltering.init(PANDOCVERSION)
 
 
     def test_use_refs_factory_1(self):

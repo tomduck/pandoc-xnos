@@ -32,13 +32,6 @@ from pandocfilters import elt, walk, stringify
 
 from pandocattributes import PandocAttributes
 
-PY3 = sys.version_info > (3,)
-
-if PY3:
-    from urllib.request import unquote  # pylint: disable=no-name-in-module
-else:
-    from urllib import unquote  # pylint: disable=no-name-in-module
-
 
 #-----------------------------------------------------------------------------
 # PANDOCVERSION
@@ -106,14 +99,14 @@ def init(pandocversion=None):
 # STRTYPES
 
 # pylint: disable=undefined-variable
-STRTYPES = [str] if PY3 else [str, unicode]
+STRTYPES = [str] if sys.version_info > (3,) else [str, unicode]
 
 
 #-----------------------------------------------------------------------------
 # STDIN, STDOUT and STDERR
 
 # Pandoc uses UTF-8 for both input and output; so must we.
-if PY3:
+if sys.version_info > (3,):
     # Py3 strings are unicode: https://docs.python.org/3.5/howto/unicode.html.
     # Character encoding/decoding is performed automatically at stream
     # interfaces: https://stackoverflow.com/questions/16549332/.
@@ -136,27 +129,21 @@ else:
 # before returning the json to pandoc.
 
 # pylint: disable=invalid-name
-AttrImage = elt('Image', 3)  # Same as Image for pandoc>=1.16
-Ref = elt('Ref', 2)          # attrs, reference string
+Ref = elt('Ref', 2)  # attrs, reference string
 
 
 # Decorators -----------------------------------------------------------------
 
-def filter_null(func):
-    """Removes None values from the value list.
-
-    Suppose that func(value, ...) is used to process a value list.  Instead of
-    deleting items, you can decorate func() with @filter_null and replace the
-    items with None instead.  The decorator will remove all null items from
-    the value list before it returns the result of the function call.  The
-    filtering is done *in place*.
+def repeat(func):
+    """Repeats func(value, ...) call until something other than None is
+    returned.
     """
     @functools.wraps(func)
-    def wrapper(value, *args, **kwargs):
-        """Performs the filtering."""
-        ret = func(value, *args, **kwargs)
-        while None in value:
-            value.remove(None)
+    def wrapper(*args, **kwargs):
+        """Repeats the call until True is returned."""
+        ret = None
+        while ret is None:
+            ret = func(*args, **kwargs)
         return ret
     return wrapper
 
@@ -265,7 +252,8 @@ def pandocify(s):
 def extract_attrs(value, n):
     """Extracts attributes from a value list beginning at index n.
 
-    Extracted elements are set to None in the value list.
+    The attributes string is removed from the value list.  Value items before
+    index n are left unchanged.
 
     Returns the attributes in pandoc format.  A ValueError is raised if
     attributes aren't found.
@@ -305,10 +293,10 @@ def extract_attrs(value, n):
 
     if flag:  # Attributes string was found, so process it
 
-        # Nullify extracted and empty elements
-        value[n:n+i] = [None]*i
-        if not value[n+i]['c']:
-            value[n+i] = None
+        # Delete empty and extracted elements
+        if value[n+i]['t'] == 'Str' and not value[n+i]['c']:
+            del value[n+i]
+        del value[n:n+i]
 
         # Process the attrs
         attrstr = stringify(dollarfy(quotify(seq))).strip()
@@ -344,31 +332,15 @@ def _is_broken_ref(key1, value1, key2, value2):
     # Check if this matches the reference regexes and return
     return True if _REF.match(s) else False
 
-def _repeat_until_successful(func):
-    """Repeats func(value, ...) call until something other than None is
-    returned.
-    """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        """Repeats the call until True is returned."""
-        ret = None
-        while ret is None:
-            ret = func(*args, **kwargs)
-        return ret
-    return wrapper
-
-@_repeat_until_successful
-@filter_null
+@repeat
 def _repair_refs(value):
-    """Performs the repair.  Returns value once successful, otherwise None."""
+    """Performs the repair.  Returns updated value list."""
     if PANDOCVERSION is None:
         raise RuntimeError('Module uninitialized.  Please call init().')
     flag = False  # Flags that a change has been made
 
     # Scan the value list
     for i in range(len(value)-1):
-        if value[i] == None:  # Skip over None values
-            continue
 
         # Check for broken references
         if _is_broken_ref(value[i]['t'], value[i]['c'],
@@ -383,19 +355,13 @@ def _repair_refs(value):
             # parts of other broken references.
             prefix, ref, suffix = _REF.match(s).groups()
 
-            # Put the extra parts back into the value list for reprocessing
-            if len(prefix):
-                if i > 0 and value[i-1]['t'] == 'Str':
-                    value[i-1]['c'] = value[i-1]['c'] + prefix
-                    value[i] = None
-                else:
-                    value[i] = Str(prefix)
-            else:
-                value[i] = None
+            # Put the suffix, reference and prefix back into the value list
+
+            # Suffix
             if len(suffix):
                 value.insert(i+2, Str(suffix))
 
-            # Put reference in as a Cite
+            # Reference
             value[i+1] = Cite(
                 [{"citationId":ref[1:],
                   "citationPrefix":[],
@@ -406,17 +372,26 @@ def _repair_refs(value):
                 [Str(ref)])
             value[i+1]['c'] = list(value[i+1]['c'])  # Needed for unit tests
 
-            # This ref repaired; bail and look for others
-            break
+            # Prefix
+            if len(prefix):
+                if i > 0 and value[i-1]['t'] == 'Str':
+                    value[i-1]['c'] = value[i-1]['c'] + prefix
+                    del value[i]
+                else:
+                    value[i] = Str(prefix)
+            else:
+                del value[i]
+
+            return  # Forces processing to be repeated
 
     if not flag:  # No more broken refs left to process
         return value
 
 def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
-    """Repairs broken references.  Using -f markdown+autolink_bare_uris
-    splits braced references like {@label:id} at the ':' into Link and Str
-    elements.  This function replaces the mess with the Cite and Str
-    elements we normally expect.  Call this before any reference processing.
+    """Using -f markdown+autolink_bare_uris splits braced references like
+    {@label:id} at the ':' into Link and Str elements.  This function replaces
+    the mess with the Cite and Str elements we normally expect.  Call this
+    before any reference processing.
     """
 
     if key in ('Para', 'Plain'):
@@ -442,49 +417,48 @@ def _parse_cite_ref(key, value):
 
 def _process_modifier(value, i, attrs):
     """Trims */+/! modifier in front of the Cite element at index i
-    and stores it as an attribute.  Sets empty values to None.
+    and stores it as an attribute.  Returns the updated index i.
     """
     assert value[i]['t'] == 'Cite'
-    if value[i-1]['t'] == 'Str':
+    if i > 0 and value[i-1]['t'] == 'Str':
         if value[i-1]['c'][-1] in ['*', '+', '!']:
             attrs[2].append(['modifier', value[i-1]['c'][-1]])
             if len(value[i-1]['c']) > 1:
                 value[i-1]['c'] = value[i-1]['c'][:-1]
+                return i
             else:
-                value[i-1] = None
+                del value[i-1]
+                return i-1
+    return i
 
 def _remove_brackets(value, i):
     """Removes curly brackets surrounding the Ref element at index i.  This
     assumes that the modifier has already been trimmed.  Empty strings are
-    set to None.
+    deleted from the value list.
     """
     assert value[i]['t'] == 'Ref'
 
-    # Find surrounding elements that are not None
-    j, k = i-1, i+1
-    while j >= 0 and value[j] == None:
-        j -= 1
-    while k < len(value) and value[k] == None:
-        k += 1
-    if j < 0 or k >= len(value):
+    # Check if there are surrounding elements
+    if i-1 < 0 or i+1 >= len(value):
         return
-    
-    # Check to see if the surrounding elements are strings
-    if not value[j]['t'] == value[k]['t'] == 'Str':
+
+    # Check if the surrounding elements are strings
+    if not value[i-1]['t'] == value[i+1]['t'] == 'Str':
         return
 
     # Trim off curly brackets and set empty values to None
-    if value[j]['c'].endswith('{') and value[k]['c'].startswith('}'):
-        if len(value[j]['c']) > 1:
-            value[j]['c'] = value[j]['c'][:-1]
+    if value[i-1]['c'].endswith('{') and value[i+1]['c'].startswith('}'):
+        if len(value[i+1]['c']) > 1:
+            value[i+1]['c'] = value[i+1]['c'][1:]
         else:
-            value[j] = None
-        if len(value[k]['c']) > 1:
-            value[k]['c'] = value[k]['c'][1:]
-        else:
-            value[k] = None
+            del value[i+1]
 
-@filter_null
+        if len(value[i-1]['c']) > 1:
+            value[i-1]['c'] = value[i-1]['c'][:-1]
+        else:
+            del value[i-1]
+
+@repeat
 def _use_refs(value, references):
     """Replaces Cite references with Ref elements."""
 
@@ -496,15 +470,13 @@ def _use_refs(value, references):
             attrs = ['', [], []]  # Initialized to empty
             if i+1 < len(value):
                 try:  # Look for attributes in { ... }
-                    # extract_attrs() sets extracted values to None
-                    # in the value list.
                     attrs = extract_attrs(value, i+1)
                 except ValueError:
                     pass
 
              # Process modifiers
             if i > 0:
-                _process_modifier(value, i, attrs)
+                i = _process_modifier(value, i, attrs)
 
             # Insert the Ref element
             value[i] = Ref(attrs, _parse_cite_ref(v['t'], v['c']))
@@ -512,6 +484,11 @@ def _use_refs(value, references):
 
             # Remove surrounding brackets
             _remove_brackets(value, i)
+
+            # The value list may be changed
+            return  # Forces processing to repeat given new value list
+
+    return True  # Ends processing
 
 
 def use_refs_factory(references):
@@ -533,64 +510,53 @@ def use_refs_factory(references):
     return use_refs
 
 
-# use_attrimages() -----------------------------------------------------------
+# use_attr_factory() ---------------------------------------------------------
 
-def _extract_imageattrs(value, n):
-    """Extracts attributes from a list of values.  n is the index of the image.
-    Extracted elements are set to None in the value list.  Attrs are returned
-    in pandoc format.
-    """
-    assert value[n]['t'] == 'Image'
+# pylint: disable=redefined-outer-name
+def use_attr_factory(name, extract_attrs=extract_attrs, allow_space=False):
+    """Returns use_attr(key, value, fmt, meta) action that replaces elements
+    of type name with attributed versions when attributes are found.
 
-    # Notes: No space between an image and its attributes;
-    # extract_attrs() sets extracted values to None in the value list.
-    try:
-        return extract_attrs(value, n+1)
-    except (ValueError, IndexError):
-        # Look for attributes attached to the image path, as occurs with
-        # reference links.  Remove the encoding.
-        image = value[n]
-        try:
-            seq = unquote(image['c'][1][0]).split()
-            path, s = seq[0], ' '.join(seq[1:])
-        except ValueError:
-            pass
-        else:
-            image['c'][1][0] = path  # Remove attr string from the path
-            return PandocAttributes(s.strip(), 'markdown').to_pandoc()
-
-@filter_null
-def _use_attrimages(value):
-    """Scans the value list and performs the substitution."""
-    # Seach for attributed images and replace them with an AttrImage
-    for i, v in enumerate(value):
-        if v and v['t'] == 'Image':
-            # Extracted values get set to None in values list
-            attrs = _extract_imageattrs(value, i)
-            if attrs:
-                value[i] = AttrImage(attrs, *v['c'])
-                value[i]['c'] = list(value[i]['c'])  # Needed for unit tests
-
-def use_attrimages(key, value, fmt, meta):  # pylint: disable=unused-argument
-    """Substitutes AttrImage elements for all attributed images (pandoc<1.16).
-    AttrImage is the same as Image for pandoc>=1.16.  Unattributed images are
-    left untouched.
+    The extract_attrs() function should read the attributes and raise a
+    ValueError or IndexError if attributes are not found.
     """
 
-    if PANDOCVERSION < '1.16' and (key == 'Para' or key == 'Plain'):
-        _use_attrimages(value)
-        # Add the figure marker
-        if len(value) == 1 and value[0]['t'] == 'Image' and \
-          len(value[0]['c']) == 3:
-            value[0]['c'][2][1] = 'fig:'  # Pandoc uses this as a figure marker
+    def _use_attr(value):
+        """Extracts and attaches the attributes."""
+        for i, v in enumerate(value):
+            if v and v['t'] == name:
+                n = i+1
+                if allow_space and n < len(value) and \
+                  value[n]['t'] == 'Space':
+                    n += 1
+                try:
+                    attrs = extract_attrs(value, n)
+                    value[i]['c'].insert(0, attrs)
+                except (ValueError, IndexError):
+                    pass
+
+    def use_attr(key, value, fmt, meta):  # pylint: disable=unused-argument
+        """Extracts attributes and attaches them to element."""
+        if key in ['Para', 'Plain']:
+            _use_attr(value)
+
+            # Image: Add pandoc's figure marker if warranted
+            if len(value) == 1 and value[0]['t'] == 'Image':
+                value[0]['c'][2][1] = 'fig:'
+
+    return use_attr
 
 
-# filter_attrimages() --------------------------------------------------------
+# filter_attr_factory() ------------------------------------------------------
 
-def filter_attrimages(key, value, fmt, meta):  # pylint: disable=unused-argument
-    """Replaces all AttrImage elements with Image elements (pandoc<1.16)."""
-    if PANDOCVERSION < '1.16' and key == 'Image' and len(value) == 3:
-        image = elt('Image', 2)(*value[1:])
-        image['c'] = list(image['c'])  # Needed for unit tests
-        return image
+def filter_attr_factory(name, n):
+    """Returns filter_attr(key, value, fmt, meta) action that replaces named
+    elements with unattributed versions of standard length n.
+    """
 
+    def filter_attr(key, value, fmt, meta):  # pylint: disable=unused-argument
+        """Replaces attributed elements with their unattributed counterparts."""
+        if key == name and len(value) == n+1:
+            del value[0]
+
+    return filter_attr

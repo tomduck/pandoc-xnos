@@ -48,22 +48,19 @@ Streams
 Pandoc uses UTF-8 for both input and output; so must we.  Python's  sys.stdin/stdout/stderr behaviours differ between versions 3 and 4.  Use these instead.
 
 
-Actions
--------
-
-Preprocessing and postprocessing functions.
-
+Actions and Factory Functions
+-----------------------------
 
 ### References ###
 
-pandocfiltering provides support for reading and processing references like `{+@label:id}`.  The curly brackets and `+` modifier are optional.  This is used, for example, by the [pandoc-fignos] filter to process references to figures.
+pandocfiltering provides support for reading and processing references like `{+@label:id}`.  The curly brackets and `+` modifier are optional.  This is used, for example, by the [pandoc-fignos] filter to process figure references.
 
 [pandoc-fignos]: https://github.com/tomduck/pandoc-fignos
 
 
 ##### `repair_refs(key, value, fmt, meta)` #####
 
-Repairs broken references.  Using `-f markdown+autolink_bare_uris` splits braced references like `{@label:id}` at the `:` into `Link` and `Str` elements.  This function replaces the mess with the `Cite` and `Str` elements normally found.  Call this action before any reference processing.
+Using `-f markdown+autolink_bare_uris` splits braced references like `{@label:id}` at the `:` into `Link` and `Str` elements.  This function replaces the mess with the `Cite` and `Str` elements normally found.  Call this action before any reference processing.
 
 
 ##### `use_refs_factory(references)` #####
@@ -73,19 +70,21 @@ Returns `use_refs(key, value, fmt, meta)` function that replaces known `referenc
 The `Ref` element has four values: the attributes, prefix, reference string, and suffix.
 
 
-### Images ###
+### Attributes ###
 
-The `Image` element became attributed in pandoc 1.16.  These functions help support earlier versions of pandoc.
-
-
-##### `use_attrimages(key, value, fmt, meta)` #####
-
-Substitutes `AttrImage` elements for all attributed images (pandoc<1.16).  `AttrImage` is the same as `Image` for pandoc>=1.16.  Unattributed images are left untouched.
+Pandoc only supports attributes for a select few elements.  The following actions allow attributes to be attached, and later filtered, for any element.
 
 
-##### `filter_attrimages(key, value, fmt, meta)` #####
+##### `use_attr_factory(name, extract_attrs=extract_attrs, allow_space=False)` #####
 
-Replaces all AttrImage elements with Image elements (pandoc<1.16).
+Returns `use_attr(key, value, fmt, meta)` action that replaces elements of type `name` with attributed versions when attributes are found.
+
+The `extract_attrs()` function should read the attributes and raise a `ValueError` or `IndexError` if attributes are not found.
+
+
+##### `filter_attr_factory(name, n)` #####
+
+Returns `filter_attr(key, value, fmt, meta)` action that replaces named elements with unattributed versions of standard length `n`.
 
 
 Functions
@@ -104,6 +103,7 @@ These functions provide support for processing of attributes strings that are ot
 
 [pandoc-attributes]: https://github.com/aaren/pandoc-attributes
 [@aaren]: https://github.com/aaren
+
 
 ##### `extract_attrs(value, n)` #####
 
@@ -143,13 +143,3 @@ Returns `x`.
 
 Returns a representation of the string `s` using pandoc elements.
 Like `stringify()`, all formatting is ignored.
-
-
-Decorators
-----------
-
-##### `@filter_null` #####
-
-Removes `None` values from the value list.
-
-Suppose that `func(value, ...)` is used to process a value list.  Instead of deleting items, you can decorate `func()` with `@filter_null` and replace the items with `None` instead.  The decorator will remove all null items from the value list before it returns the result of the function call.  The filtering is done *in place*.
