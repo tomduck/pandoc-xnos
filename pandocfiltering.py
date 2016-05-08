@@ -514,8 +514,8 @@ def use_refs_factory(references):
 
 # pylint: disable=redefined-outer-name
 def use_attr_factory(name, extract_attrs=extract_attrs, allow_space=False):
-    """Returns use_attr(key, value, fmt, meta) action that replaces elements
-    of type name with attributed versions when attributes are found.
+    """Returns use_attr(key, value, fmt, meta) action that attaches attributes
+    found in the text to elements of type name.
 
     The extract_attrs() function should read the attributes and raise a
     ValueError or IndexError if attributes are not found.
