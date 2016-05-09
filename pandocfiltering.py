@@ -574,10 +574,8 @@ def replace_refs_factory(references, cleveref_default, plusname, starname):
                     return RawInline('html', link)
             else:
                 name = plusname[0] if plus else starname[0]
-                if cleveref:
-                    return [Str(name), Space(), Str('%d'%references[label])]
-                else:
-                    return Str('%d'%references[label])
+                return [Str(name), Space(), Str('%d'%references[label])] \
+                  if cleveref else Str('%d'%references[label])
 
     return replace_refs
 
