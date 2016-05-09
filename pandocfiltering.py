@@ -518,8 +518,14 @@ def use_refs_factory(references):
 
 # replace_refs_factory() ------------------------------------------------------
 
-# Flags that cleveref tex is needed
-clevereftex = False
+# TeX that can be used to fake clever referencing
+clevereftex = []
+
+def _set_clevereftex(plusname, starname):
+    """Sets the cleveref TeX."""
+    global clevereftex  # pylint: disable=global-statement
+    clevereftex = [r'\providecommand{\cref}{%s~\ref}' % plusname[0],
+                   r'\providecommand{\Cref}{%s~\ref}' % starname[0]]
 
 def replace_refs_factory(references, cleveref_default, plusname, starname):
     """Returns replace_refs(key, value, fmt, meta) function that replaces
@@ -529,13 +535,12 @@ def replace_refs_factory(references, cleveref_default, plusname, starname):
     that give the singular and plural names for "+" and "*" clever references,
     respectively.
     """
+
+    if not clevereftex and cleveref_default:
+        _set_clevereftex(plusname, starname)
+
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces references to labelled images."""
-
-        global clevereftex  # pylint: disable=global-statement
-
-        if cleveref_default:
-            clevereftex = True
 
         if key == 'Ref':
 
@@ -547,8 +552,9 @@ def replace_refs_factory(references, cleveref_default, plusname, starname):
 
             # Check if we need cleveref tex
             if not clevereftex:
-                if 'modifier' in attrs.kvs and attrs['modifier'] in ['*', '+']:
-                    clevereftex = True
+                if not clevereftex and 'modifier' in attrs.kvs and \
+                  attrs['modifier'] in ['*', '+']:
+                    _set_clevereftex(plusname, starname)
 
             # Choose between \Cref, \cref and \ref
             cleveref = attrs['modifier'] in ['*', '+'] \
@@ -568,7 +574,7 @@ def replace_refs_factory(references, cleveref_default, plusname, starname):
                     name = plusname[0] if plus else starname[0]
                     link = '%s <a href="#%s">%s</a>' % \
                       (name, label, references[label])
-                    return Str(name), Space(), RawInline('html', link)
+                    return [Str(name), Space(), RawInline('html', link)]
                 else:
                     link = '<a href="#%s">%s</a>' % (label, references[label])
                     return RawInline('html', link)
