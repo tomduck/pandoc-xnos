@@ -27,7 +27,7 @@ import copy
 
 import psutil
 
-from pandocfilters import Str, Para, Plain, Space, Cite
+from pandocfilters import Str, Space, Cite
 from pandocfilters import elt, walk, stringify
 
 from pandocattributes import PandocAttributes
@@ -166,6 +166,24 @@ def get_meta(meta, name):
                            name)
 
 
+# joinstrings() --------------------------------------------------------------
+
+@repeat
+def _joinstrings(value):
+    """Joins the strings."""
+    for i in range(len(value)-1):
+        if value[i]['t'] == 'Str' and value[i+1]['t'] == 'Str':
+            value[i]['c'] += value[i+1]['c']
+            del value[i+1]
+            return  # Forces processing to repeat
+    return True
+
+def joinstrings(key, value, fmt, meta):  # pylint: disable=unused-argument
+    """Combines adjacent Str elements."""
+    if key == 'Para' or key == 'Plain':
+        _joinstrings(value)
+
+
 # quotify() ------------------------------------------------------------------
 
 def quotify(x):
@@ -197,21 +215,7 @@ def quotify(x):
                 ret += value[1] + [Str(quote)]
             return ret
 
-    def _joinstrings(key, value, fmt, meta):  # pylint: disable=unused-argument
-        """Combines adjacent Str elements."""
-        if key == 'Para' or key == 'Plain':
-            flag = False
-            for i in range(len(value)-1):
-                if value[i]['t'] == 'Str' and value[i+1]['t'] == 'Str':
-                    value[i]['c'] += value[i+1]['c']
-                    value[i+1] = None
-                    flag = True
-            if flag:
-                while None in value:
-                    value.remove(None)
-                return Para(value) if key == 'Para' else Plain(value)
-
-    return walk(walk(x, _quotify, '', {}), _joinstrings, '', {})
+    return walk(walk(x, _quotify, '', {}), joinstrings, '', {})
 
 
 # dollarfy() -----------------------------------------------------------------
@@ -382,7 +386,7 @@ def _repair_refs(value):
             else:
                 del value[i]
 
-            return  # Forces processing to be repeated
+            return  # Forces processing to repeat
 
     if not flag:  # No more broken refs left to process
         return value
@@ -486,7 +490,7 @@ def _use_refs(value, references):
             _remove_brackets(value, i)
 
             # The value list may be changed
-            return  # Forces processing to repeat given new value list
+            return  # Forces processing to repeat
 
     return True  # Ends processing
 
@@ -508,6 +512,63 @@ def use_refs_factory(references):
             _use_refs(value, references)
 
     return use_refs
+
+
+# replace_refs_factory() ------------------------------------------------------
+
+# Flags that cleveref tex is needed
+clevereftex = False
+
+def replace_refs_factory(references, cleveref_default, plusname, starname):
+
+    def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
+        """Replaces references to labelled images."""
+
+        global clevereftex  # pylint: disable=global-statement
+
+        if key == 'Ref':
+
+            # Parse the figure reference
+            attrs, label = value
+            attrs = PandocAttributes(attrs, 'pandoc')
+
+            assert value[1] in references
+
+            # Check if we need cleveref tex
+            if not clevereftex:
+                if 'modifier' in attrs.kvs and attrs['modifier'] in ['*', '+']:
+                    clevereftex = True
+
+            # Choose between \Cref, \cref and \ref
+            cleveref = attrs['modifier'] in ['*', '+'] \
+              if 'modifier' in attrs.kvs else cleveref_default
+            plus = attrs['modifier'] == '+' if 'modifier' in attrs.kvs \
+              else cleveref_default
+
+            # The replacement depends on the output format
+            if fmt == 'latex':
+                if cleveref:
+                    macro = r'\cref' if plus else r'\Cref'
+                    return RawInline('tex', r'%s{%s}'%(macro, label))
+                else:
+                    return RawInline('tex', r'\ref{%s}'%label)
+            elif fmt in ('html', 'html5'):
+                if cleveref:
+                    name = plusname[0] if plus else starname[0]
+                    link = '%s <a href="#%s">%s</a>' % \
+                      (name, label, references[label])
+                    return Str(name), Space(), RawInline('html', link)
+                else:
+                    link = '<a href="#%s">%s</a>' % (label, references[label])
+                    return RawInline('html', link)
+            else:
+                name = plusname[0] if plus else starname[0]
+                if cleveref:
+                    return [Str(name), Space(), Str('%d'%references[label])]
+                else:
+                    return Str('%d'%references[label])
+
+    return replace_refs
 
 
 # use_attrs_factory() ---------------------------------------------------------

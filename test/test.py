@@ -27,10 +27,11 @@ from pandocfilters import walk
 
 import pandocfiltering
 from pandocfiltering import get_meta
+from pandocfiltering import joinstrings
 from pandocfiltering import quotify, dollarfy, pandocify
 from pandocfiltering import extract_attrs, repair_refs
 from pandocfiltering import use_attrs_factory, filter_attrs_factory
-from pandocfiltering import use_refs_factory
+from pandocfiltering import use_refs_factory, replace_refs_factory
 
 PANDOCVERSION = '1.17.0.1'
 
@@ -45,7 +46,7 @@ class TestModule(unittest.TestCase):
     """Test the pandocfiltering module."""
 
     def test_get_meta_1(self):
-        """Tests quotify() #1."""
+        """Tests get_meta() #1."""
 
         ## test.md empty
 
@@ -65,7 +66,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_get_meta_2(self):
-        """Tests quotify() #2."""
+        """Tests get_meta() #2."""
 
         ## test.md: ---\nfoo: bar\n... ##
 
@@ -86,7 +87,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_get_meta_3(self):
-        """Tests quotify() #3."""
+        """Tests get_meta() #3."""
 
         ## test.md: ---\nfoo:\n  - bar\n  - baz\n... ##
 
@@ -107,7 +108,7 @@ class TestModule(unittest.TestCase):
 
 
     def test_get_meta_4(self):
-        """Tests quotify() #4."""
+        """Tests get_meta() #4."""
 
         ## test.md: ---\nfoo: True\n... ##
 
@@ -577,7 +578,7 @@ class TestModule(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Hand-coded (Ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Ref","c":[['',[],[]],'fig:one']},{"t":"Str","c":"."}]}]]''')
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Ref","c":[["",[],[]],"fig:one"]},{"t":"Str","c":"."}]}]]''')
 
         # Make the comparison
         use_refs = use_refs_factory(['fig:one'])
@@ -667,7 +668,7 @@ class TestModule(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Hand-coded (ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[['',['test'],[["modifier","+"]]],"tbl:one"]},{"t":"Str","c":"-"},{"t":"Ref","c":[['',[],[]],"tbl:four"]},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[["",["test"],[["modifier","+"]]],"tbl:one"]},{"t":"Str","c":"-"},{"t":"Ref","c":[["",[],[]],"tbl:four"]},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
 
         # Make the comparison
         use_refs = use_refs_factory(['tbl:one', 'tbl:four'])
@@ -689,7 +690,7 @@ class TestModule(unittest.TestCase):
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"@fig:1:"}]}]]''')
 
         # Hand-coded (Ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[['',[],[]],"fig:1"]},{"t":"Str","c":":"}]}]]''')
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[["",[],[]],"fig:1"]},{"t":"Str","c":":"}]}]]''')
 
         # Make the comparison
         use_refs = use_refs_factory(['fig:1'])
@@ -707,13 +708,33 @@ class TestModule(unittest.TestCase):
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"}:"}]}]]''')
 
         # Hand-coded (Ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[['',[],[]],"fig:1"]},{"t":"Str","c":":"}]}]]''')
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[["",[],[]],"fig:1"]},{"t":"Str","c":":"}]}]]''')
 
         # Make the comparison
         use_refs = use_refs_factory(['fig:1'])
         self.assertEqual(walk(src, use_refs, {}, ''), expected)
 
 
+    def test_replace_refs_factory(self):
+        """Tests replace_refs_factory."""
+
+        ## test.md: As shown in @fig:one. ##
+
+        # Expected result from test_use_refs_factory_1()
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Ref","c":[["",[],[]],"fig:one"]},{"t":"Str","c":"."}]}]]''')
+
+        # Hand-coded
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Str","c":"fig."},{"t":"Space","c":[]},{"t":"Str","c":"1."}]}]]''')
+
+        # Make the comparison
+        replace_refs = replace_refs_factory({'fig:one':1}, True,
+                                            ['fig.', 'figs.'],
+                                            ['Figure', 'Figures'])
+        self.assertEqual(walk(walk(src, replace_refs, {}, ''),
+                              joinstrings, {}, ''), expected)
+                         
+        
+        
 #-----------------------------------------------------------------------------
 # main()
 
