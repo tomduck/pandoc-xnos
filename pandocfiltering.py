@@ -521,11 +521,13 @@ def use_refs_factory(references):
 # TeX that can be used to fake clever referencing
 clevereftex = []
 
-def _set_clevereftex(plusname, starname):
+def _set_clevereftex():
     """Sets the cleveref TeX."""
     global clevereftex  # pylint: disable=global-statement
-    clevereftex = [r'\providecommand{\cref}{%s~\ref}' % plusname[0],
-                   r'\providecommand{\Cref}{%s~\ref}' % starname[0]]
+    clevereftex = [r'\newcommand{\plusnamesingular}{}',
+                   r'\newcommand{\starnamesingular}{}',
+                   r'\providecommand{\cref}{\plusnamesingular~\ref}',
+                   r'\providecommand{\Cref}{\starnamesingular~\ref}']
 
 def replace_refs_factory(references, cleveref_default, plusname, starname):
     """Returns replace_refs(key, value, fmt, meta) function that replaces
@@ -537,7 +539,7 @@ def replace_refs_factory(references, cleveref_default, plusname, starname):
     """
 
     if not clevereftex and cleveref_default:
-        _set_clevereftex(plusname, starname)
+        _set_clevereftex()
 
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces references to labelled images."""
@@ -554,7 +556,7 @@ def replace_refs_factory(references, cleveref_default, plusname, starname):
             if not clevereftex:
                 if not clevereftex and 'modifier' in attrs.kvs and \
                   attrs['modifier'] in ['*', '+']:
-                    _set_clevereftex(plusname, starname)
+                    _set_clevereftex()
 
             # Choose between \Cref, \cref and \ref
             cleveref = attrs['modifier'] in ['*', '+'] \
@@ -564,8 +566,10 @@ def replace_refs_factory(references, cleveref_default, plusname, starname):
 
             # The replacement depends on the output format
             if fmt == 'latex':
+                tex1 = r'\renewcommand{\plusnamesingular}{%s}'%plusname[0]
+                tex2 = r'\renewcommand{\starnamesingular}{%s}'%starname[0]
                 if cleveref:
-                    macro = r'\cref' if plus else r'\Cref'
+                    macro = (tex1 + r'\cref') if plus else (tex2 + r'\Cref')
                     return RawInline('tex', r'%s{%s}'%(macro, label))
                 else:
                     return RawInline('tex', r'\ref{%s}'%label)
