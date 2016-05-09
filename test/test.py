@@ -732,9 +732,8 @@ class TestModule(unittest.TestCase):
                                             ['Figure', 'Figures'])
         self.assertEqual(walk(walk(src, replace_refs, {}, ''),
                               joinstrings, {}, ''), expected)
-                         
-        
-        
+
+
 #-----------------------------------------------------------------------------
 # main()
 
