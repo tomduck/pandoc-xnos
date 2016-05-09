@@ -27,7 +27,7 @@ import copy
 
 import psutil
 
-from pandocfilters import Str, Space, Cite
+from pandocfilters import Str, Space, Cite, RawInline
 from pandocfilters import elt, walk, stringify
 
 from pandocattributes import PandocAttributes
@@ -179,7 +179,8 @@ def _joinstrings(value):
     return True
 
 def joinstrings(key, value, fmt, meta):  # pylint: disable=unused-argument
-    """Combines adjacent Str elements."""
+    """Joins adjacent Str elements.  Use this as the last action to get
+    json like pandoc would normally produce."""
     if key == 'Para' or key == 'Plain':
         _joinstrings(value)
 
@@ -498,7 +499,8 @@ def _use_refs(value, references):
 def use_refs_factory(references):
     """Returns use_refs(key, value, fmt, meta) function that replaces
     known references with Ref elements.  Ref elements aren't understood by
-    pandoc, but are easily identified for further processing by a filter.
+    pandoc, but are easily identified for further processing by a filter
+    (such as is produced by replace_refs_factory()).
     """
 
     if not references:
@@ -520,11 +522,20 @@ def use_refs_factory(references):
 clevereftex = False
 
 def replace_refs_factory(references, cleveref_default, plusname, starname):
-
+    """Returns replace_refs(key, value, fmt, meta) function that replaces
+    Ref elements with text.  The text is provided by the references dict.
+    Clever referencing is used if cleveref_default is True, or if "modifier"
+    in the Ref's attributes is "+" or "*".  plusname and starname are lists
+    that give the singular and plural names for "+" and "*" clever references,
+    respectively.
+    """
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces references to labelled images."""
 
         global clevereftex  # pylint: disable=global-statement
+
+        if cleveref_default:
+            clevereftex = True
 
         if key == 'Ref':
 
