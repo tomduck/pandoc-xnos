@@ -623,7 +623,7 @@ def replace_refs_factory(references, cleveref_default, target,
 # pylint: disable=redefined-outer-name
 def use_attrs_factory(name, extract_attrs=extract_attrs, allow_space=False):
     """Returns use_attrs(key, value, fmt, meta) action that attaches attributes
-    found in the text to elements of type name.
+    to elements of type name found in Para and Plain elements.
 
     The extract_attrs() function should read the attributes and raise a
     ValueError or IndexError if attributes are not found.
