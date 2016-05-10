@@ -498,6 +498,8 @@ def use_refs_factory(references):
 
         if key in ['Para', 'Plain']:
             _use_refs(value, references)
+        elif key in ['Image']:
+            _use_refs(value[-2], references)
 
     return use_refs
 
@@ -573,7 +575,7 @@ def replace_refs_factory(references, cleveref_default, target,
             if fmt == 'latex':
                 if cleveref:
                     # Renew commands needed for cleveref fakery
-                    tex = r'\renewcommand' + \
+                    tex = r'\protect\renewcommand' + \
                       (r'{\plusnamesingular}{%s}'%plusname[0] if plus else \
                       r'{\starnamesingular}{%s}'%starname[0])
                     macro = r'\cref' if plus else r'\Cref'
