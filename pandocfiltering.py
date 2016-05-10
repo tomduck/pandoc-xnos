@@ -22,7 +22,6 @@ import subprocess
 import re
 import textwrap
 import functools
-import itertools
 import copy
 
 import psutil
