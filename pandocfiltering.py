@@ -383,6 +383,8 @@ def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
 
     if key in ('Para', 'Plain'):
         _repair_refs(value)
+    elif key == 'Image':
+        _repair_refs(value[-2])
 
 
 # use_refs_factory() ---------------------------------------------------------
