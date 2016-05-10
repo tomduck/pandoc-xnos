@@ -27,7 +27,7 @@ import copy
 
 import psutil
 
-from pandocfilters import Para, Str, Space, Cite, RawInline, RawBlock
+from pandocfilters import Para, Str, Space, Math, Cite, RawInline, RawBlock
 from pandocfilters import elt, walk, stringify
 
 from pandocattributes import PandocAttributes
@@ -590,18 +590,25 @@ def replace_refs_factory(references, cleveref_default, target,
                     return RawInline('tex', r'%s%s{%s}'%(tex, macro, label))
                 else:
                     return RawInline('tex', r'\ref{%s}'%label)
-            elif fmt in ('html', 'html5'):
-                if cleveref:
-                    name = plusname[0] if plus else starname[0]
-                    link = '<a href="#%s">%s</a>' % (label, references[label])
-                    return [Str(name), Space(), RawInline('html', link)]
-                else:
-                    link = '<a href="#%s">%s</a>' % (label, references[label])
-                    return RawInline('html', link)
             else:
-                name = plusname[0] if plus else starname[0]
-                return [Str(name), Space(), Str('%d'%references[label])] \
-                  if cleveref else Str('%d'%references[label])
+
+                # Handle both math and text
+                text = str(references[label])
+                ret = [RawInline('html', '<a href="#%s">' % label),
+                       Math({"t":"InlineMath", "c":[]}, text[1:-1])
+                       if text.startswith('$') and text.endswith('$')
+                       else Str(text),
+                       RawInline('html', '</a>')]
+
+                if fmt in ('html', 'html5'):
+                    if cleveref:
+                        name = plusname[0] if plus else starname[0]
+                        ret = [Str(name), Space()] + ret
+                    return ret
+                else:
+                    name = plusname[0] if plus else starname[0]
+                    return [Str(name), Space(), Str('%d'%references[label])] \
+                      if cleveref else Str('%d'%references[label])
 
     return replace_refs
 

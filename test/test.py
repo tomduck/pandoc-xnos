@@ -727,7 +727,7 @@ class TestModule(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Str","c":"fig."},{"t":"Space","c":[]},{"t":"Str","c":"1."}]}]]''')
 
         # Make the comparison
-        replace_refs = replace_refs_factory({'fig:one':1}, True,
+        replace_refs = replace_refs_factory({'fig:one':1}, True, 'figure',
                                             ['fig.', 'figs.'],
                                             ['Figure', 'Figures'])
         self.assertEqual(walk(walk(src, replace_refs, {}, ''),
