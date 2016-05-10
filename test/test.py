@@ -584,9 +584,31 @@ class TestModule(unittest.TestCase):
         use_refs = use_refs_factory(['fig:one'])
         self.assertEqual(walk(src, use_refs, '', {}), expected)
 
-
     def test_use_refs_factory_2(self):
         """Tests use_refs_factory() #2."""
+
+        ## test.md: (@eq:one) ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"("},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:one","citationHash":0}],[{"t":"Str","c":"@eq:one"}]]},{"t":"Str","c":")"}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '(@eq:one)'), stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(),
+            stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded (Ref inserted)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"("},{"t":"Ref","c":[["",[],[]],"eq:one"]},{"t":"Str","c":")"}]}]]''')
+
+        # Make the comparison
+        use_refs = use_refs_factory(['eq:one'])
+        self.assertEqual(walk(src, use_refs, '', {}), expected)
+
+
+    def test_use_refs_factory_3(self):
+        """Tests use_refs_factory() #3."""
 
         ## test.md: See {+@eq:1}. ##
 
@@ -606,8 +628,8 @@ class TestModule(unittest.TestCase):
         use_refs = use_refs_factory(['eq:1'])
         self.assertEqual(walk(src, use_refs, '', {}), expected)
 
-    def test_use_refs_factory_3(self):
-        """Tests use_refs_factory() #3."""
+    def test_use_refs_factory_4(self):
+        """Tests use_refs_factory() #4."""
 
         ## test.md: !@eq:1 ##
 
@@ -628,8 +650,8 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, use_refs, '', {}), expected)
 
 
-    def test_use_refs_factory_4(self):
-        """Tests use_refs_factory() #4."""
+    def test_use_refs_factory_5(self):
+        """Tests use_refs_factory() #5."""
 
         ## test.md: {@fig:1{baz=bat foo=bar}}a. ##
 
@@ -651,8 +673,8 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, use_refs, '', {}), expected)
 
 
-    def test_use_refs_factory_5(self):
-        """Tests use_refs_factory() #5."""
+    def test_use_refs_factory_6(self):
+        """Tests use_refs_factory() #6."""
 
         ## test.md: {+@tbl:one{.test}}-{@tbl:four} provide the data. ##
 
@@ -675,8 +697,8 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, use_refs, '', {}), expected)
 
     @unittest.skip('Known issue for pandoc-1.15.2')
-    def test_use_refs_factory_6(self):
-        """Tests use_refs_factory() #6."""
+    def test_use_refs_factory_7(self):
+        """Tests use_refs_factory() #7."""
 
         ## test.md: @fig:1:
 
@@ -697,8 +719,8 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, use_refs, {}, ''), expected)
 
 
-    def test_use_refs_factory_7(self):
-        """Tests use_refs_factory() #7."""
+    def test_use_refs_factory_8(self):
+        """Tests use_refs_factory() #8."""
 
         ## test.md: {@fig:1}:
 
