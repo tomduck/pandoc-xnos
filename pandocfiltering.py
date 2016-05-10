@@ -27,7 +27,7 @@ import copy
 
 import psutil
 
-from pandocfilters import Str, Space, Cite, RawInline
+from pandocfilters import Para, Str, Space, Cite, RawInline, RawBlock
 from pandocfilters import elt, walk, stringify
 
 from pandocattributes import PandocAttributes
@@ -424,9 +424,13 @@ def _process_modifier(value, i, attrs):
     """Trims */+/! modifier in front of the Cite element at index i
     and stores it as an attribute.  Returns the updated index i.
     """
+    global clevereftex  # pylint: disable=global-statement
     assert value[i]['t'] == 'Cite'
     if i > 0 and value[i-1]['t'] == 'Str':
-        if value[i-1]['c'][-1] in ['*', '+', '!']:
+        modifier = value[i-1]['c'][-1]
+        if not clevereftex and modifier in ['*', '+']:
+            clevereftex = True
+        if modifier in ['*', '+', '!']:
             attrs[2].append(['modifier', value[i-1]['c'][-1]])
             if len(value[i-1]['c']) > 1:
                 value[i-1]['c'] = value[i-1]['c'][:-1]
@@ -518,45 +522,56 @@ def use_refs_factory(references):
 
 # replace_refs_factory() ------------------------------------------------------
 
-# TeX that can be used to fake clever referencing
-clevereftex = []
+# Flags that TeX to fake cleveref behaviour needs to be written into the doc
+clevereftex = False
 
-def _set_clevereftex():
-    """Sets the cleveref TeX."""
-    global clevereftex  # pylint: disable=global-statement
-    clevereftex = [r'\newcommand{\plusnamesingular}{}',
-                   r'\newcommand{\starnamesingular}{}',
-                   r'\providecommand{\cref}{\plusnamesingular~\ref}',
-                   r'\providecommand{\Cref}{\starnamesingular~\ref}']
-
-def replace_refs_factory(references, cleveref_default, plusname, starname):
+def replace_refs_factory(references, cleveref_default, target,
+                         plusname, starname):
     """Returns replace_refs(key, value, fmt, meta) function that replaces
     Ref elements with text.  The text is provided by the references dict.
     Clever referencing is used if cleveref_default is True, or if "modifier"
-    in the Ref's attributes is "+" or "*".  plusname and starname are lists
-    that give the singular and plural names for "+" and "*" clever references,
-    respectively.
+    in the Ref's attributes is "+" or "*".  target is the LaTeX target type
+    for clever referencing (figure, equation, table, ...).  plusname and
+    starname are lists that give the singular and plural names for "+" and
+    "*" clever references, respectively.
     """
-
-    if not clevereftex and cleveref_default:
-        _set_clevereftex()
+    global clevereftex  # pylint: disable=global-statement
+    clevereftex = clevereftex or cleveref_default
 
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces references to labelled images."""
 
-        if key == 'Ref':
+        global clevereftex  # pylint: disable=global-statement
+
+        if fmt == 'latex' and clevereftex:
+
+            # This block fakes cleveref, if needed
+            COMMENT = '% Cleveref fakery'
+            if key == 'RawBlock' and value[0] == 'tex' and \
+              value[1].startswith(COMMENT):
+                # Cleveref fakery already present
+                clevereftex = False
+            elif key == 'Para':
+                # Write in the cleveref fakery
+                clevereftex = False
+                tex = [COMMENT,
+                       r'\providecommand{\crefname}[3]{}',
+                       r'\providecommand{\Crefname}[3]{}',
+                       r'\crefname{%s}{%s}{%s}' % ((target,) + tuple(plusname)),
+                       r'\Crefname{%s}{%s}{%s}' % ((target,) + tuple(starname)),
+                       r'\providecommand{\cref}{\plusnamesingular~\ref}',
+                       r'\providecommand{\Cref}{\starnamesingular~\ref}',
+                       r'\providecommand{\plusnamesingular}{}',
+                       r'\providecommand{\starnamesingular}{}']
+                return [RawBlock('tex', '\n'.join(tex)+'\n'), Para(value)]
+
+        elif key == 'Ref':
 
             # Parse the figure reference
             attrs, label = value
             attrs = PandocAttributes(attrs, 'pandoc')
 
             assert value[1] in references
-
-            # Check if we need cleveref tex
-            if not clevereftex:
-                if not clevereftex and 'modifier' in attrs.kvs and \
-                  attrs['modifier'] in ['*', '+']:
-                    _set_clevereftex()
 
             # Choose between \Cref, \cref and \ref
             cleveref = attrs['modifier'] in ['*', '+'] \
@@ -566,11 +581,13 @@ def replace_refs_factory(references, cleveref_default, plusname, starname):
 
             # The replacement depends on the output format
             if fmt == 'latex':
-                tex1 = r'\renewcommand{\plusnamesingular}{%s}'%plusname[0]
-                tex2 = r'\renewcommand{\starnamesingular}{%s}'%starname[0]
                 if cleveref:
-                    macro = (tex1 + r'\cref') if plus else (tex2 + r'\Cref')
-                    return RawInline('tex', r'%s{%s}'%(macro, label))
+                    # Renew commands needed for cleveref fakery
+                    tex = r'\renewcommand' + \
+                      (r'{\plusnamesingular}{%s}'%plusname[0] if plus else \
+                      r'{\starnamesingular}{%s}'%starname[0])
+                    macro = r'\cref' if plus else r'\Cref'
+                    return RawInline('tex', r'%s%s{%s}'%(tex, macro, label))
                 else:
                     return RawInline('tex', r'\ref{%s}'%label)
             elif fmt in ('html', 'html5'):

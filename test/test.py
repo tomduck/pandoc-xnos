@@ -720,7 +720,7 @@ class TestModule(unittest.TestCase):
 
         ## test.md: As shown in @fig:one. ##
 
-        # Expected result from test_use_refs_factory_1()
+        # Expected result from use_refs()
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Ref","c":[["",[],[]],"fig:one"]},{"t":"Str","c":"."}]}]]''')
 
         # Hand-coded
