@@ -542,25 +542,35 @@ def replace_refs_factory(references, cleveref_default, target,
 
         if fmt == 'latex' and clevereftex:
 
-            # This block fakes cleveref, if needed
-            COMMENT = '% Cleveref fakery'
+            # Cleveref TeX
             if key == 'RawBlock' and value[0] == 'tex' and \
-              value[1].startswith(COMMENT):
-                # Cleveref fakery already present
+              value[1].startswith('% Cleveref'):
+                # Cleveref TeX already present
                 clevereftex = False
+
             elif key == 'Para':
-                # Write in the cleveref fakery
                 clevereftex = False
-                tex = [COMMENT,
-                       r'\providecommand{\crefname}[3]{}',
-                       r'\providecommand{\Crefname}[3]{}',
-                       r'\crefname{%s}{%s}{%s}' % ((target,) + tuple(plusname)),
-                       r'\Crefname{%s}{%s}{%s}' % ((target,) + tuple(starname)),
-                       r'\providecommand{\cref}{\plusnamesingular~\ref}',
-                       r'\providecommand{\Cref}{\starnamesingular~\ref}',
-                       r'\providecommand{\plusnamesingular}{}',
-                       r'\providecommand{\starnamesingular}{}']
-                return [RawBlock('tex', '\n'.join(tex)+'\n'), Para(value)]
+
+                # Cleveref macros
+                tex1 = [
+                    r'% Cleveref macros',
+                    r'\providecommand{\crefname}[3]{}',
+                    r'\providecommand{\Crefname}[3]{}',
+                    r'\crefname{%s}{%s}{%s}' % ((target,) + tuple(plusname)),
+                    r'\Crefname{%s}{%s}{%s}' % ((target,) + tuple(starname))
+                    ]
+
+                # Cleveref fakery
+                tex2 = [
+                    r'% Cleveref fakery',
+                    r'\providecommand{\plusnamesingular}{}',
+                    r'\providecommand{\starnamesingular}{}',
+                    r'\providecommand{\cref}{\plusnamesingular~\ref}',
+                    r'\providecommand{\Cref}{\starnamesingular~\ref}']
+                    
+                return [RawBlock('tex', '\n'.join(tex1)+'\n'),
+                        RawBlock('tex', '\n'.join(tex2)+'\n'),
+                        Para(value)]
 
         elif key == 'Ref':
 
