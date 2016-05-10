@@ -593,8 +593,7 @@ def replace_refs_factory(references, cleveref_default, target,
             elif fmt in ('html', 'html5'):
                 if cleveref:
                     name = plusname[0] if plus else starname[0]
-                    link = '%s <a href="#%s">%s</a>' % \
-                      (name, label, references[label])
+                    link = '<a href="#%s">%s</a>' % (label, references[label])
                     return [Str(name), Space(), RawInline('html', link)]
                 else:
                     link = '<a href="#%s">%s</a>' % (label, references[label])
