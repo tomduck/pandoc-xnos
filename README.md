@@ -85,7 +85,7 @@ Pandoc only supports attributes for a select few elements.  The following action
 
 ##### `use_attrs_factory(name, extract_attrs=extract_attrs, allow_space=False)` #####
 
-Returns `use_attrs(key, value, fmt, meta)` action that attaches attributes found in the text to elements of type name.
+Returns `use_attrs(key, value, fmt, meta)` action that attaches attributes to elements of type name found in Para and Plain blocks.
 
 The `extract_attrs()` function should read the attributes and raise a `ValueError` or `IndexError` if attributes are not found.
 
