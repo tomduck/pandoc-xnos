@@ -238,20 +238,6 @@ def dollarfy(x):
     return walk(x, _dollarfy, '', {})
 
 
-# pandocify() ----------------------------------------------------------------
-
-def pandocify(s):
-    """Returns a representation of the string s using pandoc elements.
-    Like stringify(), all formatting is ignored.
-    """
-    toks = [Str(tok) for tok in s.split()]
-    spaces = [Space()]*len(toks)
-    ret = list(itertools.chain(*zip(toks, spaces)))  # Leaves a space at the end
-    if s[0] == ' ':  # Add a space at the beginning if needed
-        ret = [Space()] + ret
-    return ret if s[-1] == ' ' else ret[:-1]  # Trim space at end if needed
-
-
 # extract_attrs() ------------------------------------------------------------
 
 def extract_attrs(value, n):

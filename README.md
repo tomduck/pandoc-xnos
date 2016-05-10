@@ -145,9 +145,3 @@ Replaces Math elements with a $-enclosed string.
 `stringify()` passes through TeX math.  Use `dollarfy(x)` first to replace `Math` elements with math strings set in dollars.  You should provide a deep copy of `x` so that the document is left untouched.
 
 Returns `x`.
-
-
-##### `pandocify(s)` #####
-
-Returns a representation of the string `s` using pandoc elements.
-Like `stringify()`, all formatting is ignored.
