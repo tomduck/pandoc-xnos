@@ -552,13 +552,18 @@ def replace_refs_factory(references, cleveref_default, target,
                 clevereftex = False
 
                 # Cleveref macros
-                tex1 = [
-                    r'% Cleveref macros',
+                tex1 = [r'% Cleveref macros']
+                tex1 += [
                     r'\providecommand{\crefname}[3]{}',
                     r'\providecommand{\Crefname}[3]{}',
                     r'\crefname{%s}{%s}{%s}' % ((target,) + tuple(plusname)),
                     r'\Crefname{%s}{%s}{%s}' % ((target,) + tuple(starname))
                     ]
+                if target == 'equation':
+                    tex1 += [r'\providecommand{\crefformat}[2]{}{}',
+                             r'\providecommand{\Crefformat}[2]{}{}',
+                             r'\crefformat{equation}{%s~#2#1#3}'%plusname[0],
+                             r'\Crefformat{equation}{%s~#2#1#3}'%starname[0]]
 
                 # Cleveref fakery
                 tex2 = [
