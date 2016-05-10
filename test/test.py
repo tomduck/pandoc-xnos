@@ -28,7 +28,7 @@ from pandocfilters import walk
 import pandocfiltering
 from pandocfiltering import get_meta
 from pandocfiltering import joinstrings
-from pandocfiltering import quotify, dollarfy, pandocify
+from pandocfiltering import quotify, dollarfy
 from pandocfiltering import extract_attrs, repair_refs
 from pandocfiltering import use_attrs_factory, filter_attrs_factory
 from pandocfiltering import use_refs_factory, replace_refs_factory
@@ -205,27 +205,6 @@ class TestModule(unittest.TestCase):
 
         # Make the comparison
         self.assertEqual(dollarfy(src[1][0]['c']), expected)
-
-
-    def test_pandocify(self):
-        """Tests pandocify()."""
-
-        ## test.md: This is a test. ##
-
-        src = 'This is a test.'
-
-        # Command: pandoc test.md -t json
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"This"},{"t":"Space","c":[]},{"t":"Str","c":"is"},{"t":"Space","c":[]},{"t":"Str","c":"a"},{"t":"Space","c":[]},{"t":"Str","c":"test."}]}]]''')
-
-        # Check expected against current pandoc
-        md = subprocess.Popen(('echo', 'This is a test.'),
-                              stdout=subprocess.PIPE)
-        output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
-        self.assertEqual(expected, output)
-
-        # Make the comparison
-        self.assertEqual(pandocify(src), expected[1][0]['c'])
 
 
     def test_extract_attrs_1(self):
