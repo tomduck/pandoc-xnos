@@ -553,17 +553,16 @@ def replace_refs_factory(references, cleveref_default, target,
 
                 # Cleveref macros
                 tex1 = [r'% Cleveref macros']
-                tex1 += [
-                    r'\providecommand{\crefname}[3]{}',
-                    r'\providecommand{\Crefname}[3]{}',
-                    r'\crefname{%s}{%s}{%s}' % ((target,) + tuple(plusname)),
-                    r'\Crefname{%s}{%s}{%s}' % ((target,) + tuple(starname))
-                    ]
-                if target == 'equation':
-                    tex1 += [r'\providecommand{\crefformat}[2]{}{}',
-                             r'\providecommand{\Crefformat}[2]{}{}',
-                             r'\crefformat{equation}{%s~#2#1#3}'%plusname[0],
-                             r'\Crefformat{equation}{%s~#2#1#3}'%starname[0]]
+                tex1 += \
+                  [r'\providecommand{\crefname}[3]{}',
+                   r'\providecommand{\Crefname}[3]{}',
+                   r'\crefname{%s}{%s}{%s}'%((target,) + tuple(plusname)),
+                   r'\Crefname{%s}{%s}{%s}'%((target,) + tuple(starname))
+                  ] if target != 'equation' else \
+                  [r'\providecommand{\crefformat}[2]{}{}',
+                   r'\providecommand{\Crefformat}[2]{}{}',
+                   r'\crefformat{equation}{%s~#2#1#3}'%plusname[0],
+                   r'\Crefformat{equation}{%s~#2#1#3}'%starname[0]]
 
                 # Cleveref fakery
                 tex2 = [
@@ -572,7 +571,7 @@ def replace_refs_factory(references, cleveref_default, target,
                     r'\providecommand{\starnamesingular}{}',
                     r'\providecommand{\cref}{\plusnamesingular~\ref}',
                     r'\providecommand{\Cref}{\starnamesingular~\ref}']
-                    
+
                 return [RawBlock('tex', '\n'.join(tex1)+'\n'),
                         RawBlock('tex', '\n'.join(tex2)+'\n'),
                         Para(value)]
