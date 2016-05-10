@@ -385,6 +385,8 @@ def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         _repair_refs(value)
     elif key == 'Image':
         _repair_refs(value[-2])
+    elif key == 'Table':
+        _repair_refs(value[-5])
 
 
 # use_refs_factory() ---------------------------------------------------------
@@ -500,8 +502,10 @@ def use_refs_factory(references):
 
         if key in ['Para', 'Plain']:
             _use_refs(value, references)
-        elif key in ['Image']:
+        elif key == 'Image':
             _use_refs(value[-2], references)
+        elif key == 'Table':
+            _use_refs(value[-5], references)
 
     return use_refs
 
