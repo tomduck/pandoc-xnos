@@ -176,7 +176,7 @@ def _joinstrings(value):
             value[i]['c'] += value[i+1]['c']
             del value[i+1]
             return  # Forces processing to repeat
-    return True
+    return True  # Terminates processing
 
 def joinstrings(key, value, fmt, meta):  # pylint: disable=unused-argument
     """Joins adjacent Str elements.  Use this as the last action to get
@@ -339,10 +339,9 @@ def _is_broken_ref(key1, value1, key2, value2):
 
 @repeat
 def _repair_refs(value):
-    """Performs the repair.  Returns updated value list."""
+    """Performs the repair."""
     if PANDOCVERSION is None:
         raise RuntimeError('Module uninitialized.  Please call init().')
-    flag = False  # Flags that a change has been made
 
     # Scan the value list
     for i in range(len(value)-1):
@@ -350,7 +349,6 @@ def _repair_refs(value):
         # Check for broken references
         if _is_broken_ref(value[i]['t'], value[i]['c'],
                           value[i+1]['t'], value[i+1]['c']):
-            flag = True  # Found broken reference
 
             # Get the reference string
             n = 0 if PANDOCVERSION < '1.16' else 1
@@ -389,8 +387,7 @@ def _repair_refs(value):
 
             return  # Forces processing to repeat
 
-    if not flag:  # No more broken refs left to process
-        return value
+    return True  # Terminates processing
 
 def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
     """Using -f markdown+autolink_bare_uris splits braced references like
@@ -497,7 +494,7 @@ def _use_refs(value, references):
             # The value list may be changed
             return  # Forces processing to repeat
 
-    return True  # Ends processing
+    return True  # Terminates processing
 
 
 def use_refs_factory(references):
@@ -608,7 +605,7 @@ def replace_refs_factory(references, cleveref_default, target,
                 else:
                     name = plusname[0] if plus else starname[0]
                     return [Str(name), Space(), Str('%d'%references[label])] \
-                      if cleveref else Str('%d'%references[label])
+                      if cleveref else Str('%s'%str(references[label]))
 
     return replace_refs
 
