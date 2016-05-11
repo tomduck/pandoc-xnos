@@ -38,8 +38,12 @@ from pandocattributes import PandocAttributes
 PANDOCVERSION = None
 
 def init(pandocversion=None):
-    """Sets the pandoc version.  If pandocversion == None then automatic
-    detection is attempted.
+    """Initializes the module.  You may call this at any time to manually set
+    the pandoc version string.  Otherwise the function will determine pandoc's
+    version using subprocess calls.
+
+    Note that pandoc does not provide version information in its json syntax
+    tree.  See: https://github.com/jgm/pandoc/issues/2640
     """
 
     # This requires some care because we can't be sure that a call to 'pandoc'
@@ -104,7 +108,7 @@ STRTYPES = [str] if sys.version_info > (3,) else [str, unicode]
 #-----------------------------------------------------------------------------
 # STDIN, STDOUT and STDERR
 
-# Pandoc uses UTF-8 for both input and output; so must we.
+# Pandoc uses UTF-8 for both input and output; so must its filters.
 if sys.version_info > (3,):
     # Py3 strings are unicode: https://docs.python.org/3.5/howto/unicode.html.
     # Character encoding/decoding is performed automatically at stream
@@ -133,7 +137,7 @@ Ref = elt('Ref', 2)  # attrs, reference string
 
 # Decorators -----------------------------------------------------------------
 
-def repeat(func):
+def _repeat(func):
     """Repeats func(value, ...) call until something other than None is
     returned.
     """
@@ -167,7 +171,7 @@ def get_meta(meta, name):
 
 # joinstrings() --------------------------------------------------------------
 
-@repeat
+@_repeat
 def _joinstrings(value):
     """Joins the strings."""
     for i in range(len(value)-1):
@@ -179,7 +183,8 @@ def _joinstrings(value):
 
 def joinstrings(key, value, fmt, meta):  # pylint: disable=unused-argument
     """Joins adjacent Str elements.  Use this as the last action to get
-    json like pandoc would normally produce."""
+    json like pandoc would normally produce.  This isn't technically
+    necessary, but is helpful for unit testing."""
     if key == 'Para' or key == 'Plain':
         _joinstrings(value)
 
@@ -246,7 +251,8 @@ def extract_attrs(value, n):
     index n are left unchanged.
 
     Returns the attributes in pandoc format.  A ValueError is raised if
-    attributes aren't found.
+    attributes aren't found.  An IndexError is raised if the index n is out
+    of range.
     """
 
     # Check for the start of the attributes string
@@ -322,7 +328,7 @@ def _is_broken_ref(key1, value1, key2, value2):
     # Check if this matches the reference regexes and return
     return True if _REF.match(s) else False
 
-@repeat
+@_repeat
 def _repair_refs(value):
     """Performs the repair."""
     if PANDOCVERSION is None:
@@ -453,7 +459,7 @@ def _remove_brackets(value, i):
         else:
             del value[i-1]
 
-@repeat
+@_repeat
 def _use_refs(value, references):
     """Replaces Cite references with Ref elements."""
 
@@ -487,10 +493,11 @@ def _use_refs(value, references):
 
 
 def use_refs_factory(references):
-    """Returns use_refs(key, value, fmt, meta) function that replaces
-    known references with Ref elements.  Ref elements aren't understood by
-    pandoc, but are easily identified for further processing by a filter
-    (such as is produced by replace_refs_factory()).
+    """Returns use_refs(key, value, fmt, meta) action that replaces listed
+    references (e.g., ['fig:1', 'fig:2', ...]) with Ref elements.  Ref elements
+    aren't understood by pandoc, but are easily identified for further
+    processing by other actions (such as those produced by
+    replace_refs_factory()).
     """
 
     if not references:
@@ -517,13 +524,13 @@ clevereftex = False
 
 def replace_refs_factory(references, cleveref_default, target,
                          plusname, starname):
-    """Returns replace_refs(key, value, fmt, meta) function that replaces
-    Ref elements with text.  The text is provided by the references dict.
-    Clever referencing is used if cleveref_default is True, or if "modifier"
-    in the Ref's attributes is "+" or "*".  target is the LaTeX target type
-    for clever referencing (figure, equation, table, ...).  plusname and
-    starname are lists that give the singular and plural names for "+" and
-    "*" clever references, respectively.
+    """Returns replace_refs(key, value, fmt, meta) action that replaces
+    Ref elements with text provided by the references dict
+    (e.g., { 'fig:1':1, 'fig:2':2, ...}).  Clever referencing is used if
+    cleveref_default is True, or if "modifier" in the Ref's attributes is "+"
+    or "*".  The target is the LaTeX type for clever referencing (figure,
+    equation, table, ...).  The plusname and starname lists give the singular
+    and plural names for "+" and "*" clever references, respectively.
     """
     global clevereftex  # pylint: disable=global-statement
     clevereftex = clevereftex or cleveref_default
@@ -616,7 +623,8 @@ def replace_refs_factory(references, cleveref_default, target,
 # pylint: disable=redefined-outer-name
 def use_attrs_factory(name, extract_attrs=extract_attrs, allow_space=False):
     """Returns use_attrs(key, value, fmt, meta) action that attaches attributes
-    to elements of type name found in Para and Plain blocks.
+    to elements of given name (e.g., 'Image', 'Math', ...) found in Para and
+    Plain blocks.
 
     The extract_attrs() function should read the attributes and raise a
     ValueError or IndexError if attributes are not found.
@@ -651,8 +659,9 @@ def use_attrs_factory(name, extract_attrs=extract_attrs, allow_space=False):
 # filter_attrs_factory() ------------------------------------------------------
 
 def filter_attrs_factory(name, n):
-    """Returns filter_attrs(key, value, fmt, meta) action that replaces named
-    elements with unattributed versions of standard length n.
+    """Returns filter_attrs(key, value, fmt, meta) action that replaces
+    elements of a given name (e.g., 'Image', 'Math', ...) with unattributed
+    versions of standard length n.
     """
 
     def filter_attrs(key, value, fmt, meta):  # pylint: disable=unused-argument
