@@ -107,7 +107,7 @@ Returns `use_refs(key, value, fmt, meta)` action that replaces listed `reference
 ##### replace_refs_factory(references, cleveref_default, target, plusname, starname) #####
 
 Returns `replace_refs(key, value, fmt, meta)` action that replaces
-`Ref` elements with text provided by the `references` dict (e.g., `{ 'fig:1':1, 'fig:2':2, ...}`).  Clever referencing is used if `cleveref_default` is `True`, or if "modifier" in the `Ref`'s attributes is "+" or "\*".  The `target` is the LaTeX type for clever referencing (`figure`, `equation`, `table`, ...).  The `plusname` and `starname` lists give the singular and plural names for "+" and "\*" clever references, respectively.
+`Ref` elements with text provided by the `references` dict (e.g., `{ 'fig:1':1, 'fig:2':2, ...}`).  Clever referencing is used if `cleveref_default` is `True`, or if "modifier" in the `Ref`'s attributes is `+` or `*`.  The `target` is the LaTeX type for clever referencing (`figure`, `equation`, `table`, ...).  The `plusname` and `starname` lists give the singular and plural names for `+` and `*` clever references, respectively.
 
 
 ### Attributes ###
