@@ -104,15 +104,10 @@ Using `-f markdown+autolink_bare_uris` splits braced references like `{+@label:i
 Returns `use_refs(key, value, fmt, meta)` action that replaces listed `references` (e.g., `['fig:1', 'fig:2', ...]`) with `Ref` elements.  `Ref` elements aren't understood by pandoc, but are easily identified for further processing by other actions (such as those produced by `replace_refs_factory()`).
 
 
-##### replace_refs_factory(references, cleveref_default, plusname, starname) #####
+##### replace_refs_factory(references, cleveref_default, target, plusname, starname) #####
 
 Returns `replace_refs(key, value, fmt, meta)` action that replaces
 `Ref` elements with text provided by the `references` dict (e.g., `{ 'fig:1':1, 'fig:2':2, ...}`).  Clever referencing is used if `cleveref_default` is `True`, or if "modifier" in the `Ref`'s attributes is "+" or "*".  The `target` is the LaTeX type for clever referencing (`figure`, `equation`, `table`, ...).  The `plusname` and `starname` lists give the singular and plural names for "+" and "*" clever references, respectively.
-
-
-##### joinstrings(key, value, fmt, meta) #####
-
-Joins adjacent `Str` elements.  Use this as the last action to get json like pandoc would normally produce.  This isn't technically necessary, but is helpful for unit testing.
 
 
 ### Attributes ###
@@ -130,3 +125,10 @@ The `extract_attrs()` function should read the attributes and raise a `ValueErro
 ##### filter_attrs_factory(name, n) #####
 
 Returns `filter_attrs(key, value, fmt, meta)` action that replaces  elements of a given name (e.g., `'Image'`, `'Math'`, ...) with unattributed versions of standard length `n`.
+
+
+### Other ###
+
+##### joinstrings(key, value, fmt, meta) #####
+
+Joins adjacent `Str` elements.  Use this as the last action to get json like pandoc would normally produce.  This isn't technically necessary, but is helpful for unit testing.
