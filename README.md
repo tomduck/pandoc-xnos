@@ -16,8 +16,7 @@ I am pleased to receive bug reports and feature requests on the project's [Issue
 Overview
 --------
 
-Below is a short summary of what is available.  More details are given in
-the function docstrings.
+Below is a short summary of what is available.  More details are given in the function docstrings.
 
 Globals
 
@@ -41,7 +40,9 @@ Actions and their factory functions
   * `join_strings()` - Joins adjacent strings in a pandoc document
   * `repair_cites()` - Repairs broken Cite elements in a document
   * `process_refs_factory()` - Functions that process references
-  * `replace_refs_factory()` -
-      Functions that replace references with format-specific content
-  * `attach_attrs_factory()` - Functions that attach attributes to elements
-  * `detach_attrs_factory()` - Functions that detach attributes from elements
+  * `replace_refs_factory()`
+      - Functions that replace refs with format-specific content
+  * `attach_attrs_factory()`
+      - Functions that attach attributes to elements
+  * `detach_attrs_factory()`
+      - Functions that detach attributes from elements
