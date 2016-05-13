@@ -23,19 +23,19 @@ import sys
 import unittest
 import subprocess
 
-from pandocfilters import walk
+from pandocfilters import walk, Math
 
-import pandocfiltering
-from pandocfiltering import get_meta
-from pandocfiltering import joinstrings
-from pandocfiltering import quotify, dollarfy
-from pandocfiltering import extract_attrs, repair_refs
-from pandocfiltering import use_attrs_factory, filter_attrs_factory
-from pandocfiltering import use_refs_factory, replace_refs_factory
+import xnos
+from xnos import get_meta
+from xnos import join_strings
+from xnos import quotify, dollarfy
+from xnos import extract_attrs
+from xnos import attach_attrs_factory, detach_attrs_factory
+from xnos import repair_refs, process_refs_factory, replace_refs_factory
 
 PANDOCVERSION = '1.17.0.1'
 
-pandocfiltering.init(PANDOCVERSION)
+xnos.init(PANDOCVERSION)
 
 
 #-----------------------------------------------------------------------------
@@ -43,7 +43,7 @@ pandocfiltering.init(PANDOCVERSION)
 
 # pylint: disable=too-many-public-methods
 class TestModule(unittest.TestCase):
-    """Test the pandocfiltering module."""
+    """Test the xnos module."""
 
     def test_get_meta_1(self):
         """Tests get_meta() #1."""
@@ -491,10 +491,242 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
-    def test_use_attrs_factory(self):
-        """Tests use_attrs_math()."""
+    def test_process_refs_factory_1(self):
+        """Tests process_refs_factory() #1."""
 
-        use_attrs_math = use_attrs_factory('Math', allow_space=True)
+        ## test.md: As shown in @fig:one. ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', 'As shown in @fig:one.'),
+                              stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(),
+            stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded (added empty attributes)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}]]''')
+
+        # Make the comparison
+        process_refs = process_refs_factory(['fig:one'])
+        self.assertEqual(walk(src, process_refs, '', {}), expected)
+
+    def test_process_refs_factory_2(self):
+        """Tests process_refs_factory() #2."""
+
+        ## test.md: (@eq:one) ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"("},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:one","citationHash":0}],[{"t":"Str","c":"@eq:one"}]]},{"t":"Str","c":")"}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '(@eq:one)'), stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(),
+            stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded (no change)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"("},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:one","citationHash":0}],[{"t":"Str","c":"@eq:one"}]]},{"t":"Str","c":")"}]}]]''')
+
+        # Make the comparison
+        process_refs = process_refs_factory(['eq:one'])
+        self.assertEqual(walk(src, process_refs, '', {}), expected)
+
+
+    def test_process_refs_factory_3(self):
+        """Tests process_refs_factory() #3."""
+
+        ## test.md: See {@tbl:1}. ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"}."}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', 'See {@tbl:1}.'), stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded (braces stripped, attributes added)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"."}]}]]''')
+
+        # Make the comparison
+        process_refs = process_refs_factory(['tbl:1'])
+        self.assertEqual(walk(src, process_refs, '', {}), expected)
+
+
+    def test_process_refs_factory_4(self):
+        """Tests process_refs_factory() #4."""
+
+        ## test.md: See +@eq:1. ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"."}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', 'See +@eq:1.'), stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded (modifier extracted, attributes added)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"."}]}]]''')
+
+        # Make the comparison
+        process_refs = process_refs_factory(['eq:1'])
+        self.assertEqual(walk(src, process_refs, '', {}), expected)
+
+
+    def test_process_refs_factory_5(self):
+        """Tests process_refs_factory() #5."""
+
+        ## test.md: See {+@tbl:1}. ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"}."}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', 'See {+@tbl:1}.'), stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded (braces stripped, modifier extracted, attributes added)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"."}]}]]''')
+
+        # Make the comparison
+        process_refs = process_refs_factory(['tbl:1'])
+        self.assertEqual(walk(src, process_refs, '', {}), expected)
+
+
+    def test_process_refs_factory_6(self):
+        """Tests process_refs_factory() #6."""
+
+        ## test.md: See xxx{+@tbl:1}xxx. ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"xxx{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"}xxx."}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', 'See xxx{+@tbl:1}xxx.'), stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded (braces stripped, modifier extracted, attributes added)
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"xxx"},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"xxx."}]}]]''')
+
+        # Make the comparison
+        process_refs = process_refs_factory(['tbl:1'])
+        self.assertEqual(walk(src, process_refs, '', {}), expected)
+
+
+    def test_use_refs_factory_7(self):
+        """Tests use_refs_factory() #7."""
+
+        ## test.md: {+@tbl:one}-{@tbl:four} provide the data. ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"}-{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Str","c":"}"},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(
+            ('echo', '{+@tbl:one}-{@tbl:four} provide the data.'),
+            stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"-"},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
+
+        # Make the comparison
+        process_refs = process_refs_factory(['tbl:one', 'tbl:four'])
+        self.assertEqual(walk(src, process_refs, '', {}), expected)
+
+    @unittest.skip('Known issue for pandoc-1.15.2')
+    def test_use_refs_factory_8(self):
+        """Tests use_refs_factory() #8."""
+
+        ## test.md: @fig:1:
+
+        # pandoc-1.15.2 doesn't detect references that end in a colon.  This
+        # was fixed in subsequent versions of pandoc.  There is a trivial
+        # workaround; use "{@fig:1}:" instead.  This is demonstrated in the
+        # next unit test.  Given that there is a trivial work-around, this is
+        # probably not worth fixing.
+
+        # Command: pandoc-1.15.2 test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"@fig:1:"}]}]]''')
+
+        # Check against pandoc-1.15.2
+        md = subprocess.Popen(('echo', '@fig:1:'), stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc-1.15.2 -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Generate expected using current pandoc
+        md = subprocess.Popen(('echo', '@fig:1:'), stdout=subprocess.PIPE)
+        expected = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+
+        # Make the comparison
+        process_refs = process_refs_factory(['fig:1'])
+        self.assertEqual(walk(src, process_refs, {}, ''), expected)
+
+
+    def test_process_refs_factory_9(self):
+        """Tests process_refs_factory() #9."""
+
+        ## test.md: {@fig:1}:
+
+        # See previous unit test
+
+        # Command: pandoc-1.15.2 test.md -t json
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"}:"}]}]]''')
+
+        # Check against pandoc-1.15.2
+        md = subprocess.Popen(('echo', '{@fig:1}:'), stdout=subprocess.PIPE)
+        output = eval(subprocess.check_output(
+            'pandoc-1.15.2 -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        # Hand-coded
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":":"}]}]]''')
+
+        # Make the comparison
+        process_refs = process_refs_factory(['fig:1'])
+        self.assertEqual(walk(src, process_refs, {}, ''), expected)
+
+
+    def test_replace_refs_factory(self):
+        """Tests replace_refs_factory."""
+
+        ## test.md: As shown in @fig:1. ##
+
+        # Result from process_refs()
+        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}]]''')
+
+        # Hand-coded
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Str","c":"fig."},{"t":"Space","c":[]},{"t":"Str","c":"1."}]}]]''')
+
+        # Make the comparison
+        replace_refs = replace_refs_factory({'fig:one':1}, True,
+                                            ['fig.', 'figs.'],
+                                            ['Figure', 'Figures'],
+                                            'figure')
+        self.assertEqual(walk(walk(src, replace_refs, {}, ''),
+                              join_strings, {}, ''), expected)
+
+
+    def test_attach_attrs_factory(self):
+        """Tests attach_attrs_math()."""
+
+        attach_attrs_math = attach_attrs_factory(Math, allow_space=True)
 
         ## test.md: $$ y = f(x) $${#eq:1 tag="B.1"} ##
 
@@ -512,14 +744,15 @@ class TestModule(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Math","c":[["eq:1",[],[["tag","B.1"]]],{"t":"DisplayMath","c":[]}," y = f(x) "]}]}]]''')
 
         # Make the comparison
-        self.assertEqual(walk(src, use_attrs_math, '', {}), expected)
+        self.assertEqual(walk(src, attach_attrs_math, '', {}), expected)
 
-    def test_filter_attrs_factory(self):
+
+    def test_detach_attrs_factory(self):
         """Tests filter_attrs_factory()."""
 
-        filter_attrs_math = filter_attrs_factory('Math', 2)
+        detach_attrs_math = detach_attrs_factory(Math)
 
-        ## Use expected result from test_use_attrs_math() ##
+        ## Use expected result from _test_use_attrs_math() ##
 
         # Command: pandoc test.md -t json
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Math","c":[["eq:1",[],[["tag","B.1"]]],{"t":"DisplayMath","c":[]}," y = f(x) "]}]}]]''')
@@ -537,202 +770,7 @@ class TestModule(unittest.TestCase):
         self.assertEqual(expected, output)
 
         # Make the comparison
-        self.assertEqual(walk(src, filter_attrs_math, '', {}), expected)
-
-
-    def test_use_refs_factory_1(self):
-        """Tests use_refs_factory() #1."""
-
-        ## test.md: As shown in @fig:one. ##
-
-        # Command: pandoc test.md -t json
-        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}]]''')
-
-        # Check src against current pandoc
-        md = subprocess.Popen(('echo', 'As shown in @fig:one.'),
-                              stdout=subprocess.PIPE)
-        output = eval(subprocess.check_output(
-            'pandoc -t json'.split(),
-            stdin=md.stdout).strip())
-        self.assertEqual(src, output)
-
-        # Hand-coded (Ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Ref","c":[["",[],[]],"fig:one"]},{"t":"Str","c":"."}]}]]''')
-
-        # Make the comparison
-        use_refs = use_refs_factory(['fig:one'])
-        self.assertEqual(walk(src, use_refs, '', {}), expected)
-
-    def test_use_refs_factory_2(self):
-        """Tests use_refs_factory() #2."""
-
-        ## test.md: (@eq:one) ##
-
-        # Command: pandoc test.md -t json
-        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"("},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:one","citationHash":0}],[{"t":"Str","c":"@eq:one"}]]},{"t":"Str","c":")"}]}]]''')
-
-        # Check src against current pandoc
-        md = subprocess.Popen(('echo', '(@eq:one)'), stdout=subprocess.PIPE)
-        output = eval(subprocess.check_output(
-            'pandoc -t json'.split(),
-            stdin=md.stdout).strip())
-        self.assertEqual(src, output)
-
-        # Hand-coded (Ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"("},{"t":"Ref","c":[["",[],[]],"eq:one"]},{"t":"Str","c":")"}]}]]''')
-
-        # Make the comparison
-        use_refs = use_refs_factory(['eq:one'])
-        self.assertEqual(walk(src, use_refs, '', {}), expected)
-
-
-    def test_use_refs_factory_3(self):
-        """Tests use_refs_factory() #3."""
-
-        ## test.md: See {+@eq:1}. ##
-
-        # Command: pandoc test.md -t json
-        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}."}]}]]''')
-
-        # Check src against current pandoc
-        md = subprocess.Popen(('echo', 'See {+@eq:1}.'), stdout=subprocess.PIPE)
-        output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
-        self.assertEqual(src, output)
-
-        # Hand-coded (Ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Ref","c":[["",[],[["modifier","+"]]],"eq:1"]},{"t":"Str","c":"."}]}]]''')
-
-        # Make the comparison
-        use_refs = use_refs_factory(['eq:1'])
-        self.assertEqual(walk(src, use_refs, '', {}), expected)
-
-    def test_use_refs_factory_4(self):
-        """Tests use_refs_factory() #4."""
-
-        ## test.md: !@eq:1 ##
-
-        # Command: pandoc test.md -t json
-        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"!"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]}]}]]''')
-
-        # Check src against current pandoc
-        md = subprocess.Popen(('echo', '!@eq:1'), stdout=subprocess.PIPE)
-        output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
-        self.assertEqual(src, output)
-
-        # Hand-coded (Ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[["",[],[["modifier","!"]]],"eq:1"]}]}]]''')
-
-        # Make the comparison
-        use_refs = use_refs_factory(['eq:1'])
-        self.assertEqual(walk(src, use_refs, '', {}), expected)
-
-
-    def test_use_refs_factory_5(self):
-        """Tests use_refs_factory() #5."""
-
-        ## test.md: {@fig:1{baz=bat foo=bar}}a. ##
-
-        # Command: pandoc test.md -t json
-        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"{baz=bat"},{"t":"Space","c":[]},{"t":"Str","c":"foo=bar}}a."}]}]]''')
-
-        # Check src against current pandoc
-        md = subprocess.Popen(('echo', '{@fig:1{baz=bat foo=bar}}a.'),
-                              stdout=subprocess.PIPE)
-        output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
-        self.assertEqual(src, output)
-
-        # Hand-coded (Ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[["",[],[["baz","bat"],["foo","bar"]]],"fig:1"]},{"t":"Str","c":"a."}]}]]''')
-
-        # Make the comparison
-        use_refs = use_refs_factory(['fig:1'])
-        self.assertEqual(walk(src, use_refs, '', {}), expected)
-
-
-    def test_use_refs_factory_6(self):
-        """Tests use_refs_factory() #6."""
-
-        ## test.md: {+@tbl:one{.test}}-{@tbl:four} provide the data. ##
-
-        # Command: pandoc test.md -t json
-        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"{.test}}-{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Str","c":"}"},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
-
-        # Check src against current pandoc
-        md = subprocess.Popen(
-            ('echo', '{+@tbl:one{.test}}-{@tbl:four} provide the data.'),
-            stdout=subprocess.PIPE)
-        output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
-        self.assertEqual(src, output)
-
-        # Hand-coded (ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[["",["test"],[["modifier","+"]]],"tbl:one"]},{"t":"Str","c":"-"},{"t":"Ref","c":[["",[],[]],"tbl:four"]},{"t":"Space","c":[]},{"t":"Str","c":"provide"},{"t":"Space","c":[]},{"t":"Str","c":"the"},{"t":"Space","c":[]},{"t":"Str","c":"data."}]}]]''')
-
-        # Make the comparison
-        use_refs = use_refs_factory(['tbl:one', 'tbl:four'])
-        self.assertEqual(walk(src, use_refs, '', {}), expected)
-
-    @unittest.skip('Known issue for pandoc-1.15.2')
-    def test_use_refs_factory_7(self):
-        """Tests use_refs_factory() #7."""
-
-        ## test.md: @fig:1:
-
-        # pandoc-1.15.2 doesn't detect references that end in a colon.  This
-        # was fixed in subsequent versions of pandoc.  There is a trivial
-        # workaround; use "{@fig:1}:" instead.  This is demonstrated in the
-        # next unit test.  Given that there is a trivial work-around, this is
-        # probably not worth fixing.
-
-        # Command: pandoc-1.15.2 test.md -t json
-        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"@fig:1:"}]}]]''')
-
-        # Hand-coded (Ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[["",[],[]],"fig:1"]},{"t":"Str","c":":"}]}]]''')
-
-        # Make the comparison
-        use_refs = use_refs_factory(['fig:1'])
-        self.assertEqual(walk(src, use_refs, {}, ''), expected)
-
-
-    def test_use_refs_factory_8(self):
-        """Tests use_refs_factory() #8."""
-
-        ## test.md: {@fig:1}:
-
-        # See previous unit test
-
-        # Command: pandoc-1.15.2 test.md -t json
-        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"}:"}]}]]''')
-
-        # Hand-coded (Ref inserted)
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Ref","c":[["",[],[]],"fig:1"]},{"t":"Str","c":":"}]}]]''')
-
-        # Make the comparison
-        use_refs = use_refs_factory(['fig:1'])
-        self.assertEqual(walk(src, use_refs, {}, ''), expected)
-
-
-    def test_replace_refs_factory(self):
-        """Tests replace_refs_factory."""
-
-        ## test.md: As shown in @fig:one. ##
-
-        # Expected result from use_refs()
-        src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Ref","c":[["",[],[]],"fig:one"]},{"t":"Str","c":"."}]}]]''')
-
-        # Hand-coded
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Str","c":"fig."},{"t":"Space","c":[]},{"t":"Str","c":"1."}]}]]''')
-
-        # Make the comparison
-        replace_refs = replace_refs_factory({'fig:one':1}, True, 'figure',
-                                            ['fig.', 'figs.'],
-                                            ['Figure', 'Figures'])
-        self.assertEqual(walk(walk(src, replace_refs, {}, ''),
-                              joinstrings, {}, ''), expected)
+        self.assertEqual(walk(src, detach_attrs_math, '', {}), expected)
 
 
 #-----------------------------------------------------------------------------
