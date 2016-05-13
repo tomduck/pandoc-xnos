@@ -61,6 +61,11 @@ import textwrap
 import functools
 import copy
 
+import pkg_resources
+pkg_resources.require('pandocfilters==1.3.0')
+pkg_resources.require('pandoc-attributes==0.1.7')
+pkg_resources.require('psutil==4.1.0')
+
 import psutil
 
 from pandocfilters import Str, Space, Math, Cite, RawInline, RawBlock
@@ -576,16 +581,16 @@ def process_refs_factory(labels):
 
 # replace_refs_factory() ------------------------------------------------------
 
-def _get_cleveref_elements(target):
+def _get_cleveref_elements(target, names):
     """Raw TeX elements for use with cleveref.  The 'target' is the TeX
     object being referenced; i.e., "figure", "equation", "table", etc."""
 
     # Cleveref macros
     tex1 = [r'% Cleveref macros',
-            r'\providecommand{\crefformat}[2]{}{}',
-            r'\providecommand{\Crefformat}[2]{}{}',
-            r'\crefformat{%s}{%s~#2#1#3}'%(target, plusname[0]),
-            r'\Crefformat{%s}{%s~#2#1#3}'%(target, starname[0])]
+            r'\providecommand{\crefformat}[2]{}',
+            r'\providecommand{\Crefformat}[2]{}',
+            r'\crefformat{%s}{%s~#2#1#3}'%(target, names[0]),
+            r'\Crefformat{%s}{%s~#2#1#3}'%(target, names[1])]
 
     # Cleveref fakery
     tex2 = [
@@ -618,8 +623,8 @@ def _get_ref_elements(item, attrs, fmt, cleveref_default, names):
         if cleveref:
             # Renew commands needed for cleveref fakery
             tex = r'\protect\renewcommand' + \
-              (r'{\plusnamesingular}{%s}'%plusname[0] if plus else \
-              r'{\starnamesingular}{%s}'%starname[0])
+              (r'{\plusnamesingular}{%s}' if plus else \
+              r'{\starnamesingular}{%s}') % name
             macro = r'\cref' if plus else r'\Cref'
             ret = RawInline('tex', r'%s%s{%s}'%(tex, macro, label))
         else:
@@ -654,6 +659,9 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
     # Update global if clever referencing is required by default
     _CLEVEREFTEX = _CLEVEREFTEX or cleveref_default
 
+    # Get the singular names for plus and star references
+    names = [plusname[0], starname[0]]
+
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces references with format-specific content."""
 
@@ -661,9 +669,14 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
 
         if fmt == 'latex' and _CLEVEREFTEX:
 
-            # Put the cleveref TeX in front of the first element that isn't
-            # a RawBlock.  Check to make sure that the TeX is not already
-            # installed.
+            # Put the cleveref TeX in front of the first block element that
+            # isn't a RawBlock.  Check to make sure that the TeX is not
+            # already installed.
+
+            if not key in ['Plain', 'Para', 'CodeBlock', 'BlockQuote',
+                           'OrderedList', 'BulletList', 'DefinitionList',
+                           'Header', 'HorizontalRule', 'Table', 'Div', 'Null']:
+                return
 
             if key == 'RawBlock':
                 if value[0] == 'tex' and value[1].startswith('% Cleveref'):
@@ -674,7 +687,7 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
                 _CLEVEREFTEX = False  # Cancels further attempts
                 el = elt(key, len(value))(*value)  # pylint: disable=star-args
                 el['c'] = list(el['c'])  # Otherwise it will be a tuple
-                return _get_cleveref_elements(target) + [el]
+                return _get_cleveref_elements(target, names) + [el]
 
         elif key == 'Cite' and len(value) == 3:
 
@@ -685,7 +698,6 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
             assert label in references
 
             item = [label, str(references[label])]
-            names = [plusname[0], starname[0]]
             return _get_ref_elements(item, attrs, fmt, cleveref_default, names)
 
     return replace_refs
@@ -744,13 +756,14 @@ def detach_attrs_factory(f):
 
     def detach_attrs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Detaches the attributes."""
-        assert len(value) <= n+1
-        if key == name and len(value) == n+1:
-            # Make sure value[0] represents attributes then delete
-            assert len(value[0]) == 3
-            assert type(value[0][0]) in STRTYPES
-            assert type(value[0][1]) is list
-            assert type(value[0][2]) is list
-            del value[0]
+        if key == name:
+            assert len(value) <= n+1
+            if len(value) == n+1:
+                # Make sure value[0] represents attributes then delete
+                assert len(value[0]) == 3
+                assert type(value[0][0]) in STRTYPES
+                assert type(value[0][1]) is list
+                assert type(value[0][2]) is list
+                del value[0]
 
     return detach_attrs

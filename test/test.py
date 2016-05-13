@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-"""Unit tests for pandocfiltering."""
+"""Unit tests for pandoc-xnos."""
 
 # Copyright 2016 Thomas J. Duck.
 # All rights reserved.
