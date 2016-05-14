@@ -6,23 +6,23 @@ Overview
 Below is a short summary of what is available.  More details are
 given in the function docstrings.
 
-Globals
+#### Globals ####
 
   * `STRTYPES` - a list of string types for this python version
   * `STDIN`/`STDOUT`/`STDERR` - streams for use with pandoc
 
-Utility functions
+#### Utility functions ####
 
-  * `init()` - Determines the pandoc version and returns it
+  * `init()` - Determines and returns the pandoc version
   * `get_meta()` - Retrieves variables from a document's metadata
 
-Element list functions
+#### Element list functions ####
 
   * `quotify()` - Changes Quoted elements to quoted strings
   * `dollarfy()` - Changes Math elements to dollared strings
   * `extract_attrs()` - Extracts attribute strings
 
-Actions and their factory functions
+#### Actions and their factory functions ####
 
   * `join_strings()` - Joins adjacent strings in a pandoc document
   * `repair_refs()` - Repairs broken Cite elements in a document
