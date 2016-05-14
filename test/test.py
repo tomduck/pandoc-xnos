@@ -25,17 +25,17 @@ import subprocess
 
 from pandocfilters import walk, Math
 
-import xnos
-from xnos import get_meta
-from xnos import join_strings
-from xnos import quotify, dollarfy
-from xnos import extract_attrs
-from xnos import attach_attrs_factory, detach_attrs_factory
-from xnos import repair_refs, process_refs_factory, replace_refs_factory
+import pandocxnos
+from pandocxnos import get_meta
+from pandocxnos import join_strings
+from pandocxnos import quotify, dollarfy
+from pandocxnos import extract_attrs
+from pandocxnos import attach_attrs_factory, detach_attrs_factory
+from pandocxnos import repair_refs, process_refs_factory, replace_refs_factory
 
 PANDOCVERSION = '1.17.0.1'
 
-xnos.init(PANDOCVERSION)
+pandocxnos.init(PANDOCVERSION)
 
 
 #-----------------------------------------------------------------------------
@@ -43,7 +43,7 @@ xnos.init(PANDOCVERSION)
 
 # pylint: disable=too-many-public-methods
 class TestModule(unittest.TestCase):
-    """Test the xnos module."""
+    """Test the pandocxnos package."""
 
     def test_get_meta_1(self):
         """Tests get_meta() #1."""
