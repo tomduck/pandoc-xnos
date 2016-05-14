@@ -667,20 +667,15 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
         if fmt == 'latex' and _CLEVEREFTEX:
 
             # Put the cleveref TeX in front of the first block element that
-            # isn't a RawBlock.  Check to make sure that the TeX is not
-            # already installed.
+            # isn't a RawBlock.
 
-            if not key in ['Plain', 'Para', 'CodeBlock', 'BlockQuote',
-                           'OrderedList', 'BulletList', 'DefinitionList',
-                           'Header', 'HorizontalRule', 'Table', 'Div', 'Null']:
+            if not key in ['Plain', 'Para', 'CodeBlock', 'RawBlock',
+                           'BlockQuote', 'OrderedList', 'BulletList',
+                           'DefinitionList', 'Header', 'HorizontalRule',
+                           'Table', 'Div', 'Null']:
                 return
 
-            if key == 'RawBlock':
-                if value[0] == 'tex' and value[1].startswith('% Cleveref'):
-                    _CLEVEREFTEX = False  # Cleveref TeX already present
-                return
-
-            else:
+            if key != 'RawBlock':
                 _CLEVEREFTEX = False  # Cancels further attempts
                 el = elt(key, len(value))(*value)  # pylint: disable=star-args
                 el['c'] = list(el['c'])  # Otherwise it will be a tuple
