@@ -8,13 +8,12 @@ given in the function docstrings.
 
 Globals
 
-  * `PANDOCVERSION` - the pandoc version string
   * `STRTYPES` - a list of string types for this python version
   * `STDIN`/`STDOUT`/`STDERR` - streams for use with pandoc
 
 Utility functions
 
-  * `init()` - Initializes or determines `PANDOCVERSION`
+  * `init()` - Determines the pandoc version and returns it
   * `get_meta()` - Retrieves variables from a document's metadata
 
 Element list functions
@@ -72,9 +71,6 @@ from pandocattributes import PandocAttributes
 #=============================================================================
 # Globals
 
-# A string giving the pandoc version
-PANDOCVERSION = None
-
 # Python has different string types depending on the python version.  We must
 # be able to identify them both.
 # pylint: disable=undefined-variable
@@ -127,24 +123,30 @@ def _repeat(func):
 
 # init() ---------------------------------------------------------------------
 
+_PANDOCVERSION = None  # A string giving the pandoc version
+
 def init(pandocversion=None):
-    """Sets or determines the pandoc version.  Pandoc does not provide
-    version information.  This is needed for multi-version support.  See:
-    https://github.com/jgm/pandoc/issues/2640"""
+    """Sets or determines the pandoc version.  This must be called
+
+    Pandoc does not provide version information.  This is needed for
+    multi-version support.  See: https://github.com/jgm/pandoc/issues/2640
+
+    Returns the pandoc version"""
 
     # This requires some care because we can't be sure that a call to 'pandoc'
     # will work.  It could be 'pandoc-1.17.0.2' or some other name.  Try
     # checking the parent process first, and only make a call to 'pandoc' as
     # a last resort.
 
-    global PANDOCVERSION  # pylint: disable=global-statement
+    global _PANDOCVERSION  # pylint: disable=global-statement
 
     pattern = re.compile(r'^1\.[0-9]+(?:\.[0-9]+)?(?:\.[0-9]+)?$')
 
     if not pandocversion is None:
+        # Test the result and if it is OK then store it in _PANDOCVERSION
         if pattern.match(pandocversion):
-            PANDOCVERSION = pandocversion
-            return
+            _PANDOCVERSION = pandocversion
+            return _PANDOCVERSION
         else:
             msg = 'Cannot understand pandocversion=%s'%pandocversion
             raise RuntimeError(msg)
@@ -171,14 +173,16 @@ def init(pandocversion=None):
     except: # pylint: disable=bare-except
         pandocversion = ''
 
-    # Test the result
+    # Test the result and if it is OK then store it in _PANDOCVERSION
     if pattern.match(pandocversion):
-        PANDOCVERSION = pandocversion
+        _PANDOCVERSION = pandocversion
 
-    if PANDOCVERSION is None:
+    if _PANDOCVERSION is None:
         msg = """Cannot determine pandoc version.  Please file an issue at
               https://github.com/tomduck/pandocfiltering/issues"""
         raise RuntimeError(textwrap.dedent(msg))
+
+    return _PANDOCVERSION
 
 
 # get_meta() -----------------------------------------------------------------
@@ -380,13 +384,11 @@ _REF = re.compile(r'^((?:.*{)?[\*\+!]?)@([^:]*:[\w/-]+)(.*)?')
 
 def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""
-    if PANDOCVERSION is None:
-        raise RuntimeError('Module uninitialized.  Please call init().')
     # A link followed by a string may represent a broken reference
     if key1 != 'Link' or key2 != 'Str':
         return False
     # Assemble the parts
-    n = 0 if PANDOCVERSION < '1.16' else 1
+    n = 0 if _PANDOCVERSION < '1.16' else 1
     s = value1[n][0]['c'] + value2
     # Return True if this matches the reference regex
     return True if _REF.match(s) else False
@@ -395,17 +397,17 @@ def _is_broken_ref(key1, value1, key2, value2):
 def _repair_refs(x):
     """Performs the repair on the element list 'x'."""
 
-    if PANDOCVERSION is None:
+    if _PANDOCVERSION is None:
         raise RuntimeError('Module uninitialized.  Please call init().')
 
     # Scan the element list x
     for i in range(len(x)-1):
-
+        
         # Check for broken references
         if _is_broken_ref(x[i]['t'], x[i]['c'], x[i+1]['t'], x[i+1]['c']):
 
             # Get the reference string
-            n = 0 if PANDOCVERSION < '1.16' else 1
+            n = 0 if _PANDOCVERSION < '1.16' else 1
             s = x[i]['c'][n][0]['c'] + x[i+1]['c']
 
             # Chop it into pieces.  Note that the prefix and suffix may be
@@ -567,9 +569,9 @@ def process_refs_factory(labels):
         if key in ['Para', 'Plain']:
             _process_refs(value, labels)
         elif key == 'Image':
-            _process_refs(value[-2], references)
+            _process_refs(value[-2], labels)
         elif key == 'Table':
-            _process_refs(value[-5], references)
+            _process_refs(value[-5], labels)
 
     return process_refs
 
@@ -733,7 +735,7 @@ def attach_attrs_factory(f, extract_attrs=extract_attrs, allow_space=False):
 
             # Image: Add pandoc's figure marker if warranted
             if len(value) == 1 and value[0]['t'] == 'Image':
-                value[0]['c'][2][1] = 'fig:'
+                value[0]['c'][-1][1] = 'fig:'
 
     return attach_attrs
 
