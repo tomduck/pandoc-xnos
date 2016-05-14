@@ -402,7 +402,7 @@ def _repair_refs(x):
 
     # Scan the element list x
     for i in range(len(x)-1):
-        
+
         # Check for broken references
         if _is_broken_ref(x[i]['t'], x[i]['c'], x[i+1]['t'], x[i+1]['c']):
 
