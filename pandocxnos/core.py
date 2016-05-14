@@ -61,11 +61,6 @@ import textwrap
 import functools
 import copy
 
-import pkg_resources
-pkg_resources.require('pandocfilters>=1.3.0')
-pkg_resources.require('pandoc-attributes>=0.1.7')
-pkg_resources.require('psutil>=4.1.0')
-
 import psutil
 
 from pandocfilters import Str, Space, Math, Cite, RawInline, RawBlock

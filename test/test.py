@@ -33,7 +33,7 @@ from pandocxnos import extract_attrs
 from pandocxnos import attach_attrs_factory, detach_attrs_factory
 from pandocxnos import repair_refs, process_refs_factory, replace_refs_factory
 
-PANDOCVERSION = '1.17.0.1'
+PANDOCVERSION = '1.17.0.2'
 
 pandocxnos.init(PANDOCVERSION)
 
