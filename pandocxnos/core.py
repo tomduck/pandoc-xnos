@@ -634,7 +634,9 @@ def _get_ref_elements(item, attrs, fmt, cleveref_default, names):
         if cleveref:
             ret = [Str(name), Space()] + ret
     else:
-        return ([Str(name), Space()] if cleveref else []) + [Str(text)]
+        return ([Str(name), Space()] if cleveref else []) + \
+           [Math({"t":"InlineMath", "c":[]}, text[1:-1]) \
+            if text.startswith('$') and text.endswith('$') else Str(text)]
 
     return ret
 
