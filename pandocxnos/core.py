@@ -578,27 +578,26 @@ def process_refs_factory(labels):
 
 # replace_refs_factory() ------------------------------------------------------
 
-def _get_cleveref_elements(target, names):
-    """Raw TeX elements for use with cleveref.  The 'target' is the TeX
-    object being referenced; i.e., "figure", "equation", "table", etc."""
-
-    # Cleveref macros
-    tex1 = [r'% Cleveref macros',
-            r'\providecommand{\crefformat}[2]{}',
-            r'\providecommand{\Crefformat}[2]{}',
-            r'\crefformat{%s}{%s~#2#1#3}'%(target, names[0]),
-            r'\Crefformat{%s}{%s~#2#1#3}'%(target, names[1])]
+def _get_cleveref_tex(target, names):
+    """TeX for use with cleveref.  The 'target' is the TeX object being
+    referenced; i.e., "figure", "equation", "table", etc."""
 
     # Cleveref fakery
-    tex2 = [
+    tex1 = [
         r'% Cleveref fakery',
         r'\providecommand{\plusnamesingular}{}',
         r'\providecommand{\starnamesingular}{}',
         r'\providecommand{\cref}{\plusnamesingular~\ref}',
-        r'\providecommand{\Cref}{\starnamesingular~\ref}']
+        r'\providecommand{\Cref}{\starnamesingular~\ref}',
+        r'\providecommand{\crefformat}[2]{}',
+        r'\providecommand{\Crefformat}[2]{}']
 
-    return [RawBlock('tex', '\n'.join(tex1)+'\n'),
-            RawBlock('tex', '\n'.join(tex2)+'\n')]
+    # Cleveref macros
+    tex2 = [r'% Cleveref formatting',
+            r'\crefformat{%s}{%s~#2#1#3}'%(target, names[0]),
+            r'\Crefformat{%s}{%s~#2#1#3}'%(target, names[1])]
+
+    return tex1, tex2
 
 
 def _get_ref_elements(item, attrs, fmt, cleveref_default, names):
@@ -661,6 +660,9 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
     # Get the singular names for plus and star references
     names = [plusname[0], starname[0]]
 
+    # Get the cleveref TeX
+    tex1, tex2 = _get_cleveref_tex(target, names)
+
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces references with format-specific content."""
 
@@ -677,15 +679,22 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
                            'Table', 'Div', 'Null']:
                 return
 
-            if key != 'RawBlock':
+            if key == 'RawBlock':  # Check for existing cleveref TeX
+                if value[1].startswith('% Cleveref formatting'):
+                    # Append the new portion
+                    value[1] = value[1][:-1] + '\n' + '\n'.join(tex2[1:]) + '\n'
+                    _CLEVEREFTEX = False
+
+            elif key != 'RawBlock':  # Write the cleveref TeX
                 _CLEVEREFTEX = False  # Cancels further attempts
+                rawblock1 = RawBlock('tex', '\n'.join(tex1) + '\n')
+                rawblock2 = RawBlock('tex', '\n'.join(tex2) + '\n')
                 el = elt(key, len(value))(*value)  # pylint: disable=star-args
                 el['c'] = list(el['c'])  # Otherwise it will be a tuple
-                return _get_cleveref_elements(target, names) + [el]
+                return [rawblock1, rawblock2, el]
 
-        elif key == 'Cite' and len(value) == 3:
+        elif key == 'Cite' and len(value) == 3:  # Replace the reference
 
-            # Parse the figure reference
             attrs, label = value[0], _get_label(key, value)
             attrs = PandocAttributes(attrs, 'pandoc')
 
