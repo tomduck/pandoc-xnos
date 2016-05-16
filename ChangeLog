@@ -1,7 +1,7 @@
 
-pandoc-xnos 0.2 (Unreleased)
+pandoc-xnos 0.2 (2016-05-16)
 
-    * Fixed treatment of math references for non-html/tex/pdf output
+    * Fixed treatment of math references for NON-html/tex/pdf output
 
 
 pandoc-xnos 0.1 (2016-05-14)
