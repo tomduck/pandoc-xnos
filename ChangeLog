@@ -1,5 +1,5 @@
 
-pandoc-xnos 0.3 (unreleased)
+pandoc-xnos 0.3 (2016-05-18)
 
     * Improved TeX output.
     * Added integration tests.
