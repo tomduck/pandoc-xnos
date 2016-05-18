@@ -2,12 +2,12 @@
 cleveref: On
 fignos-plus-name: FIG.
 fignos-star-name: FIGURE
-fignos-caption-name: FiG.
+fignos-caption-name: FIG.
 eqnos-plus-name: EQ.
 eqnos-star-name: EQUATION
 tablenos-plus-name: TAB.
 tablenos-star-name: TABLE
-xnos-cleveref-fake: Off
+xnos-cleveref-fake: On
 ...
 
 *@fig:1, +@fig:1, figure !@fig:1, and {@fig:1}.

@@ -8,7 +8,7 @@ all: out/demo.pdf out/demo.tex out/demo.html out/demo.epub out/demo.md out/demo.
 
 out/demo.pdf: demo.md
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(PANDOC) $< $(FLAGS) --include-in-header=cleveref.tex -o $@
+	$(PANDOC) $< $(FLAGS) -o $@ # --include-in-header=cleveref.tex
 
 out/demo.tex: demo.md
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
