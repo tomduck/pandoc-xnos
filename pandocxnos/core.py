@@ -426,7 +426,7 @@ def _repair_refs(x):
                   "citationMode":{"t":"AuthorInText", "c":[]},
                   "citationHash":0}],
                 [Str('@' + label)])
-            x[i+1]['c'] = list(x[i+1]['c'])  # Needed for unit tests
+            x[i+1]['c'] = list(x[i+1]['c'])
             if len(prefix):
                 if i > 0 and x[i-1]['t'] == 'Str':
                     x[i-1]['c'] = x[i-1]['c'] + prefix
@@ -578,66 +578,6 @@ def process_refs_factory(labels):
 
 # replace_refs_factory() ------------------------------------------------------
 
-def _get_cleveref_tex(target, names):
-    """TeX for use with cleveref.  The 'target' is the TeX object being
-    referenced; i.e., "figure", "equation", "table", etc."""
-
-    # Cleveref fakery
-    tex1 = [
-        r'% Cleveref fakery',
-        r'\providecommand{\plusnamesingular}{}',
-        r'\providecommand{\starnamesingular}{}',
-        r'\providecommand{\cref}{\plusnamesingular~\ref}',
-        r'\providecommand{\Cref}{\starnamesingular~\ref}',
-        r'\providecommand{\crefformat}[2]{}',
-        r'\providecommand{\Crefformat}[2]{}']
-
-    # Cleveref macros
-    tex2 = [r'% Cleveref formatting',
-            r'\crefformat{%s}{%s~#2#1#3}'%(target, names[0]),
-            r'\Crefformat{%s}{%s~#2#1#3}'%(target, names[1])]
-
-    return tex1, tex2
-
-
-def _get_ref_elements(item, attrs, fmt, cleveref_default, names):
-    """Returns the replacement ref elements."""
-
-    # Get the label and replacement value
-    label, value = item
-    text = str(value)
-
-    # Choose between \Cref, \cref and \ref
-    cleveref = attrs['modifier'] in ['*', '+'] \
-      if 'modifier' in attrs.kvs else cleveref_default
-    plus = attrs['modifier'] == '+' if 'modifier' in attrs.kvs \
-      else cleveref_default
-    name = names[0] if plus else names[1]  # cref name faking
-
-    # The replacement depends on the output format
-    if fmt == 'latex':
-        if cleveref:
-            # Renew commands needed for cleveref fakery
-            tex = r'\protect\renewcommand' + \
-              (r'{\plusnamesingular}{%s}' if plus else \
-              r'{\starnamesingular}{%s}') % name
-            macro = r'\cref' if plus else r'\Cref'
-            ret = RawInline('tex', r'%s%s{%s}'%(tex, macro, label))
-        else:
-            ret = RawInline('tex', r'\ref{%s}'%label)
-    elif fmt in ('html', 'html5'):
-        ret = [RawInline('html', '<a href="#%s">' % label),
-               Math({"t":"InlineMath", "c":[]}, text[1:-1])
-               if text.startswith('$') and text.endswith('$')
-               else Str(text), RawInline('html', '</a>')]
-        if cleveref:
-            ret = [Str(name), Space()] + ret
-    else:
-        return ([Str(name), Space()] if cleveref else []) + \
-           [Math({"t":"InlineMath", "c":[]}, text[1:-1]) \
-            if text.startswith('$') and text.endswith('$') else Str(text)]
-
-    return ret
 
 def replace_refs_factory(references, cleveref_default, plusname, starname,
                          target):
@@ -657,16 +597,98 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
     # Update global if clever referencing is required by default
     _CLEVEREFTEX = _CLEVEREFTEX or cleveref_default
 
-    # Get the singular names for plus and star references
-    names = [plusname[0], starname[0]]
+    def _cleveref_tex(key, value, meta):
+        r"""Produces TeX to support clever referencing in LaTeX documents.
 
-    # Get the cleveref TeX
-    tex1, tex2 = _get_cleveref_tex(target, names)
+        The \providecommand macro is used to fake the cleveref package's
+        behaviour if it is not provided in the template via
+        \usepackage{cleveref}.
+
+        TeX is inserted into the value.  Replacement elements are returned.
+        """
+
+        global _CLEVEREFTEX  # pylint: disable=global-statement
+
+        tex1 = [r'% Cleveref formatting',
+                r'\crefformat{%s}{%s~#2#1#3}'%(target, plusname[0]),
+                r'\Crefformat{%s}{%s~#2#1#3}'%(target, starname[0])]
+
+        if key == 'RawBlock':  # Check for existing cleveref TeX
+            if value[1].startswith('% Cleveref formatting'):
+                # Append the new portion
+                value[1] = value[1][:-1] + '\n' + '\n'.join(tex1[1:]) + '\n'
+                _CLEVEREFTEX = False  # Cleveref fakery already installed
+
+        elif key != 'RawBlock':  # Write the cleveref TeX
+            _CLEVEREFTEX = False  # Cancels further attempts
+            ret = []
+            if not 'xnos-cleveref-fake' in meta or \
+              get_meta(meta, 'xnos-cleveref-fake'):
+                # Cleveref fakery
+                tex2 = [
+                    r'% Cleveref fakery',
+                    r'\providecommand{\plusnamesingular}{}',
+                    r'\providecommand{\starnamesingular}{}',
+                    r'\providecommand{\cref}{\plusnamesingular~\ref}',
+                    r'\providecommand{\Cref}{\starnamesingular~\ref}',
+                    r'\providecommand{\crefformat}[2]{}',
+                    r'\providecommand{\Crefformat}[2]{}']
+                ret.append(RawBlock('tex', '\n'.join(tex2) + '\n'))
+            ret.append(RawBlock('tex', '\n'.join(tex1) + '\n'))
+            return ret
+
+    def _cite_replacement(key, value, fmt, meta):
+        """Returns context-dependent content to replace a Cite element."""
+
+        assert key == 'Cite'
+
+        attrs, label = value[0], _get_label(key, value)
+        attrs = PandocAttributes(attrs, 'pandoc')
+
+        assert label in references
+
+        # Get the replacement value
+        text = str(references[label])
+
+        # Choose between \Cref, \cref and \ref
+        cleveref = attrs['modifier'] in ['*', '+'] \
+          if 'modifier' in attrs.kvs else cleveref_default
+        plus = attrs['modifier'] == '+' if 'modifier' in attrs.kvs \
+          else cleveref_default
+        name = plusname[0] if plus else starname[0]  # Name used by cref
+
+        # The replacement depends on the output format
+        if fmt == 'latex':
+            if cleveref:
+                # Renew commands needed for cleveref fakery
+                if not 'xnos-cleveref-fake' in meta or \
+                  get_meta(meta, 'xnos-cleveref-fake'):
+                    tex = r'\protect\renewcommand' + \
+                      (r'{\plusnamesingular}{%s}' if plus else \
+                      r'{\starnamesingular}{%s}') % name
+                else:
+                    tex = ''
+                macro = r'\cref' if plus else r'\Cref'
+                ret = RawInline('tex', r'%s%s{%s}'%(tex, macro, label))
+            else:
+                ret = RawInline('tex', r'\ref{%s}'%label)
+        elif fmt in ('html', 'html5'):
+            ret = [RawInline('html', '<a href="#%s">' % label),
+                   Math({"t":"InlineMath", "c":[]}, text[1:-1])
+                   if text.startswith('$') and text.endswith('$')
+                   else Str(text), RawInline('html', '</a>')]
+            if cleveref:
+                ret = [Str(name), Space()] + ret
+        else:
+            return ([Str(name), Space()] if cleveref else []) + \
+               [Math({"t":"InlineMath", "c":[]}, text[1:-1]) \
+                if text.startswith('$') and text.endswith('$') else \
+               Str(text)]
+
+        return ret
 
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces references with format-specific content."""
-
-        global _CLEVEREFTEX  # pylint: disable=global-statement
 
         if fmt == 'latex' and _CLEVEREFTEX:
 
@@ -679,29 +701,18 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
                            'Table', 'Div', 'Null']:
                 return
 
-            if key == 'RawBlock':  # Check for existing cleveref TeX
-                if value[1].startswith('% Cleveref formatting'):
-                    # Append the new portion
-                    value[1] = value[1][:-1] + '\n' + '\n'.join(tex2[1:]) + '\n'
-                    _CLEVEREFTEX = False
+            # Reconstruct the block element
+            el = elt(key, len(value))(*value)  # pylint: disable=star-args
+            el['c'] = list(el['c'])
 
-            elif key != 'RawBlock':  # Write the cleveref TeX
-                _CLEVEREFTEX = False  # Cancels further attempts
-                rawblock1 = RawBlock('tex', '\n'.join(tex1) + '\n')
-                rawblock2 = RawBlock('tex', '\n'.join(tex2) + '\n')
-                el = elt(key, len(value))(*value)  # pylint: disable=star-args
-                el['c'] = list(el['c'])  # Otherwise it will be a tuple
-                return [rawblock1, rawblock2, el]
+            # Insert cleveref TeX in front of the block element
+            tex = _cleveref_tex(key, value, meta)
+            if tex:
+                return  tex + [el]
 
         elif key == 'Cite' and len(value) == 3:  # Replace the reference
 
-            attrs, label = value[0], _get_label(key, value)
-            attrs = PandocAttributes(attrs, 'pandoc')
-
-            assert label in references
-
-            item = [label, str(references[label])]
-            return _get_ref_elements(item, attrs, fmt, cleveref_default, names)
+            return _cite_replacement(key, value, fmt, meta)
 
     return replace_refs
 
