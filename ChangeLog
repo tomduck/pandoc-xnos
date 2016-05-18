@@ -1,4 +1,10 @@
 
+pandoc-xnos 0.3 (unreleased)
+
+    * Improved TeX output.
+    * Added integration tests.
+
+
 pandoc-xnos 0.2 (2016-05-16)
 
     * Fixed treatment of math references for NON-html/tex/pdf output
