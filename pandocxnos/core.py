@@ -609,12 +609,13 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
 
         global _CLEVEREFTEX  # pylint: disable=global-statement
 
-        tex1 = [r'% Cleveref formatting',
+        comment1 = '% pandoc-xnos: cleveref formatting'
+        tex1 = [comment1,
                 r'\crefformat{%s}{%s~#2#1#3}'%(target, plusname[0]),
                 r'\Crefformat{%s}{%s~#2#1#3}'%(target, starname[0])]
 
         if key == 'RawBlock':  # Check for existing cleveref TeX
-            if value[1].startswith('% Cleveref formatting'):
+            if value[1].startswith(comment1):
                 # Append the new portion
                 value[1] = value[1][:-1] + '\n' + '\n'.join(tex1[1:]) + '\n'
                 _CLEVEREFTEX = False  # Cleveref fakery already installed
@@ -626,9 +627,13 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
               get_meta(meta, 'xnos-cleveref-fake'):
                 # Cleveref fakery
                 tex2 = [
-                    r'% Cleveref fakery',
-                    r'\providecommand{\plusnamesingular}{}',
-                    r'\providecommand{\starnamesingular}{}',
+                    r'% pandoc-xnos: cleveref fakery',
+                    r'\newcommand{\plusnamesingular}{}',
+                    r'\newcommand{\starnamesingular}{}',
+                    r'\newcommand{\xrefname}[1]{'\
+                      r'\protect\renewcommand{\plusnamesingular}{#1}}',
+                    r'\newcommand{\Xrefname}[1]{'\
+                      r'\protect\renewcommand{\starnamesingular}{#1}}',
                     r'\providecommand{\cref}{\plusnamesingular~\ref}',
                     r'\providecommand{\Cref}{\starnamesingular~\ref}',
                     r'\providecommand{\crefformat}[2]{}',
@@ -663,13 +668,12 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
                 # Renew commands needed for cleveref fakery
                 if not 'xnos-cleveref-fake' in meta or \
                   get_meta(meta, 'xnos-cleveref-fake'):
-                    tex = r'\protect\renewcommand' + \
-                      (r'{\plusnamesingular}{%s}' if plus else \
-                      r'{\starnamesingular}{%s}') % name
+                    faketex = (r'\xrefname' if plus else r'\Xrefname') + \
+                      '{%s}' % name
                 else:
-                    tex = ''
+                    faketex = ''
                 macro = r'\cref' if plus else r'\Cref'
-                ret = RawInline('tex', r'%s%s{%s}'%(tex, macro, label))
+                ret = RawInline('tex', r'%s%s{%s}'%(faketex, macro, label))
             else:
                 ret = RawInline('tex', r'\ref{%s}'%label)
         elif fmt in ('html', 'html5'):

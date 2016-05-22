@@ -12,7 +12,7 @@ out/demo.pdf: demo.md
 
 out/demo.tex: demo.md
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(PANDOC) $< $(FLAGS) -o $@
+	$(PANDOC) $< $(FLAGS) -o $@ # --standalone
 
 out/demo.html: demo.md
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
