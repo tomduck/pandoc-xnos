@@ -1,4 +1,9 @@
 
+pandoc-xnos 0.4 (unreleased)
+
+    * More improvements to TeX output.
+
+
 pandoc-xnos 0.3 (2016-05-18)
 
     * Improved TeX output.
