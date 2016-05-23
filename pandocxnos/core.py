@@ -635,7 +635,7 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
         if key == 'RawBlock':  # Check for existing cleveref TeX
             if value[1].startswith(comment1):
                 # Append the new portion
-                value[1] = value[1][:-1] + '\n' + '\n'.join(tex1[1:])
+                value[1] = value[1] + '\n' + '\n'.join(tex1[1:])
                 _CLEVEREFTEX = False  # Cleveref fakery already installed
 
         elif key != 'RawBlock':  # Write the cleveref TeX
@@ -809,40 +809,10 @@ def detach_attrs_factory(f):
 
 # install_rawblock_factory() -------------------------------------------------
 
-# TeX to make a caption without a prefix
-MAKENOPREFIXCAPTION = r"""
-% pandoc-xnos: macro to create a caption without a prefix
-\makeatletter
-\long\def\@makenoprefixcaption#1#2{
-  \vskip\abovecaptionskip
-  \sbox\@tempboxa{#2}
-  \ifdim \wd\@tempboxa >\hsize
-    #2\par
-  \else
-    \global \@minipagefalse
-    \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}
-  \fi
-  \vskip\belowcaptionskip}
-\let\@oldmakecaption=\@makecaption
-\newcounter{dummy}
-\makeatother
-""".strip()
-
 def insert_rawblocks_factory(rawblocks):
     r"""Returns insert_rawblocks(key, value, fmt, meta) action that inserts
     non-duplicate RawBlock elements.
-
-    The \@makenoprefixcaption macro is prepended to rawblocks if it is used
-    in a TeX RawBlock.
     """
-
-    # Check to see if \@makenoprefixcaption macro is needed
-    for rawblock in rawblocks:
-        assert rawblock['t'] == 'RawBlock'
-        if rawblock['c'][0] == 'tex' and \
-          r'\@makenoprefixcaption' in rawblock['c'][1]:
-            rawblocks.insert(0, RawBlock('tex', MAKENOPREFIXCAPTION))
-            break
 
     # pylint: disable=unused-argument
     def insert_rawblocks(key, value, fmt, meta):
