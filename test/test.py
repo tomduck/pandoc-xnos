@@ -26,7 +26,7 @@ import subprocess
 from pandocfilters import walk, Math
 
 import pandocxnos
-from pandocxnos import get_meta
+from pandocxnos import get_meta, elt
 from pandocxnos import join_strings
 from pandocxnos import quotify, dollarfy
 from pandocxnos import extract_attrs
@@ -127,6 +127,15 @@ class TestModule(unittest.TestCase):
 
         # Make the comparison
         self.assertEqual(get_meta(src[0]['unMeta'], 'foo'), expected)
+
+
+    def test_elt(self):
+        """Tests elt()."""
+
+        el = elt('RawBlock', 2)
+        self.assertEqual(len(el.__closure__), 2)
+        self.assertEqual(el.__closure__[0].cell_contents, 'RawBlock')
+        self.assertEqual(el.__closure__[1].cell_contents, 2)
 
 
     def test_quotify_1(self):

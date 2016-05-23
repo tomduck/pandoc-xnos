@@ -1,5 +1,5 @@
 
-pandoc-xnos 0.3
+pandoc-xnos 0.4
 ===============
 
 *pandoc-xnos* provides library code for the pandoc-[fignos]/[eqnos]/[tablenos] filters.
@@ -47,3 +47,5 @@ given in the function docstrings.
                                to elements
   * `detach_attrs_factory()` - Makes functions that detach attributes
                                from elements
+  * `insert_rawblock_factory()` - Makes function to insert
+                                  non-duplicate RawBlock elements.

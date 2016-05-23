@@ -34,6 +34,8 @@ given in the function docstrings.
                                to elements
   * `detach_attrs_factory()` - Makes functions that detach attributes
                                from elements
+  * `insert_rawblock_factory()` - Makes function to insert
+                                  non-duplicate Raw Block elements.
 """
 
 # Copyright 2015, 2016 Thomas J. Duck.
@@ -62,8 +64,9 @@ import copy
 
 import psutil
 
-from pandocfilters import Str, Space, Math, Cite, RawInline, RawBlock
-from pandocfilters import elt, walk, stringify
+from pandocfilters import Str, Space, Math, RawInline, RawBlock
+from pandocfilters import walk, stringify
+from pandocfilters import elt as _elt
 
 from pandocattributes import PandocAttributes
 
@@ -205,6 +208,24 @@ def get_meta(meta, name):
     else:
         raise RuntimeError("Could not understand metadata variable '%s'." %
                            name)
+
+
+# elt() ----------------------------------------------------------------------
+
+def elt(eltType, numargs):  # pylint: disable=invalid-name
+    """Returns Element(*value) to create pandoc json elements.
+
+    This should be used in place of pandocfilters.elt().  This version
+    ensures that the content is stored in a list, not a tuple.
+    """
+    def Element(*value):  # pylint: disable=invalid-name
+        """Creates an element."""
+        el = _elt(eltType, numargs)(*value)
+        el['c'] = list(el['c'])  # The content should be a list, not tuple
+        return el
+    return Element
+
+Cite = elt('Cite', 2)  # pylint: disable=invalid-name
 
 
 #=============================================================================
@@ -373,7 +394,6 @@ def join_strings(key, value, fmt, meta):  # pylint: disable=unused-argument
         _join_strings(value[-5])
 
 
-
 # repair_reference() ---------------------------------------------------------
 
 # Reference regex.  This splits a reference into three componenets: the
@@ -426,7 +446,6 @@ def _repair_refs(x):
                   "citationMode":{"t":"AuthorInText", "c":[]},
                   "citationHash":0}],
                 [Str('@' + label)])
-            x[i+1]['c'] = list(x[i+1]['c'])
             if len(prefix):
                 if i > 0 and x[i-1]['t'] == 'Str':
                     x[i-1]['c'] = x[i-1]['c'] + prefix
@@ -578,7 +597,6 @@ def process_refs_factory(labels):
 
 # replace_refs_factory() ------------------------------------------------------
 
-
 def replace_refs_factory(references, cleveref_default, plusname, starname,
                          target):
     """Returns replace_refs(key, value, fmt, meta) action that replaces
@@ -617,7 +635,7 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
         if key == 'RawBlock':  # Check for existing cleveref TeX
             if value[1].startswith(comment1):
                 # Append the new portion
-                value[1] = value[1][:-1] + '\n' + '\n'.join(tex1[1:]) + '\n'
+                value[1] = value[1][:-1] + '\n' + '\n'.join(tex1[1:])
                 _CLEVEREFTEX = False  # Cleveref fakery already installed
 
         elif key != 'RawBlock':  # Write the cleveref TeX
@@ -638,8 +656,8 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
                     r'\providecommand{\Cref}{\starnamesingular~\ref}',
                     r'\providecommand{\crefformat}[2]{}',
                     r'\providecommand{\Crefformat}[2]{}']
-                ret.append(RawBlock('tex', '\n'.join(tex2) + '\n'))
-            ret.append(RawBlock('tex', '\n'.join(tex1) + '\n'))
+                ret.append(RawBlock('tex', '\n'.join(tex2)))
+            ret.append(RawBlock('tex', '\n'.join(tex1)))
             return ret
 
     def _cite_replacement(key, value, fmt, meta):
@@ -707,7 +725,6 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
 
             # Reconstruct the block element
             el = elt(key, len(value))(*value)  # pylint: disable=star-args
-            el['c'] = list(el['c'])
 
             # Insert cleveref TeX in front of the block element
             tex = _cleveref_tex(key, value, meta)
@@ -769,6 +786,9 @@ def detach_attrs_factory(f):
     Attributes provided natively by pandoc will be left as is."""
 
     # Get the name and standard length
+    if len(f.__closure__) != 2:
+        raise RuntimeError(f.__closure__)
+
     name = f.__closure__[0].cell_contents
     n = f.__closure__[1].cell_contents
 
@@ -785,3 +805,68 @@ def detach_attrs_factory(f):
                 del value[0]
 
     return detach_attrs
+
+
+# install_rawblock_factory() -------------------------------------------------
+
+# TeX to make a caption without a prefix
+MAKENOPREFIXCAPTION = r"""
+% pandoc-xnos: macro to create a caption without a prefix
+\makeatletter
+\long\def\@makenoprefixcaption#1#2{
+  \vskip\abovecaptionskip
+  \sbox\@tempboxa{#2}
+  \ifdim \wd\@tempboxa >\hsize
+    #2\par
+  \else
+    \global \@minipagefalse
+    \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}
+  \fi
+  \vskip\belowcaptionskip}
+\let\@oldmakecaption=\@makecaption
+\newcounter{dummy}
+\makeatother
+""".strip()
+
+def insert_rawblocks_factory(rawblocks):
+    r"""Returns insert_rawblocks(key, value, fmt, meta) action that inserts
+    non-duplicate RawBlock elements.
+
+    The \@makenoprefixcaption macro is prepended to rawblocks if it is used
+    in a TeX RawBlock.
+    """
+
+    # Check to see if \@makenoprefixcaption macro is needed
+    for rawblock in rawblocks:
+        assert rawblock['t'] == 'RawBlock'
+        if rawblock['c'][0] == 'tex' and \
+          r'\@makenoprefixcaption' in rawblock['c'][1]:
+            rawblocks.insert(0, RawBlock('tex', MAKENOPREFIXCAPTION))
+            break
+
+    # pylint: disable=unused-argument
+    def insert_rawblocks(key, value, fmt, meta):
+        """Inserts non-duplicate RawBlock elements."""
+
+        if not rawblocks:
+            return
+
+        # Put the RawBlock elements in front of the first block element that
+        # isn't also a RawBlock.
+
+        if not key in ['Plain', 'Para', 'CodeBlock', 'RawBlock',
+                       'BlockQuote', 'OrderedList', 'BulletList',
+                       'DefinitionList', 'Header', 'HorizontalRule',
+                       'Table', 'Div', 'Null']:
+            return
+
+        if key == 'RawBlock':  # Remove duplicates
+            rawblock = RawBlock(*value)  # pylint: disable=star-args
+            if rawblock in rawblocks:
+                rawblocks.remove(rawblock)
+
+        elif rawblocks:  # Insert blocks
+            return [rawblocks.pop(0) for i in range(len(rawblocks))] + \
+              [elt(key, len(value))(*value)]  # pylint: disable=star-args
+
+    return insert_rawblocks
