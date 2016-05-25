@@ -25,6 +25,8 @@ import subprocess
 
 from pandocfilters import walk, Math
 
+from pandocattributes import PandocAttributes
+
 import pandocxnos
 from pandocxnos import get_meta, elt
 from pandocxnos import join_strings
@@ -42,7 +44,7 @@ pandocxnos.init(PANDOCVERSION)
 # Test class
 
 # pylint: disable=too-many-public-methods
-class TestModule(unittest.TestCase):
+class TestXnos(unittest.TestCase):
     """Test the pandocxnos package."""
 
     def test_get_meta_1(self):
@@ -782,6 +784,19 @@ class TestModule(unittest.TestCase):
         self.assertEqual(walk(src, detach_attrs_math, '', {}), expected)
 
 
+class TestPandocAttributes(unittest.TestCase):
+    """Test the pandocattributes package."""
+
+    def test_kvs(self):
+        """Tests PandocAttributes.kvs."""
+        attrs = PandocAttributes(['',[],[['tag','B.1']]], 'pandoc')
+        kvs = attrs.kvs
+
+        # Ensure that changing the kvs changes attrs too
+        kvs['tag'] = 'B.3'
+        self.assertEqual(attrs['tag'], 'B.3')
+
+
 #-----------------------------------------------------------------------------
 # main()
 
@@ -789,7 +804,9 @@ def main():
     """Runs the suite of unit tests"""
 
     # Do the tests
-    suite = unittest.makeSuite(TestModule)
+    suite = unittest.TestSuite()
+    suite.addTests(unittest.makeSuite(TestXnos))
+    suite.addTests(unittest.makeSuite(TestPandocAttributes))
     result = unittest.TextTestRunner(verbosity=1).run(suite)
     n_errors = len(result.errors)
     n_failures = len(result.failures)
