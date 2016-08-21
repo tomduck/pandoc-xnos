@@ -1,4 +1,9 @@
 
+pandoc-xnos 0.4.1 (2016-08-21)
+
+    * Fixed bug inadvertently added.
+
+
 pandoc-xnos 0.4 (2016-08-21)
 
     * Added insert_rawblock_factory().

@@ -835,15 +835,17 @@ def insert_rawblocks_factory(rawblocks):
             rawblock = RawBlock(*value)  # pylint: disable=star-args
             if rawblock in rawblocks:
                 rawblocks.remove(rawblock)
+                return
 
-        elif rawblocks:  # Insert blocks
-            with open('test.tmp','a') as f:
-                f.write(str(key))
-                f.write('\n\n')
-                f.write(str(value))
-                f.write('\n\n----------\n\n')
-                
-            #return [rawblocks.pop(0) for i in range(len(rawblocks))] + \
-            return  [elt(key, len(value))(*value)]  # pylint: disable=star-args
+        if rawblocks:  # Insert blocks
+            if key in ['HorizontalRule', 'Null']:
+                el = elt(key, 0)()
+            elif key in ['Plain', 'Para', 'BlockQuote', 'BulletList',
+                         'DefinitionList', 'HorizontalRule', 'Null']:
+                el = elt(key, 1)(value)
+            else:
+                el = elt(key, len(value))(*value) # pylint: disable=star-args
+
+            return [rawblocks.pop(0) for i in range(len(rawblocks))] + [el]
 
     return insert_rawblocks
