@@ -1,5 +1,5 @@
 
-pandoc-xnos 0.4 (unreleased)
+pandoc-xnos 0.4 (2016-08-21)
 
     * Added insert_rawblock_factory().
     * More improvements to TeX output.
