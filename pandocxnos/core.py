@@ -221,7 +221,8 @@ def elt(eltType, numargs):  # pylint: disable=invalid-name
     def Element(*value):  # pylint: disable=invalid-name
         """Creates an element."""
         el = _elt(eltType, numargs)(*value)
-        el['c'] = list(el['c'])  # The content should be a list, not tuple
+        if type(el['c']) == tuple:
+            el['c'] = list(el['c'])  # The content should be a list, not tuple
         return el
     return Element
 
@@ -836,7 +837,13 @@ def insert_rawblocks_factory(rawblocks):
                 rawblocks.remove(rawblock)
 
         elif rawblocks:  # Insert blocks
-            return [rawblocks.pop(0) for i in range(len(rawblocks))] + \
-              [elt(key, len(value))(*value)]  # pylint: disable=star-args
+            with open('test.tmp','a') as f:
+                f.write(str(key))
+                f.write('\n\n')
+                f.write(str(value))
+                f.write('\n\n----------\n\n')
+                
+            #return [rawblocks.pop(0) for i in range(len(rawblocks))] + \
+            return  [elt(key, len(value))(*value)]  # pylint: disable=star-args
 
     return insert_rawblocks
