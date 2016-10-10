@@ -1,4 +1,9 @@
 
+pandoc-xnos 0.5 (unreleased)
+
+    * Fixed bug in broken refs code (Issue #1).
+
+
 pandoc-xnos 0.4.1 (2016-08-21)
 
     * Fixed bug inadvertently added.
