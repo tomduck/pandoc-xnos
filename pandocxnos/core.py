@@ -411,9 +411,6 @@ def _is_broken_ref(key1, value1, key2, value2):
     # Assemble the parts
     n = 0 if _PANDOCVERSION < '1.16' else 1
 
-    with open('tmp.txt','w') as f:
-        f.write(str(value1))
-
     if type(value1[n][0]['c']) == list:
         # Occurs when there is quoted text in an actual link.  This is not
         # a broken link.  See Issue #1.
