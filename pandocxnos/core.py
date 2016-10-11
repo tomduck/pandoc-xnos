@@ -228,7 +228,7 @@ def elt(eltType, numargs):  # pylint: disable=invalid-name
 
 Cite = elt('Cite', 2)  # pylint: disable=invalid-name
 
-def getel(key, value):
+def _getel(key, value):
     """Returns an element given a key and value."""
     if key in ['HorizontalRule', 'Null']:
         return elt(key, 0)()
@@ -741,7 +741,7 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
                 return
 
             # Reconstruct the block element
-            el = getel(key, value)
+            el = _getel(key, value)
 
             # Insert cleveref TeX in front of the block element
             tex = _cleveref_tex(key, value, meta)
@@ -854,7 +854,7 @@ def insert_rawblocks_factory(rawblocks):
                 return
 
         if rawblocks:  # Insert blocks
-            el = getel(key, value)
+            el = _getel(key, value)
             return [rawblocks.pop(0) for i in range(len(rawblocks))] + [el]
 
     return insert_rawblocks
