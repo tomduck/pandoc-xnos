@@ -228,6 +228,16 @@ def elt(eltType, numargs):  # pylint: disable=invalid-name
 
 Cite = elt('Cite', 2)  # pylint: disable=invalid-name
 
+def getel(key, value):
+    """Returns an element given a key and value."""
+    if key in ['HorizontalRule', 'Null']:
+        return elt(key, 0)()
+    elif key in ['Plain', 'Para', 'BlockQuote', 'BulletList',
+                 'DefinitionList', 'HorizontalRule', 'Null']:
+        return elt(key, 1)(value)
+    else:
+        return elt(key, len(value))(*value) # pylint: disable=star-args
+
 
 #=============================================================================
 # Element list functions
@@ -731,7 +741,7 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
                 return
 
             # Reconstruct the block element
-            el = elt(key, len(value))(*value)  # pylint: disable=star-args
+            el = getel(key, value)
 
             # Insert cleveref TeX in front of the block element
             tex = _cleveref_tex(key, value, meta)
@@ -844,14 +854,7 @@ def insert_rawblocks_factory(rawblocks):
                 return
 
         if rawblocks:  # Insert blocks
-            if key in ['HorizontalRule', 'Null']:
-                el = elt(key, 0)()
-            elif key in ['Plain', 'Para', 'BlockQuote', 'BulletList',
-                         'DefinitionList', 'HorizontalRule', 'Null']:
-                el = elt(key, 1)(value)
-            else:
-                el = elt(key, len(value))(*value) # pylint: disable=star-args
-
+            el = getel(key, value)
             return [rawblocks.pop(0) for i in range(len(rawblocks))] + [el]
 
     return insert_rawblocks
