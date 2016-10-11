@@ -425,7 +425,7 @@ def _is_broken_ref(key1, value1, key2, value2):
         # Occurs when there is quoted text in an actual link.  This is not
         # a broken link.  See Issue #1.
         return False
-        
+
     s = value1[n][0]['c'] + value2
     # Return True if this matches the reference regex
     return True if _REF.match(s) else False
