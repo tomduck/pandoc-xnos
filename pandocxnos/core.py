@@ -34,8 +34,8 @@ given in the function docstrings.
                                to elements
   * `detach_attrs_factory()` - Makes functions that detach attributes
                                from elements
-  * `insert_rawblock_factory()` - Makes function to insert
-                                  non-duplicate Raw Block elements.
+  * `insert_rawblocks_factory()` - Makes function to insert
+                                   non-duplicate Raw Block elements.
 """
 
 # Copyright 2015, 2016 Thomas J. Duck.
@@ -712,10 +712,10 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
             else:
                 ret = RawInline('tex', r'\ref{%s}'%label)
         else:
-            linktext =  [Math({"t":"InlineMath", "c":[]}, text[1:-1]) \
+            linktext = [Math({"t":"InlineMath", "c":[]}, text[1:-1]) \
                if text.startswith('$') and text.endswith('$') \
                else Str(text)]
-            
+
             link = elt('Link', 2)(linktext, ['#%s' % label, '']) \
               if _PANDOCVERSION < '1.16' else \
               Link(['', [], []], linktext, ['#%s' % label, ''])
@@ -736,6 +736,15 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
                            'DefinitionList', 'Header', 'HorizontalRule',
                            'Table', 'Div', 'Null']:
                 return
+
+            # Bail if this is a meta field
+            if key == 'Para':
+                for v in meta.values():
+                    if v['t'] == 'MetaBlocks':
+                        for el in v['c']:
+                            if el['t'] == 'Para':
+                                if stringify(el['c']) == stringify(value):
+                                    return
 
             # Reconstruct the block element
             el = _getel(key, value)
@@ -843,6 +852,15 @@ def insert_rawblocks_factory(rawblocks):
                        'DefinitionList', 'Header', 'HorizontalRule',
                        'Table', 'Div', 'Null']:
             return
+
+        # Bail if this is a meta field
+        if key == 'Para':
+            for v in meta.values():
+                if v['t'] == 'MetaBlocks':
+                    for el in v['c']:
+                        if el['t'] == 'Para':
+                            if stringify(el['c']) == stringify(value):
+                                return
 
         if key == 'RawBlock':  # Remove duplicates
             rawblock = RawBlock(*value)  # pylint: disable=star-args
