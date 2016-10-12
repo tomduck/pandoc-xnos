@@ -737,15 +737,6 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
                            'Table', 'Div', 'Null']:
                 return
 
-            # Bail if this is a meta field
-            if key == 'Para':
-                for v in meta.values():
-                    if v['t'] == 'MetaBlocks':
-                        for el in v['c']:
-                            if el['t'] == 'Para':
-                                if stringify(el['c']) == stringify(value):
-                                    return
-
             # Reconstruct the block element
             el = _getel(key, value)
 
@@ -852,15 +843,6 @@ def insert_rawblocks_factory(rawblocks):
                        'DefinitionList', 'Header', 'HorizontalRule',
                        'Table', 'Div', 'Null']:
             return
-
-        # Bail if this is a meta field
-        if key == 'Para':
-            for v in meta.values():
-                if v['t'] == 'MetaBlocks':
-                    for el in v['c']:
-                        if el['t'] == 'Para':
-                            if stringify(el['c']) == stringify(value):
-                                return
 
         if key == 'RawBlock':  # Remove duplicates
             rawblock = RawBlock(*value)  # pylint: disable=star-args
