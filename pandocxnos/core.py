@@ -64,7 +64,7 @@ import copy
 
 import psutil
 
-from pandocfilters import Str, Space, Math, RawInline, RawBlock
+from pandocfilters import Str, Space, Math, RawInline, RawBlock, Link
 from pandocfilters import walk, stringify
 from pandocfilters import elt as _elt
 
@@ -711,18 +711,15 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
                 ret = RawInline('tex', r'%s%s{%s}'%(faketex, macro, label))
             else:
                 ret = RawInline('tex', r'\ref{%s}'%label)
-        elif fmt in ('html', 'html5'):
-            ret = [RawInline('html', '<a href="#%s">' % label),
-                   Math({"t":"InlineMath", "c":[]}, text[1:-1])
-                   if text.startswith('$') and text.endswith('$')
-                   else Str(text), RawInline('html', '</a>')]
-            if cleveref:
-                ret = [Str(name), Space()] + ret
         else:
-            return ([Str(name), Space()] if cleveref else []) + \
-               [Math({"t":"InlineMath", "c":[]}, text[1:-1]) \
-                if text.startswith('$') and text.endswith('$') else \
-               Str(text)]
+            linktext =  [Math({"t":"InlineMath", "c":[]}, text[1:-1]) \
+               if text.startswith('$') and text.endswith('$') \
+               else Str(text)]
+            
+            link = elt('Link', 2)(linktext, ['#%s' % label, '']) \
+              if _PANDOCVERSION < '1.16' else \
+              Link(['', [], []], linktext, ['#%s' % label, ''])
+            ret = ([Str(name), Space()] if cleveref else []) + [link]
 
         return ret
 
