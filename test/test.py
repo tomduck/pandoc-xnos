@@ -719,11 +719,11 @@ class TestXnos(unittest.TestCase):
 
         ## test.md: As shown in @fig:1. ##
 
-        # Result from process_refs()
+        # Command: pandoc-1.15.2 test.md -t json
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}]]''')
 
         # Hand-coded
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Str","c":"fig."},{"t":"Space","c":[]},{"t":"Str","c":"1."}]}]]''')
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Str","c":"fig."},{"t":"Space","c":[]},{'t':'Link','c':(['',[],[]],[{'t':'Str','c':'1'}],['#fig:one',''])},{"t":"Str","c":"."}]}]]''')
 
         # Make the comparison
         replace_refs = replace_refs_factory({'fig:one':1}, True,
