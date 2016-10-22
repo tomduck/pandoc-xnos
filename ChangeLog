@@ -1,8 +1,9 @@
 
-pandoc-xnos 0.5 (unreleased)
+pandoc-xnos 0.5 (2016-10-22)
 
     * Fixed bug in broken refs code (Issue #1).
     * Fixed textless doc crash (pandoc-fignos Issue #27).
+
 
 pandoc-xnos 0.4.1 (2016-08-21)
 
@@ -23,9 +24,9 @@ pandoc-xnos 0.3 (2016-05-18)
 
 pandoc-xnos 0.2 (2016-05-16)
 
-    * Fixed treatment of math references for NON-html/tex/pdf output
+    * Fixed treatment of math references for NON-html/tex/pdf output.
 
 
 pandoc-xnos 0.1 (2016-05-14)
 
-    * Initial release
+    * Initial release.
