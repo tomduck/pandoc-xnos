@@ -22,7 +22,7 @@ from setuptools import setup
 
 DESCRIPTION = 'Library code for the pandoc-fignos/eqnos/tablenos filters.'
 
-VERSION = '0.5'
+VERSION = '0.6'
 
 setup(
     name='pandoc-xnos',
@@ -37,7 +37,7 @@ setup(
     url='https://github.com/tomduck/pandoc-xnos',
     download_url='https://github.com/tomduck/pandoc-xnos/tarball/'+VERSION,
 
-    install_requires=['pandocfilters>=1.3.0',
+    install_requires=['pandocfilters>=1.4.0',
                       'pandoc-attributes>=0.1.7',
                       'psutil>=4.1.0'],
 

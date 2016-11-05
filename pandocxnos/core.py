@@ -128,11 +128,11 @@ def _repeat(func):
 
 _PANDOCVERSION = None  # A string giving the pandoc version
 
-def init(pandocversion=None):
-    """Sets or determines the pandoc version.  This must be called
+def init(pandocversion=None, doc=None):
+    """Sets or determines the pandoc version.  This must be called.
 
-    Pandoc does not provide version information.  This is needed for
-    multi-version support.  See: https://github.com/jgm/pandoc/issues/2640
+    The pandoc version is needed for multi-version support.
+    See: https://github.com/jgm/pandoc/issues/2640
 
     Returns the pandoc version"""
 
@@ -153,6 +153,11 @@ def init(pandocversion=None):
         else:
             msg = 'Cannot understand pandocversion=%s'%pandocversion
             raise RuntimeError(msg)
+
+    if not doc is None:
+        if 'pandoc-api-version' in doc:
+            _PANDOCVERSION = '1.18'
+            return _PANDOCVERSION
 
     # Get the command
     try:  # Get the path for the parent process
@@ -441,7 +446,8 @@ def _repair_refs(x):
     for i in range(len(x)-1):
 
         # Check for broken references
-        if _is_broken_ref(x[i]['t'], x[i]['c'], x[i+1]['t'], x[i+1]['c']):
+        if _is_broken_ref(x[i]['t'], x[i]['c'] if 'c' in x[i] else [],
+                          x[i+1]['t'], x[i+1]['c'] if 'c' in x[i+1] else []):
 
             # Get the reference string
             n = 0 if _PANDOCVERSION < '1.16' else 1
@@ -481,6 +487,9 @@ def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
     like "{@fig:one}" into email Link and Str elements.  This function
     replaces the mess with the Cite and Str elements we normally get.  Call
     this before any reference processing."""
+
+    if _PANDOCVERSION >= '1.18':
+        return
 
     # The problem spans multiple elements, and so can only be identified in
     # element lists.  Element lists are encapsulated in different ways.  We
