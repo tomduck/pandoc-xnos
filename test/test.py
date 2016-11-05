@@ -36,6 +36,7 @@ from pandocxnos import attach_attrs_factory, detach_attrs_factory
 from pandocxnos import repair_refs, process_refs_factory, replace_refs_factory
 
 PANDOCVERSION = '1.18'
+PANDOC1p15 = 'pandoc-1.15.2'
 
 pandocxnos.init(PANDOCVERSION)
 
@@ -583,7 +584,7 @@ class TestXnos(unittest.TestCase):
         # Check against pandoc-1.15.2
         md = subprocess.Popen(('echo', '@fig:1:'), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc-1.15.2 -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC1p15 + ' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Generate expected using current pandoc
@@ -609,7 +610,7 @@ class TestXnos(unittest.TestCase):
         # Check against pandoc-1.15.2
         md = subprocess.Popen(('echo', '{@fig:1}:'), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc-1.15.2 -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC1p15 + ' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Hand-coded
