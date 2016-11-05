@@ -8,7 +8,7 @@ Install Alternatives
 
 To install the most recent sources from github using pip:
 
-    # pip install git+https://github.com/tomduck/pandocfiltering.git
+    # pip install git+https://github.com/tomduck/pandocxnos.git
 
 (to upgrade use the --upgrade flag).
 
