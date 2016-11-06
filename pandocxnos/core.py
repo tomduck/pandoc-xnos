@@ -520,15 +520,16 @@ def _extract_modifier(x, i, attrs):
     assert x[i]['t'] == 'Cite'
     assert i > 0
 
+    # Check the previous element for a modifier in the last character
     if x[i-1]['t'] == 'Str':
         modifier = x[i-1]['c'][-1]
         if not _CLEVEREFTEX and modifier in ['*', '+']:
             _CLEVEREFTEX = True
         if modifier in ['*', '+', '!']:
-            attrs[2].append(['modifier', x[i-1]['c'][-1]])
-            if len(x[i-1]['c']) > 1:
+            attrs[2].append(['modifier', modifier])
+            if len(x[i-1]['c']) > 1:  # Lop the modifier off of the string
                 x[i-1]['c'] = x[i-1]['c'][:-1]
-            else:
+            else:  # The element contains only the modifier; delete it
                 del x[i-1]
                 i -= 1
 
