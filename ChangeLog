@@ -1,7 +1,7 @@
 
 pandoc-xnos 0.7 (unreleased)
 
-    * Fixed regex for python 2.7.3 (Issue #32).
+    * Fixed regex for python 2.7.3 (pandoc-fignos Issue #32).
 
 
 pandoc-xnos 0.6 (2016-11-05)
