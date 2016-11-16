@@ -412,12 +412,11 @@ def join_strings(key, value, fmt, meta):  # pylint: disable=unused-argument
 
 # repair_reference() ---------------------------------------------------------
 
-# Reference regex.  This splits a reference into three componenets: the
+# Reference regex.  This splits a reference into three components: the
 # prefix, label and suffix.  e.g.:
 # >>> _REF.match('xxx{+@fig:1}xxx').groups()
 # ('xxx{+', 'fig:1', '}xxx').
 _REF = re.compile(r'^((?:.*{)?[\*\+!]?)@([^:]*:[\w/-]+)(.*)?')
-
 def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""
     # A link followed by a string may represent a broken reference
