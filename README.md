@@ -1,5 +1,5 @@
 
-pandoc-xnos 0.6
+pandoc-xnos 0.7
 ===============
 
 *pandoc-xnos* provides library code for the pandoc-[fignos]/[eqnos]/[tablenos] filters.
