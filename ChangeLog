@@ -1,4 +1,9 @@
 
+pandoc-xnos 0.8 (2016-12-02)
+
+    * New factory function for adding section numbers.
+
+
 pandoc-xnos 0.7 (2016-11-17)
 
     * Fixed regex for python 2.7.3 (pandoc-fignos Issue #32).

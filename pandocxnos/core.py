@@ -34,6 +34,8 @@ given in the function docstrings.
                                to elements
   * `detach_attrs_factory()` - Makes functions that detach attributes
                                from elements
+  * `insert_secnos_factory()` - Makes functions that insert section
+                                numbers into attributes
   * `insert_rawblocks_factory()` - Makes function to insert
                                    non-duplicate Raw Block elements.
 """
@@ -98,6 +100,9 @@ else:
 
 # Privately flags that cleveref TeX needs to be written into the doc
 _CLEVEREFTEX = False
+
+# Used to tack section numbers
+SEC = []
 
 
 #=============================================================================
@@ -761,7 +766,7 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
     return replace_refs
 
 
-# use_attrs_factory() ---------------------------------------------------------
+# attach_attrs_factory() -----------------------------------------------------
 
 # pylint: disable=redefined-outer-name
 def attach_attrs_factory(f, extract_attrs=extract_attrs, allow_space=False):
@@ -828,6 +833,59 @@ def detach_attrs_factory(f):
                 del value[0]
 
     return detach_attrs
+
+
+# insert_secnos_factory() ----------------------------------------------------
+
+# pylint: disable=redefined-outer-name
+def insert_secnos_factory(f):
+    """Returns insert_secnos(key, value, fmt, meta) action that inserts
+    section numbers into the attributes of elements of type f.
+    """
+
+    # Get the name
+    name = f.__closure__[0].cell_contents
+
+    def insert_secnos(key, value, fmt, meta):  # pylint: disable=unused-argument
+        """Inserts section numbers into elements attributes."""
+        global SEC  # pylint: disable=global-statement
+
+        if 'numbersections' in meta and meta['numbersections']['c'] and \
+          fmt in ['html', 'html5']:
+            if key == 'Header':
+                if 'unnumbered' in value[1][1]:
+                    return
+                level = value[0]
+                n = level - len(SEC)
+                if n > 0:
+                    SEC.extend([0]*n)
+                SEC[level-1] += 1
+                SEC = SEC[:level]
+            if key == name:
+                s = '.'.join([str(n) for n in SEC])
+                value[0][2].insert(0, ['secno', s])
+
+    return insert_secnos
+
+
+# delete_secnos_factory() ----------------------------------------------------
+
+# pylint: disable=redefined-outer-name
+def delete_secnos_factory(f):
+    """Returns delete_secnos(key, value, fmt, meta) action that deletes
+    section numbers from the attributes of elements of type f.
+    """
+
+    # Get the name
+    name = f.__closure__[0].cell_contents
+
+    def delete_secnos(key, value, fmt, meta):  # pylint: disable=unused-argument
+        """Deletes section numbers from elements attributes."""
+        if 'numbersections' in meta and meta['numbersections']['c']:
+            if key == name and value[0][2][0][0] == 'secno':
+                del value[0][2][0]
+
+    return delete_secnos
 
 
 # install_rawblock_factory() -------------------------------------------------
