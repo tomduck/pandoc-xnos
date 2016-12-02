@@ -1,7 +1,8 @@
 
-pandoc-xnos 0.8 (unreleased)
+pandoc-xnos 0.8 (2016-12-02)
 
-    * New factory function for adding section numbers.
+    * New factory functions for adding and removing section numbers
+      from an element's attributes.
 
 
 pandoc-xnos 0.7 (2016-11-17)
