@@ -1,5 +1,5 @@
 
-pandoc-xnos 0.8 (2016-12-02)
+pandoc-xnos 0.8 (unreleased)
 
     * New factory function for adding section numbers.
 
