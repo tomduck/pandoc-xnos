@@ -850,7 +850,8 @@ def insert_secnos_factory(f):
         """Inserts section numbers into elements attributes."""
         global SEC  # pylint: disable=global-statement
 
-        if 'numbersections' in meta and meta['numbersections']['c'] and \
+        if 'xnos-number-sections' in meta and \
+          meta['xnos-number-sections']['c'] and \
           fmt in ['html', 'html5']:
             if key == 'Header':
                 if 'unnumbered' in value[1][1]:
@@ -881,7 +882,8 @@ def delete_secnos_factory(f):
 
     def delete_secnos(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Deletes section numbers from elements attributes."""
-        if 'numbersections' in meta and meta['numbersections']['c']:
+        if 'xnos-number-sections' in meta and \
+          meta['xnos-number-sections']['c']:
             if key == name and value[0][2][0][0] == 'secno':
                 del value[0][2][0]
 
