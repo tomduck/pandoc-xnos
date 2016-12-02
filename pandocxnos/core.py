@@ -102,7 +102,7 @@ else:
 _CLEVEREFTEX = False
 
 # Used to tack section numbers
-SEC = []
+SEC = [0]
 
 
 #=============================================================================
@@ -857,11 +857,14 @@ def insert_secnos_factory(f):
                 if 'unnumbered' in value[1][1]:
                     return
                 level = value[0]
-                n = level - len(SEC)
-                if n > 0:
-                    SEC.extend([0]*n)
-                SEC[level-1] += 1
-                SEC = SEC[:level]
+                #n = level - len(SEC)
+                #if n > 0:
+                #    SEC.extend([0]*n)
+                #SEC[level-1] += 1
+                #SEC = SEC[:level]
+                if level == 1:
+                    SEC[0] += 1
+
             if key == name:
                 s = '.'.join([str(n) for n in SEC])
                 value[0][2].insert(0, ['secno', s])
