@@ -883,8 +883,10 @@ def delete_secnos_factory(f):
     def delete_secnos(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Deletes section numbers from elements attributes."""
         if 'xnos-number-sections' in meta and \
-          meta['xnos-number-sections']['c']:
-            if key == name and value[0][2][0][0] == 'secno':
+          meta['xnos-number-sections']['c'] and \
+          fmt in ['html', 'html5']:
+            if key == name and len(value[0][2]) and \
+              value[0][2][0][0] == 'secno':
                 del value[0][2][0]
 
     return delete_secnos
