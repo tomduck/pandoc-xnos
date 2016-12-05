@@ -1,5 +1,5 @@
 
-pandoc-xnos 0.8.1 (2016-12-02)
+pandoc-xnos 0.8, 0.8.1, 0.8.2 (2016-12-05)
 
     * New factory functions for adding and removing section numbers
       from an element's attributes.
@@ -21,12 +21,7 @@ pandoc-xnos 0.5 (2016-10-22)
     * Fixed textless doc crash (pandoc-fignos Issue #27).
 
 
-pandoc-xnos 0.4.1 (2016-08-21)
-
-    * Fixed bug inadvertently added.
-
-
-pandoc-xnos 0.4 (2016-08-21)
+pandoc-xnos 0.4, 0.4.1 (2016-08-21)
 
     * Added insert_rawblock_factory().
     * More improvements to TeX output.
