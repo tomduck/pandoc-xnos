@@ -134,13 +134,14 @@ def _repeat(func):
 
 _PANDOCVERSION = None  # A string giving the pandoc version
 
+# pylint: disable=too-many-branches
 def init(pandocversion=None, doc=None):
     """Sets or determines the pandoc version.  This must be called.
 
     The pandoc version is needed for multi-version support.
     See: https://github.com/jgm/pandoc/issues/2640
 
-    Returns the pandoc version"""
+    Returns the pandoc version."""
 
     # This requires some care because we can't be sure that a call to 'pandoc'
     # will work.  It could be 'pandoc-1.17.0.2' or some other name.  Try
@@ -150,6 +151,9 @@ def init(pandocversion=None, doc=None):
     global _PANDOCVERSION  # pylint: disable=global-statement
 
     pattern = re.compile(r'^1\.[0-9]+(?:\.[0-9]+)?(?:\.[0-9]+)?$')
+
+    if 'PANDOC_VERSION' in os.environ:  # Available for pandoc >= 1.19.1
+        pandocversion = str(os.environ['PANDOC_VERSION'])
 
     if not pandocversion is None:
         # Test the result and if it is OK then store it in _PANDOCVERSION
@@ -162,6 +166,9 @@ def init(pandocversion=None, doc=None):
 
     if not doc is None:
         if 'pandoc-api-version' in doc:
+            # This could be either 1.18 or 1.19; there is no way to
+            # distinguish them (but there isn't a use case in pandoc-fignos
+            # and friends where it matters)
             _PANDOCVERSION = '1.18'
             return _PANDOCVERSION
 

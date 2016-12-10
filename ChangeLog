@@ -1,4 +1,10 @@
 
+pandoc-xnos 0.9 (2016-12-10)
+
+    * Uses the new PANDOC_VERSION environment variable
+      (pandoc Issue #2640).
+
+
 pandoc-xnos 0.8, 0.8.1, 0.8.2 (2016-12-05)
 
     * New factory functions for adding and removing section numbers
