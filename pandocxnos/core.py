@@ -150,7 +150,7 @@ def init(pandocversion=None, doc=None):
 
     global _PANDOCVERSION  # pylint: disable=global-statement
 
-    pattern = re.compile(r'^1\.[0-9]+(?:\.[0-9]+)?(?:\.[0-9]+)?$')
+    pattern = re.compile(r'(^1\.[0-9]+(?:\.[0-9]+)?(?:\.[0-9]+)?$)|(^2.0)')
 
     if 'PANDOC_VERSION' in os.environ:  # Available for pandoc >= 1.19.1
         pandocversion = str(os.environ['PANDOC_VERSION'])
