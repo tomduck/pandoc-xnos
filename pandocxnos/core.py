@@ -547,33 +547,6 @@ def _extract_modifier(x, i, attrs):
 
     return i
 
-def _extract_labels(x, i, attrs, labels):
-    """Extracts additional labels associated with this reference.  The labels
-    are stored in 'attrs'."""
-
-    assert x[i]['t'] == 'Cite'
-    assert i > 0
-
-    # Get the label prefix
-    #p = re.compile
-    #x[i][-1][0]['c']
-
-    # Get the additional labels
-    if x[i+1]['t'] == 'Str':
-        p = re.compile(r'^,((?:[\w/-]+,?)*)(.*)')
-        try:
-            head, tail = p.match(x[i+1]['c'])
-            tokens = head.split(',')
-            for token in tokens:
-                assert token in labels
-            attrs['labels'] = tokens
-            if tail:
-                x[i+1]['t'] = tail
-            else:
-                del x[i+1]
-        except (TypeError, AssertionError):
-            pass
-
 def _remove_brackets(x, i):
     """Removes curly brackets surrounding the Cite element at index 'i' in
     the element list 'x'.  It is assumed that the modifier has been
@@ -617,9 +590,6 @@ def _process_refs(x, labels):
             # deletion could change the index of the Cite being processed.
             if i > 0:
                 i = _extract_modifier(x, i, attrs)
-
-            # Extract extra labels
-            _extract_labels(x, i, attrs, labels)
 
             # Attach the attributes
             v['c'].insert(0, attrs)
