@@ -495,10 +495,10 @@ def _repair_refs(x):
     return True  # Terminates processing
 
 def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
-    """Using "-f markdown+autolink_bare_uris" with pandoc splits a reference
-    like "{@fig:one}" into email Link and Str elements.  This function
-    replaces the mess with the Cite and Str elements we normally get.  Call
-    this before any reference processing."""
+    """Using "-f markdown+autolink_bare_uris" with pandoc < 1.18 splits a
+    reference like "{@fig:one}" into email Link and Str elements.  This
+    function replaces the mess with the Cite and Str elements we normally
+    get.  Call this before any reference processing."""
 
     if _PANDOCVERSION >= '1.18':
         return
@@ -547,6 +547,33 @@ def _extract_modifier(x, i, attrs):
 
     return i
 
+def _extract_labels(x, i, attrs, labels):
+    """Extracts additional labels associated with this reference.  The labels
+    are stored in 'attrs'."""
+
+    assert x[i]['t'] == 'Cite'
+    assert i > 0
+
+    # Get the label prefix
+    #p = re.compile
+    #x[i][-1][0]['c']
+
+    # Get the additional labels
+    if x[i+1]['t'] == 'Str':
+        p = re.compile(r'^,((?:[\w/-]+,?)*)(.*)')
+        try:
+            head, tail = p.match(x[i+1]['c'])
+            tokens = head.split(',')
+            for token in tokens:
+                assert token in labels
+            attrs['labels'] = tokens
+            if tail:
+                x[i+1]['t'] = tail
+            else:
+                del x[i+1]
+        except (TypeError, AssertionError):
+            pass
+
 def _remove_brackets(x, i):
     """Removes curly brackets surrounding the Cite element at index 'i' in
     the element list 'x'.  It is assumed that the modifier has been
@@ -575,7 +602,8 @@ def _remove_brackets(x, i):
 def _process_refs(x, labels):
     """Strips surrounding curly braces and adds modifiers to the
     attributes of Cite elements.  Only references with labels in the 'labels'
-    list are processed."""
+    list are processed.  Repeats processing (via decorator) until no more
+    broken references are found."""
 
     # Scan the element list x for Cite elements with known labels
     for i, v in enumerate(x):
@@ -590,6 +618,9 @@ def _process_refs(x, labels):
             if i > 0:
                 i = _extract_modifier(x, i, attrs)
 
+            # Extract extra labels
+            _extract_labels(x, i, attrs, labels)
+
             # Attach the attributes
             v['c'].insert(0, attrs)
 
@@ -598,10 +629,9 @@ def _process_refs(x, labels):
                 _remove_brackets(x, i)
 
             # The element list may be changed
-            return  # Forces processing to repeat
+            return  # Forces processing to repeat via _repeat decorator
 
-    return True  # Terminates processing
-
+    return True  # Terminates processing in _repeat decorator
 
 def process_refs_factory(labels):
     """Returns process_refs(key, value, fmt, meta) action that processes

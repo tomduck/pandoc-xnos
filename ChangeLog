@@ -1,4 +1,7 @@
 
+pandoc-xnos 0.10 (unreleased)
+
+
 pandoc-xnos 0.9 (2016-12-10)
 
     * Uses the new PANDOC_VERSION environment variable
