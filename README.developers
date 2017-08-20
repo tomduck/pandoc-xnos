@@ -26,9 +26,12 @@ Tagging:
     $ git push origin <tag>
 
 
-Uploading to pypi:
+Creating a source distribution:
 
-    $ python setup.py register -r pypi
-    $ python setup.py sdist upload -r pypi
+    $ python3 setup.py sdist
 
-(from http://peterdowns.com/posts/first-time-with-pypi.html)
+Uploading to pypi (update the version number):
+
+    $ twine upload dist/pandoc-xnos-0.10.tar.gz
+
+(from https://pypi.python.org/pypi/twine).
