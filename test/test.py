@@ -2,7 +2,7 @@
 
 """Unit tests for pandoc-xnos."""
 
-# Copyright 2016 Thomas J. Duck.
+# Copyright 2016-2017 Thomas J. Duck.
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
