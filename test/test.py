@@ -625,7 +625,7 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(walk(src, process_refs, {}, ''), expected)
 
 
-    def _test_replace_refs_factory(self):
+    def test_replace_refs_factory(self):
         """Tests replace_refs_factory."""
 
         ## test.md: As shown in @fig:1. ##
@@ -634,7 +634,7 @@ class TestXnos(unittest.TestCase):
         src = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}]]''')
 
         # Hand-coded
-        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Str","c":"fig."},{"t":"Space","c":[]},{'t':'Link','c':(['',[],[]],[{'t':'Str','c':'1'}],['#fig:one',''])},{"t":"Str","c":"."}]}]]''')
+        expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Str","c":"fig."},{"t":"Space","c":[]},{'t':'Link','c':[['',[],[]],[{'t':'Str','c':'1'}],['#fig:one','']]},{"t":"Str","c":"."}]}]]''')
 
         # Make the comparison
         replace_refs = replace_refs_factory({'fig:one':1}, True,
@@ -642,10 +642,10 @@ class TestXnos(unittest.TestCase):
                                             ['Figure', 'Figures'],
                                             'figure')
         self.assertEqual(walk(walk(src, replace_refs, {}, ''),
-                              join_strings, {}, ''), expected)
+                                  join_strings, {}, ''), expected)
 
 
-    def _test_attach_attrs_factory(self):
+    def test_attach_attrs_factory(self):
         """Tests attach_attrs_math()."""
 
         attach_attrs_math = attach_attrs_factory(Math, allow_space=True)
@@ -653,13 +653,13 @@ class TestXnos(unittest.TestCase):
         ## test.md: $$ y = f(x) $${#eq:1 tag="B.1"} ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath"}," y = f(x) "]},{"t":"Str","c":"{#eq:1"},{"t":"Space"},{"t":"Str","c":"tag=\"B.1\"}"}]}],"pandoc-api-version":[1,17,3],"meta":{}}''')
+        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath"}," y = f(x) "]},{"t":"Str","c":"{#eq:1"},{"t":"Space"},{"t":"Str","c":"tag="},{"t":"Quoted","c":[{"t":"DoubleQuote"},[{"t":"Str","c":"B.1"}]]},{"t":"Str","c":"}"}]}],"pandoc-api-version":[1,17,3],"meta":{}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '$$ y = f(x) $${#eq:1 tag="B.1"}'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            'pandoc -t json'.split(), stdin=md.stdout).strip())        
         self.assertEqual(src, output)
 
         # Hand-coded (attributes deleted)
