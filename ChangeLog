@@ -1,5 +1,10 @@
 
-pandoc-xnos 0.10 (unreleased)
+pandoc-xnos ??? (unreleased)
+
+    * Updated tests for pandoc-2.0.
+
+
+pandoc-xnos 0.10 (2017-08-20)
 
     * Allows version numbers starting with 2 (pandoc-fignos
       Issue #40).
