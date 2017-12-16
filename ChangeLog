@@ -1,3 +1,7 @@
+pandoc-xnos 0.12 (2017-12-16)
+
+    * Added work-around for a pandoc-attributes install error.
+
 
 pandoc-xnos 0.11 (2017-11-18)
 

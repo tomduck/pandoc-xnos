@@ -22,7 +22,17 @@ from setuptools import setup
 
 DESCRIPTION = 'Library code for the pandoc-fignos/eqnos/tablenos filters.'
 
-VERSION = '0.11'
+VERSION = '0.12'
+
+# Hack to overcome a bug in the pandoc-attributes 0.1.7 install script.
+# See https://github.com/aaren/pandoc-attributes/issues/1.
+try:
+    import pypandoc
+    def raiseImportError(*args, **kwargs):
+        raise ImportError
+    pypandoc.convert = raiseImportError
+except ImportError:
+    pass
 
 setup(
     name='pandoc-xnos',
