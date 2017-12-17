@@ -8,10 +8,10 @@ Copyrights
 
 This project is licensed under the GPL version 3.  See LICENSE.
 
-pandocxnos/pandocattributes.py was copied from
-https://github.com/aaren/pandoc-attributes.   According to the setup.py for
-that project, it was released under the "BSD 2-Clause" license.  A copyright
-notice was added to the top of the file.
+The file pandocxnos/pandocattributes.py was copied from
+https://github.com/aaren/pandoc-attributes.   According to that project's
+setup.py, it was released under the "BSD 2-Clause" license.  A copyright
+notice was added to the top of the file to make this clear.
 
 For more information on combining licenses, see "Maintaining Permissive-
 Licensed Files in a GPL-Licensed Project: Guidelines for Developers" from
