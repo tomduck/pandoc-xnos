@@ -25,9 +25,8 @@ import subprocess
 
 from pandocfilters import walk, Math
 
-from pandocattributes import PandocAttributes
-
 import pandocxnos
+from pandocxnos import PandocAttributes
 from pandocxnos import get_meta, elt
 from pandocxnos import join_strings
 from pandocxnos import quotify, dollarfy

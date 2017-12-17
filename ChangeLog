@@ -1,6 +1,8 @@
-pandoc-xnos 0.12 (2017-12-16)
+pandoc-xnos 0.12.1 (2017-12-16)
 
-    * Added work-around for a pandoc-attributes install error.
+    * Copied pandocattributes.py into pandoc-xnos to work around
+      an install error (see
+      https://github.com/aaren/pandoc-attributes/issues/1)
 
 
 pandoc-xnos 0.11 (2017-11-18)

@@ -70,7 +70,7 @@ from pandocfilters import Str, Space, Math, RawInline, RawBlock, Link
 from pandocfilters import walk, stringify
 from pandocfilters import elt as _elt
 
-from pandocattributes import PandocAttributes
+from .pandocattributes import PandocAttributes
 
 
 #=============================================================================
