@@ -1,6 +1,6 @@
 """setup.py - install script for pandoc-xnos."""
 
-# Copyright 2015-2017 Thomas J. Duck.
+# Copyright 2015-2018 Thomas J. Duck.
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@ from setuptools import setup
 
 DESCRIPTION = 'Library code for the pandoc-fignos/eqnos/tablenos filters.'
 
-VERSION = '0.13'
+VERSION = '0.14'
 
 setup(
     name='pandoc-xnos',

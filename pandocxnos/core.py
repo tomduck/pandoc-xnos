@@ -40,7 +40,7 @@ given in the function docstrings.
                                    non-duplicate Raw Block elements.
 """
 
-# Copyright 2015, 2016 Thomas J. Duck.
+# Copyright 2015-2017 Thomas J. Duck.
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -624,12 +624,17 @@ def process_refs_factory(labels):
         """Instates Ref elements."""
         # References may occur in a variety of places; we must process them
         # all.
+        
         if key in ['Para', 'Plain']:
             _process_refs(value, labels)
         elif key == 'Image':
             _process_refs(value[-2], labels)
         elif key == 'Table':
             _process_refs(value[-5], labels)
+        elif key == 'Emph':
+            _process_refs(value, labels)
+        elif key == 'Strong':
+            _process_refs(value, labels)
 
     return process_refs
 
