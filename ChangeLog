@@ -1,4 +1,4 @@
-pandoc-xnos 0.14 (unreleased)
+pandoc-xnos 0.14 (2018-01-09)
 
     * Fixed bug that prevented bolding or italicizing of references
       (pandoc-fignos Issue #45).

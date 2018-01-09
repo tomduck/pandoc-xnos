@@ -40,7 +40,7 @@ given in the function docstrings.
                                    non-duplicate Raw Block elements.
 """
 
-# Copyright 2015-2017 Thomas J. Duck.
+# Copyright 2015-2018 Thomas J. Duck.
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
