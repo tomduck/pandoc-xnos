@@ -48,6 +48,6 @@ Creating a source distribution:
 
 Uploading to pypi (update the version number):
 
-    $ twine upload dist/pandoc-xnos-0.14.tar.gz
+    $ twine upload dist/pandoc-xnos-0.15.tar.gz
 
 (from https://pypi.python.org/pypi/twine).

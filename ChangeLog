@@ -1,3 +1,9 @@
+pandoc-xnos 0.15 (2018-01-13)
+
+    * Added support for AMS-style equations referencing
+      (pandoc-eqnos Issue #27).
+
+
 pandoc-xnos 0.14 (2018-01-09)
 
     * Fixed bug that prevented bolding or italicizing of references

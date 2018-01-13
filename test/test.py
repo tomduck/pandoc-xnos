@@ -2,7 +2,7 @@
 
 """Unit tests for pandoc-xnos."""
 
-# Copyright 2016-2017 Thomas J. Duck.
+# Copyright 2016-2018 Thomas J. Duck.
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -34,7 +34,7 @@ from pandocxnos import extract_attrs
 from pandocxnos import attach_attrs_factory, detach_attrs_factory
 from pandocxnos import repair_refs, process_refs_factory, replace_refs_factory
 
-PANDOCVERSION = '2.0.2'
+PANDOCVERSION = '2.1'
 PANDOC1p15 = 'pandoc-1.15.2'
 
 pandocxnos.init(PANDOCVERSION)
@@ -636,7 +636,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Str","c":"fig."},{"t":"Space","c":[]},{'t':'Link','c':[['',[],[]],[{'t':'Str','c':'1'}],['#fig:one','']]},{"t":"Str","c":"."}]}]]''')
 
         # Make the comparison
-        replace_refs = replace_refs_factory({'fig:one':1}, True,
+        replace_refs = replace_refs_factory({'fig:one':1}, True, False,
                                             ['fig.', 'figs.'],
                                             ['Figure', 'Figures'],
                                             'figure')

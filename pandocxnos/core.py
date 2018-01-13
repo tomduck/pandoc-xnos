@@ -99,11 +99,13 @@ else:
     STDERR = sys.stdout
 
 # Privately flags that cleveref TeX needs to be written into the doc
-_CLEVEREFTEX = False
+# (for TeX/pdf output only).
+_cleveref_tex_flag = False  # pylint: disable=invalid-name
 
 # Used to track section numbers
+# pylint: disable=invalid-name
 MAXLEVEL = 1  # The maximum level header to track
-SEC = [0]     # Expand dynamically if needed
+sec = [0]     # Expand dynamically if needed
 
 
 #=============================================================================
@@ -527,7 +529,7 @@ def _extract_modifier(x, i, attrs):
     element list 'x'.  The modifier is stored in 'attrs'.  Returns the updated
     index 'i'."""
 
-    global _CLEVEREFTEX  # pylint: disable=global-statement
+    global _cleveref_tex_flag  # pylint: disable=global-statement
 
     assert x[i]['t'] == 'Cite'
     assert i > 0
@@ -535,8 +537,8 @@ def _extract_modifier(x, i, attrs):
     # Check the previous element for a modifier in the last character
     if x[i-1]['t'] == 'Str':
         modifier = x[i-1]['c'][-1]
-        if not _CLEVEREFTEX and modifier in ['*', '+']:
-            _CLEVEREFTEX = True
+        if not _cleveref_tex_flag and modifier in ['*', '+']:
+            _cleveref_tex_flag = True
         if modifier in ['*', '+', '!']:
             attrs[2].append(['modifier', modifier])
             if len(x[i-1]['c']) > 1:  # Lop the modifier off of the string
@@ -624,7 +626,7 @@ def process_refs_factory(labels):
         """Instates Ref elements."""
         # References may occur in a variety of places; we must process them
         # all.
-        
+
         if key in ['Para', 'Plain']:
             _process_refs(value, labels)
         elif key == 'Image':
@@ -641,12 +643,13 @@ def process_refs_factory(labels):
 
 # replace_refs_factory() ------------------------------------------------------
 
-def replace_refs_factory(references, cleveref_default, plusname, starname,
-                         target):
+# pylint: disable=too-many-arguments
+def replace_refs_factory(references, use_cleveref_default, use_eqref,
+                         plusname, starname, target):
     """Returns replace_refs(key, value, fmt, meta) action that replaces
     references with format-specific content.  The content is determined using
     the 'references' dict, which associates reference labels with numbers or
-    string tags (e.g., { 'fig:1':1, 'fig:2':2, ...}).  If 'cleveref_default'
+    string tags (e.g., { 'fig:1':1, 'fig:2':2, ...}).  If 'use_cleveref_default'
     is True, or if "modifier" in the reference's attributes is "+" or "*", then
     clever referencing is used; i.e., a name is placed in front of the number
     or string tag.  The 'plusname' and 'starname' lists give the singular
@@ -654,13 +657,15 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
     'target' is the LaTeX type for clever referencing (e.g., "figure",
     "equation", "table", ...)."""
 
-    global _CLEVEREFTEX  # pylint: disable=global-statement
+    global _cleveref_tex_flag  # pylint: disable=global-statement
 
     # Update global if clever referencing is required by default
-    _CLEVEREFTEX = _CLEVEREFTEX or cleveref_default
+    _cleveref_tex_flag = _cleveref_tex_flag or use_cleveref_default
 
-    def _cleveref_tex(key, value, meta):
-        r"""Produces TeX to support clever referencing in LaTeX documents.
+    def _insert_cleveref_fakery(key, value, meta):
+        r"""Inserts TeX to support clever referencing in LaTeX documents
+        if the key isn't a RawBlock.  If the key is a RawBlock, then check
+        the value to see if the TeX was already inserted.
 
         The \providecommand macro is used to fake the cleveref package's
         behaviour if it is not provided in the template via
@@ -669,7 +674,7 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
         TeX is inserted into the value.  Replacement elements are returned.
         """
 
-        global _CLEVEREFTEX  # pylint: disable=global-statement
+        global _cleveref_tex_flag  # pylint: disable=global-statement
 
         comment1 = '% pandoc-xnos: cleveref formatting'
         tex1 = [comment1,
@@ -680,11 +685,13 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
             if value[1].startswith(comment1):
                 # Append the new portion
                 value[1] = value[1] + '\n' + '\n'.join(tex1[1:])
-                _CLEVEREFTEX = False  # Cleveref fakery already installed
+                _cleveref_tex_flag = False  # Cleveref fakery already installed
 
         elif key != 'RawBlock':  # Write the cleveref TeX
-            _CLEVEREFTEX = False  # Cancels further attempts
+            _cleveref_tex_flag = False  # Cancels further attempts
             ret = []
+
+            # Check first to see if fakery is turned off
             if not 'xnos-cleveref-fake' in meta or \
               get_meta(meta, 'xnos-cleveref-fake'):
                 # Cleveref fakery
@@ -718,15 +725,15 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
         text = str(references[label])
 
         # Choose between \Cref, \cref and \ref
-        cleveref = attrs['modifier'] in ['*', '+'] \
-          if 'modifier' in attrs.kvs else cleveref_default
+        use_cleveref = attrs['modifier'] in ['*', '+'] \
+          if 'modifier' in attrs.kvs else use_cleveref_default
         plus = attrs['modifier'] == '+' if 'modifier' in attrs.kvs \
-          else cleveref_default
+          else use_cleveref_default
         name = plusname[0] if plus else starname[0]  # Name used by cref
 
         # The replacement depends on the output format
         if fmt == 'latex':
-            if cleveref:
+            if use_cleveref:
                 # Renew commands needed for cleveref fakery
                 if not 'xnos-cleveref-fake' in meta or \
                   get_meta(meta, 'xnos-cleveref-fake'):
@@ -736,9 +743,14 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
                     faketex = ''
                 macro = r'\cref' if plus else r'\Cref'
                 ret = RawInline('tex', r'%s%s{%s}'%(faketex, macro, label))
+            elif use_eqref:
+                ret = RawInline('tex', r'\eqref{%s}'%label)
             else:
                 ret = RawInline('tex', r'\ref{%s}'%label)
         else:
+            if use_eqref:
+                text = '(' + text + ')'
+
             linktext = [Math({"t":"InlineMath", "c":[]}, text[1:-1]) \
                if text.startswith('$') and text.endswith('$') \
                else Str(text)]
@@ -746,17 +758,17 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
             link = elt('Link', 2)(linktext, ['#%s' % label, '']) \
               if _PANDOCVERSION < '1.16' else \
               Link(['', [], []], linktext, ['#%s' % label, ''])
-            ret = ([Str(name), Space()] if cleveref else []) + [link]
+            ret = ([Str(name), Space()] if use_cleveref else []) + [link]
 
         return ret
 
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces references with format-specific content."""
 
-        if fmt == 'latex' and _CLEVEREFTEX:
+        if fmt == 'latex' and _cleveref_tex_flag:
 
-            # Put the cleveref TeX in front of the first block element that
-            # isn't a RawBlock.
+            # Put the cleveref TeX fakery in front of the first block element
+            # that isn't a RawBlock.
 
             if not key in ['Plain', 'Para', 'CodeBlock', 'RawBlock',
                            'BlockQuote', 'OrderedList', 'BulletList',
@@ -768,7 +780,7 @@ def replace_refs_factory(references, cleveref_default, plusname, starname,
             el = _getel(key, value)
 
             # Insert cleveref TeX in front of the block element
-            tex = _cleveref_tex(key, value, meta)
+            tex = _insert_cleveref_fakery(key, value, meta)
             if tex:
                 return  tex + [el]
 
@@ -861,7 +873,8 @@ def insert_secnos_factory(f):
 
     def insert_secnos(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Inserts section numbers into elements attributes."""
-        global SEC  # pylint: disable=global-statement
+
+        global sec  # pylint: disable=global-statement
 
         if 'xnos-number-sections' in meta and \
           meta['xnos-number-sections']['c'] and \
@@ -870,13 +883,13 @@ def insert_secnos_factory(f):
                 if 'unnumbered' in value[1][1]:
                     return
                 level = value[0]
-                n = level - len(SEC)
+                n = level - len(sec)
                 if n > 0:
-                    SEC.extend([0]*n)
-                SEC[level-1] += 1
-                SEC = SEC[:MAXLEVEL]
+                    sec.extend([0]*n)
+                sec[level-1] += 1
+                sec = sec[:MAXLEVEL]
             if key == name:
-                s = '.'.join([str(n) for n in SEC])
+                s = '.'.join([str(n) for n in sec])
                 value[0][2].insert(0, ['secno', s])
 
     return insert_secnos

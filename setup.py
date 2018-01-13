@@ -22,7 +22,7 @@ from setuptools import setup
 
 DESCRIPTION = 'Library code for the pandoc-fignos/eqnos/tablenos filters.'
 
-VERSION = '0.14'
+VERSION = '0.15'
 
 setup(
     name='pandoc-xnos',
