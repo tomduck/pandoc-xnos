@@ -3,6 +3,21 @@
 Developer Notes
 ===============
 
+Contributions to this project are welcome.  There are a number of outstanding
+Issues that need to be addressed.  Before you begin, please give me a heads-up
+so that we don't work at cross-purposes.
+
+Substantial contributions of code will be acknowledged in the AUTHORS file.
+
+
+Branches
+--------
+
+Development is mostly done in the `nextrelease` branch.  When complete
+(and tested), the changes are merged into the `master` branch and a new
+release is prepared.
+
+
 Copyrights
 ----------
 
@@ -48,6 +63,6 @@ Creating a source distribution:
 
 Uploading to pypi (update the version number):
 
-    $ twine upload dist/pandoc-xnos-0.15.tar.gz
+    $ twine upload dist/pandoc-xnos-1.0.0.tar.gz
 
 (from https://pypi.python.org/pypi/twine).
