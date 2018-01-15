@@ -1,3 +1,10 @@
+pandoc-xnos 1.0.0 (2018-01-14)
+
+    * Moving to MAJOR.MINOR.PATCH release semantic versioning as per
+      https://semver.org/.  API changes will result in an increment
+      of the MAJOR number.  This helps fix pandoc-fignos Issue #46.
+
+
 pandoc-xnos 0.15 (2018-01-13)
 
     * Added support for AMS-style equations referencing
