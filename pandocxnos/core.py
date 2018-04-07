@@ -890,6 +890,8 @@ def insert_secnos_factory(f):
                 sec = sec[:MAXLEVEL]
             if key == name:
                 s = '.'.join([str(n) for n in sec])
+                if 2 not in value[0]:
+                    value[0][2] = []
                 value[0][2].insert(0, ['secno', s])
 
     return insert_secnos
