@@ -116,14 +116,14 @@ class TestXnos(unittest.TestCase):
         ## test.md: ---\nfoo: True\n... ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"meta":{"foo": {"t": "MetaInlines", "c": [{"t": "Str", "c": "True"}]}},"blocks":[],"pandoc-api-version":[1,17,5,1]}''')
+        src = eval(r'''{"blocks": [], "pandoc-api-version": [1, 17, 5, 1], "meta": {"foo": {"t": "MetaBool", "c": True}}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nfoo: True\n...'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip()\
-            .decode("utf-8").replace('true', 'True'))        
+            'pandoc -t json'.split(),
+            stdin=md.stdout).strip().decode("utf-8").replace('true', 'True'))
         self.assertEqual(src, output)
 
         expected = True
@@ -138,16 +138,17 @@ class TestXnos(unittest.TestCase):
         ## test.md: ---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$ {#eq:1}\n ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks":[{"t":"Header","c":[1,["title",[],[]],[{"t":"Str","c":"Title"}]]},{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath"}," x "]},{"t":"Space"},{"t":"Str","c":"{#eq:1}"}]}],"pandoc-api-version":[1,17,5,1],"meta":{"xnos-number-sections":{"t":"MetaInlines","c":[{"t":"Str","c":"True"}]}}}''')
+        src = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}, {"t": "Space"}, {"t": "Str", "c": "{#eq:1}"}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$ {#eq:1}\n'), stdout=subprocess.PIPE)
         
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            'pandoc -t json'.split(),
+            stdin=md.stdout).strip().decode("utf-8").replace('true', 'True'))
         self.assertEqual(src, output)
 
-        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [["eq:1", [], [["secno", "1"]]], {"t": "DisplayMath"}, " x "]}, {"t": "Space"}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaInlines", "c": [{"t": "Str", "c": "True"}]}}}''')
+        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [["eq:1", [], [["secno", "1"]]], {"t": "DisplayMath"}, " x "]}, {"t": "Space"}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
 
         # Make the comparison
         meta = src['meta']
@@ -164,16 +165,17 @@ class TestXnos(unittest.TestCase):
         ## test.md: ---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$\n ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks":[{"t":"Header","c":[1,["title",[],[]],[{"t":"Str","c":"Title"}]]},{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath"}," x "]}]}],"pandoc-api-version":[1,17,5,1],"meta":{"xnos-number-sections":{"t":"MetaInlines","c":[{"t":"Str","c":"True"}]}}}''')
+        src = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$\n'), stdout=subprocess.PIPE)
         
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            'pandoc -t json'.split(),
+            stdin=md.stdout).strip().decode("utf-8").replace('true', 'True'))
         self.assertEqual(src, output)
 
-        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaInlines", "c": [{"t": "Str", "c": "True"}]}}}''')
+        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
 
         # Make the comparison
         meta = src['meta']
