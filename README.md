@@ -27,6 +27,7 @@ given in the function docstrings.
 #### Utility functions ####
 
   * `init()` - Determines and returns the pandoc version
+  * `check_bool()` - Used to check if a variable is boolean
   * `get_meta()` - Retrieves variables from a document's metadata
 
 #### Element list functions ####
