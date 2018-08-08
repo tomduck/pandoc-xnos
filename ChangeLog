@@ -1,6 +1,9 @@
 pandoc-xnos 1.1 (unreleased)
 
-    * Update to address change in boolean handling in pandoc.
+    * A workaround is provided for a bug in boolean metadata handling
+      for pandoc 2.2.3 and 2.2.3.1 (see pandoc Issue #4819).
+    * A bug involving xnos-number-sections and unattributed
+      equations is fixed (see pandoc-xnos Issue #30).
 
 
 pandoc-xnos 1.0.1 (2018-01-14)

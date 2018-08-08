@@ -23,7 +23,7 @@ import sys
 import unittest
 import subprocess
 
-from pandocfilters import walk, Math
+from pandocfilters import walk, Math, Image
 
 import pandocxnos
 from pandocxnos import PandocAttributes
@@ -32,6 +32,7 @@ from pandocxnos import join_strings
 from pandocxnos import quotify, dollarfy
 from pandocxnos import extract_attrs
 from pandocxnos import attach_attrs_factory, detach_attrs_factory
+from pandocxnos import insert_secnos_factory
 from pandocxnos import repair_refs, process_refs_factory, replace_refs_factory
 
 PANDOCVERSION = '2.1'
@@ -131,6 +132,58 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(get_meta(src['meta'], 'foo'), expected)
 
 
+    def test_insert_secnos_factory_1(self):
+        """Tests insert_secnos_factory() #1."""
+
+        ## test.md: ---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$ {#eq:1}\n ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''{"blocks":[{"t":"Header","c":[1,["title",[],[]],[{"t":"Str","c":"Title"}]]},{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath"}," x "]},{"t":"Space"},{"t":"Str","c":"{#eq:1}"}]}],"pandoc-api-version":[1,17,5,1],"meta":{"xnos-number-sections":{"t":"MetaInlines","c":[{"t":"Str","c":"True"}]}}}''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$ {#eq:1}\n'), stdout=subprocess.PIPE)
+        
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [["eq:1", [], [["secno", "1"]]], {"t": "DisplayMath"}, " x "]}, {"t": "Space"}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaInlines", "c": [{"t": "Str", "c": "True"}]}}}''')
+
+        # Make the comparison
+        meta = src['meta']
+        fmt = 'html'
+        attach_attrs_math = attach_attrs_factory(Math, allow_space=True)
+        insert_secnos = insert_secnos_factory(Math)
+        tmp = walk(src, attach_attrs_math, fmt, meta)
+        self.assertEqual(walk(tmp, insert_secnos, fmt, meta), expected)
+
+
+    def test_insert_secnos_factory_2(self):
+        """Tests insert_secnos_factory() #2."""
+
+        ## test.md: ---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$\n ##
+
+        # Command: pandoc test.md -t json
+        src = eval(r'''{"blocks":[{"t":"Header","c":[1,["title",[],[]],[{"t":"Str","c":"Title"}]]},{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath"}," x "]}]}],"pandoc-api-version":[1,17,5,1],"meta":{"xnos-number-sections":{"t":"MetaInlines","c":[{"t":"Str","c":"True"}]}}}''')
+
+        # Check src against current pandoc
+        md = subprocess.Popen(('echo', '---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$\n'), stdout=subprocess.PIPE)
+        
+        output = eval(subprocess.check_output(
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
+        self.assertEqual(src, output)
+
+        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaInlines", "c": [{"t": "Str", "c": "True"}]}}}''')
+
+        # Make the comparison
+        meta = src['meta']
+        fmt = 'html'
+        attach_attrs_math = attach_attrs_factory(Math, allow_space=True)
+        insert_secnos = insert_secnos_factory(Math)
+        tmp = walk(src, attach_attrs_math, fmt, meta)
+        self.assertEqual(walk(tmp, insert_secnos, fmt, meta), expected)
+
+        
     def test_elt(self):
         """Tests elt()."""
 

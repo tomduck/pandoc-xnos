@@ -218,19 +218,18 @@ def get_meta(meta, name):
     """Retrieves the metadata variable 'name' from the 'meta' dict."""
     assert name in meta
     data = meta[name]
-    
+
     if data['t'] in ['MetaString', 'MetaBool']:
         return data['c']
     elif data['t'] == 'MetaInlines':
-        if len(data['c'])==1 and data['c'][0]['t'] == 'Str':
+        # Handle bug in pandoc 2.2.3 and 2.2.3.1: Return boolean value rather
+        # than strings, as appropriate.
+        if len(data['c']) == 1 and data['c'][0]['t'] == 'Str':
             if data['c'][0]['c'] in ['true', 'True', 'TRUE']:
                 return True
             elif data['c'][0]['c'] in ['false', 'False', 'FALSE']:
                 return False
-            else:
-                return stringify(data['c'])
-        else:
-            return stringify(data['c'])
+        return stringify(data['c'])
     elif data['t'] == 'MetaList':
         return [stringify(v['c']) for v in data['c']]
     else:
@@ -847,9 +846,6 @@ def detach_attrs_factory(f):
     Attributes provided natively by pandoc will be left as is."""
 
     # Get the name and standard length
-    if len(f.__closure__) != 2:
-        raise RuntimeError(f.__closure__)
-
     name = f.__closure__[0].cell_contents
     n = f.__closure__[1].cell_contents
 
@@ -876,8 +872,9 @@ def insert_secnos_factory(f):
     section numbers into the attributes of elements of type f.
     """
 
-    # Get the name
+    # Get the name and standard length
     name = f.__closure__[0].cell_contents
+    n = f.__closure__[1].cell_contents
 
     def insert_secnos(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Inserts section numbers into elements attributes."""
@@ -885,20 +882,32 @@ def insert_secnos_factory(f):
         global sec  # pylint: disable=global-statement
 
         if 'xnos-number-sections' in meta and \
-          meta['xnos-number-sections']['c'] and \
-          fmt in ['html', 'html5']:
+          get_meta(meta, 'xnos-number-sections') and \
+              fmt in ['html', 'html5']:
             if key == 'Header':
                 if 'unnumbered' in value[1][1]:
                     return
                 level = value[0]
-                n = level - len(sec)
-                if n > 0:
-                    sec.extend([0]*n)
+                m = level - len(sec)
+                if m > 0:
+                    sec.extend([0]*m)
                 sec[level-1] += 1
                 sec = sec[:MAXLEVEL]
             if key == name:
-                s = '.'.join([str(n) for n in sec])
-                value[0][2].insert(0, ['secno', s])
+
+                # Only insert if attributes are attached
+                assert len(value) <= n+1
+                if len(value) == n+1:
+
+                    # Make sure value[0] represents attributes
+                    assert len(value[0]) == 3
+                    assert type(value[0][0]) in STRTYPES
+                    assert type(value[0][1]) is list
+                    assert type(value[0][2]) is list
+
+                    # Insert the section number into the attributes
+                    s = '.'.join([str(m) for m in sec])
+                    value[0][2].insert(0, ['secno', s])
 
     return insert_secnos
 
@@ -911,17 +920,30 @@ def delete_secnos_factory(f):
     section numbers from the attributes of elements of type f.
     """
 
-    # Get the name
+    # Get the name and standard length
     name = f.__closure__[0].cell_contents
+    n = f.__closure__[1].cell_contents
 
     def delete_secnos(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Deletes section numbers from elements attributes."""
         if 'xnos-number-sections' in meta and \
-          meta['xnos-number-sections']['c'] and \
-          fmt in ['html', 'html5']:
-            if key == name and len(value[0][2]) and \
-              value[0][2][0][0] == 'secno':
-                del value[0][2][0]
+          get_meta(meta, 'xnos-number-sections') and \
+              fmt in ['html', 'html5']:
+
+            # Only delete if attributes are attached
+            assert len(value) <= n+1
+            if len(value) == n+1:
+                
+                # Make sure value[0] represents attributes
+                assert len(value[0]) == 3
+                assert type(value[0][0]) in STRTYPES
+                assert type(value[0][1]) is list
+                assert type(value[0][2]) is list
+
+                # Remove the secno attribute
+                if key == name and len(value[0][2]) and \
+                  value[0][2][0][0] == 'secno':
+                    del value[0][2][0]
 
     return delete_secnos
 
