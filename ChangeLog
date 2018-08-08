@@ -4,6 +4,8 @@ pandoc-xnos 1.1 (unreleased)
       for pandoc 2.2.3 and 2.2.3.1 (see pandoc Issue #4819).
     * A bug involving xnos-number-sections and unattributed
       equations is fixed (see pandoc-xnos Issue #30).
+    * Added processing for references in spans (pandoc-xnos
+      merge request #6).
 
 
 pandoc-xnos 1.0.1 (2018-01-14)

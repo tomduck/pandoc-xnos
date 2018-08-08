@@ -640,6 +640,8 @@ def process_refs_factory(labels):
             _process_refs(value[-2], labels)
         elif key == 'Table':
             _process_refs(value[-5], labels)
+        elif key == 'Span':
+            _process_refs(value[-1], labels)
         elif key == 'Emph':
             _process_refs(value, labels)
         elif key == 'Strong':
