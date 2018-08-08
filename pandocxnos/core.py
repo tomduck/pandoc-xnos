@@ -208,6 +208,21 @@ def init(pandocversion=None, doc=None):
     return _PANDOCVERSION
 
 
+# check_bool() ---------------------------------------------------------------
+
+def check_bool(v):
+    """Checks that metadata value is boolean.  Returns the value or
+    raises an exception."""
+    if type(v) != bool:
+        msg = 'Metadata boolean values must be one of the following: ' \
+              'true, True, TRUE, false, False, FALSE. ' \
+              'As of pandoc 2.2.2, the following are not allowed: ' \
+              'On, Off.'
+        raise ValueError(msg)
+    else:
+        return v
+
+
 # get_meta() -----------------------------------------------------------------
 
 # Metadata json depends upon whether or not the variables were defined on the
@@ -702,7 +717,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
             # Check first to see if fakery is turned off
             if not 'xnos-cleveref-fake' in meta or \
-              get_meta(meta, 'xnos-cleveref-fake'):
+              check_bool(get_meta(meta, 'xnos-cleveref-fake')):
                 # Cleveref fakery
                 tex2 = [
                     r'% pandoc-xnos: cleveref fakery',
@@ -745,7 +760,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
             if use_cleveref:
                 # Renew commands needed for cleveref fakery
                 if not 'xnos-cleveref-fake' in meta or \
-                  get_meta(meta, 'xnos-cleveref-fake'):
+                  check_bool(get_meta(meta, 'xnos-cleveref-fake')):
                     faketex = (r'\xrefname' if plus else r'\Xrefname') + \
                       '{%s}' % name
                 else:
@@ -884,7 +899,7 @@ def insert_secnos_factory(f):
         global sec  # pylint: disable=global-statement
 
         if 'xnos-number-sections' in meta and \
-          get_meta(meta, 'xnos-number-sections') and \
+          check_bool(get_meta(meta, 'xnos-number-sections')) and \
               fmt in ['html', 'html5']:
             if key == 'Header':
                 if 'unnumbered' in value[1][1]:
@@ -929,7 +944,7 @@ def delete_secnos_factory(f):
     def delete_secnos(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Deletes section numbers from elements attributes."""
         if 'xnos-number-sections' in meta and \
-          get_meta(meta, 'xnos-number-sections') and \
+          check_bool(get_meta(meta, 'xnos-number-sections')) and \
               fmt in ['html', 'html5']:
 
             # Only delete if attributes are attached
