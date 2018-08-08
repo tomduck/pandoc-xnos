@@ -6,6 +6,9 @@ pandoc-xnos 1.1 (unreleased)
       equations is fixed (see pandoc-xnos Issue #30).
     * Added processing for references in spans (pandoc-xnos
       merge request #6).
+    * Provides a helpful error message when On or Off are used as
+      boolean xnos metadata values.  As of pandoc 2.2.2 this is no
+      longer allowed.
 
 
 pandoc-xnos 1.0.1 (2018-01-14)
