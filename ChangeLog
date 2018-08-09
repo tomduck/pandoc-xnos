@@ -1,4 +1,4 @@
-pandoc-xnos 1.1 (unreleased)
+pandoc-xnos 1.1 (2018-08-09)
 
     * A workaround is provided for a bug in boolean metadata handling
       for pandoc 2.2.3 and 2.2.3.1 (see pandoc Issue #4819).
