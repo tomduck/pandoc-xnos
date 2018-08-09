@@ -920,9 +920,10 @@ def insert_secnos_factory(f):
                 sec = sec[:MAXLEVEL]
             if key == name:
 
-                # Only insert if attributes are attached
+                # Only insert if attributes are attached.  Images always have
+                # attributes.
                 assert len(value) <= n+1
-                if len(value) == n+1:
+                if name == 'Image' or len(value) == n+1:
 
                     # Make sure value[0] represents attributes
                     assert len(value[0]) == 3
@@ -955,19 +956,21 @@ def delete_secnos_factory(f):
           check_bool(get_meta(meta, 'xnos-number-sections')) and \
               fmt in ['html', 'html5']:
 
-            # Only delete if attributes are attached
-            assert len(value) <= n+1
-            if len(value) == n+1:
+            # Only delete if attributes are attached.   Images always have
+            # attributes.
+            if key == name:
+                assert len(value) <= n+1
+                if name == 'Image' or len(value) == n+1:
 
-                # Make sure value[0] represents attributes
-                assert len(value[0]) == 3
-                assert isinstance(value[0][0], STRTYPES)
-                assert isinstance(value[0][1], list)
-                assert isinstance(value[0][2], list)
+                    # Make sure value[0] represents attributes
+                    assert len(value[0]) == 3
+                    assert isinstance(value[0][0], STRTYPES)
+                    assert isinstance(value[0][1], list)
+                    assert isinstance(value[0][2], list)
 
-                # Remove the secno attribute
-                if key == name and value[0][2] and value[0][2][0][0] == 'secno':
-                    del value[0][2][0]
+                    # Remove the secno attribute
+                    if value[0][2] and value[0][2][0][0] == 'secno':
+                        del value[0][2][0]
 
     return delete_secnos
 
