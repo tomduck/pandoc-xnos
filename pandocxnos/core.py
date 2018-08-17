@@ -716,7 +716,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
                 value[1] = value[1] + '\n' + '\n'.join(tex1[1:])
                 _cleveref_tex_flag = False  # Cleveref fakery already installed
 
-        elif key != 'RawBlock':  # Write the cleveref TeX
+        if _cleveref_tex_flag:  # Write the cleveref TeX
             _cleveref_tex_flag = False  # Cancels further attempts
             ret = []
 
