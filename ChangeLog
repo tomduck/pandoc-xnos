@@ -1,3 +1,9 @@
+pandoc-xnos 1.2.0 (unreleased)
+
+    * Fixed cleveref fakery insertion bug (pandoc-xnos
+      Pull Request #7).
+
+
 pandoc-xnos 1.1.1 (2018-08-09)
 
     * Fixed new problem with section numbers and html output.
