@@ -908,7 +908,7 @@ def insert_secnos_factory(f):
 
         if 'xnos-number-sections' in meta and \
           check_bool(get_meta(meta, 'xnos-number-sections')) and \
-              fmt in ['html', 'html5']:
+              fmt in ['html', 'html5', 'docx']:
             if key == 'Header':
                 if 'unnumbered' in value[1][1]:
                     return
@@ -954,7 +954,7 @@ def delete_secnos_factory(f):
         """Deletes section numbers from elements attributes."""
         if 'xnos-number-sections' in meta and \
           check_bool(get_meta(meta, 'xnos-number-sections')) and \
-              fmt in ['html', 'html5']:
+              fmt in ['html', 'html5', 'docx']:
 
             # Only delete if attributes are attached.   Images always have
             # attributes.
