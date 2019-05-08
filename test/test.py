@@ -2,7 +2,7 @@
 
 """Unit tests for pandoc-xnos."""
 
-# Copyright 2016-2018 Thomas J. Duck.
+# Copyright 2016-2019 Thomas J. Duck.
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -35,7 +35,7 @@ from pandocxnos import attach_attrs_factory, detach_attrs_factory
 from pandocxnos import insert_secnos_factory
 from pandocxnos import repair_refs, process_refs_factory, replace_refs_factory
 
-PANDOCVERSION = '2.1'
+PANDOCVERSION = '2.7'
 PANDOC1p15 = 'pandoc-1.15.2'
 
 pandocxnos.init(PANDOCVERSION)
@@ -54,7 +54,7 @@ class TestXnos(unittest.TestCase):
         ## test.md empty
 
         # Command: pandoc test.md -t json -M foo=bar
-        src = eval(r'''{"meta":{"foo":{"t":"MetaString","c":"bar"}},"blocks":[],"pandoc-api-version":[1,17,5,1]}''')
+        src = eval(r'''{"meta":{"foo":{"t":"MetaString","c":"bar"}},"blocks":[],"pandoc-api-version":[1,17,5,4]}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', ''), stdout=subprocess.PIPE)
@@ -74,7 +74,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: ---\nfoo: bar\n... ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"meta":{"foo":{"t":"MetaInlines","c":[{"t":"Str","c":"bar"}]}},"blocks":[],"pandoc-api-version":[1,17,5,1]}''')
+        src = eval(r'''{"meta":{"foo":{"t":"MetaInlines","c":[{"t":"Str","c":"bar"}]}},"blocks":[],"pandoc-api-version":[1,17,5,4]}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nfoo: bar\n...'),
@@ -95,7 +95,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: ---\nfoo:\n  - bar\n  - baz\n... ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"meta":{"foo":{"t":"MetaList","c":[{"t":"MetaInlines","c":[{"t":"Str","c":"bar"}]},{"t":"MetaInlines","c":[{"t":"Str","c":"baz"}]}]}},"blocks":[],"pandoc-api-version":[1,17,5,1]}''')
+        src = eval(r'''{"meta":{"foo":{"t":"MetaList","c":[{"t":"MetaInlines","c":[{"t":"Str","c":"bar"}]},{"t":"MetaInlines","c":[{"t":"Str","c":"baz"}]}]}},"blocks":[],"pandoc-api-version":[1,17,5,4]}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nfoo:\n  - bar\n  - baz\n...'),
@@ -116,7 +116,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: ---\nfoo: True\n... ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks": [], "pandoc-api-version": [1, 17, 5, 1], "meta": {"foo": {"t": "MetaBool", "c": True}}}''')
+        src = eval(r'''{"blocks": [], "pandoc-api-version": [1, 17, 5, 4], "meta": {"foo": {"t": "MetaBool", "c": True}}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nfoo: True\n...'),
@@ -138,7 +138,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: ---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$ {#eq:1}\n ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}, {"t": "Space"}, {"t": "Str", "c": "{#eq:1}"}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
+        src = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}, {"t": "Space"}, {"t": "Str", "c": "{#eq:1}"}]}], "pandoc-api-version": [1, 17, 5, 4], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$ {#eq:1}\n'), stdout=subprocess.PIPE)
@@ -148,7 +148,7 @@ class TestXnos(unittest.TestCase):
             stdin=md.stdout).strip().decode("utf-8").replace('true', 'True'))
         self.assertEqual(src, output)
 
-        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [["eq:1", [], [["secno", "1"]]], {"t": "DisplayMath"}, " x "]}, {"t": "Space"}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
+        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [["eq:1", [], [["secno", "1"]]], {"t": "DisplayMath"}, " x "]}, {"t": "Space"}]}], "pandoc-api-version": [1, 17, 5, 4], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
 
         # Make the comparison
         meta = src['meta']
@@ -165,7 +165,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: ---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$\n ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
+        src = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [1, 17, 5, 4], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$\n'), stdout=subprocess.PIPE)
@@ -175,7 +175,7 @@ class TestXnos(unittest.TestCase):
             stdin=md.stdout).strip().decode("utf-8").replace('true', 'True'))
         self.assertEqual(src, output)
 
-        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [1, 17, 5, 1], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
+        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [1, 17, 5, 4], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
 
         # Make the comparison
         meta = src['meta']
@@ -202,7 +202,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: "test" ##
 
         # Command: pandoc test.md -f markdown+smart -t json
-        src = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Quoted","c":[{"t":"DoubleQuote"},[{"t":"Str","c":"test"}]]}]}],"pandoc-api-version":[1,17,5,1]}''')
+        src = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Quoted","c":[{"t":"DoubleQuote"},[{"t":"Str","c":"test"}]]}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '"test"'), stdout=subprocess.PIPE)
@@ -212,7 +212,7 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Command: pandoc -f markdown-smart test.md -t json
-        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"\"test\""}]}],"pandoc-api-version":[1,17,5,1]}''')
+        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"\"test\""}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Check expected against current pandoc
         md = subprocess.Popen(('echo', '"test"'), stdout=subprocess.PIPE)
@@ -231,7 +231,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: This is 'test 2'. ##
 
         # Command: pandoc test.md -f markdown+smart -t json
-        src = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"This"},{"t":"Space"},{"t":"Str","c":"is"},{"t":"Space"},{"t":"Quoted","c":[{"t":"SingleQuote"},[{"t":"Str","c":"test"},{"t":"Space"},{"t":"Str","c":"2"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,1]}''')
+        src = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"This"},{"t":"Space"},{"t":"Str","c":"is"},{"t":"Space"},{"t":"Quoted","c":[{"t":"SingleQuote"},[{"t":"Str","c":"test"},{"t":"Space"},{"t":"Str","c":"2"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', "This is 'test 2'."),
@@ -242,7 +242,7 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Command: pandoc -f markdown-smart test.md -t json
-        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"This"},{"t":"Space"},{"t":"Str","c":"is"},{"t":"Space"},{"t":"Str","c":"'test"},{"t":"Space"},{"t":"Str","c":"2'."}]}],"pandoc-api-version":[1,17,5,1]}''')
+        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"This"},{"t":"Space"},{"t":"Str","c":"is"},{"t":"Space"},{"t":"Str","c":"'test"},{"t":"Space"},{"t":"Str","c":"2'."}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Check expected against current pandoc
         md = subprocess.Popen(('echo', "This is 'test 2'."),
@@ -262,7 +262,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: $\frac{1}{2}$ ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Math","c":[{"t":"InlineMath"},"\\frac{1}{2}"]}]}],"pandoc-api-version":[1,17,5,1]}''')
+        src = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Math","c":[{"t":"InlineMath"},"\\frac{1}{2}"]}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', r'$\frac{1}{2}$'),
@@ -284,7 +284,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: Test {#eq:id .class tag="foo"}. ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"Test"},{"t":"Space"},{"t":"Str","c":"{#eq:id"},{"t":"Space"},{"t":"Str","c":".class"},{"t":"Space"},{"t":"Str","c":"tag="},{"t":"Quoted","c":[{"t":"DoubleQuote"},[{"t":"Str","c":"foo"}]]},{"t":"Str","c":"}."}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"Test"},{"t":"Space"},{"t":"Str","c":"{#eq:id"},{"t":"Space"},{"t":"Str","c":".class"},{"t":"Space"},{"t":"Str","c":"tag="},{"t":"Quoted","c":[{"t":"DoubleQuote"},[{"t":"Str","c":"foo"}]]},{"t":"Str","c":"}."}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'Test {#eq:id .class tag="foo"}.'),
@@ -306,7 +306,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: Test {#eq:id .class tag="foo"}. ##
 
         # Command: pandoc test.md -f markdown+smart -t json
-        src = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"Test"},{"t":"Space"},{"t":"Str","c":"{#eq:id"},{"t":"Space"},{"t":"Str","c":".class"},{"t":"Space"},{"t":"Str","c":"tag="},{"t":"Quoted","c":[{"t":"DoubleQuote"},[{"t":"Str","c":"foo"}]]},{"t":"Str","c":"}."}]}],"pandoc-api-version":[1,17,5,1]}''')
+        src = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"Test"},{"t":"Space"},{"t":"Str","c":"{#eq:id"},{"t":"Space"},{"t":"Str","c":".class"},{"t":"Space"},{"t":"Str","c":"tag="},{"t":"Quoted","c":[{"t":"DoubleQuote"},[{"t":"Str","c":"foo"}]]},{"t":"Str","c":"}."}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Check src against pandoc-1.17.2
         md = subprocess.Popen(('echo', 'Test {#eq:id .class tag="foo"}.'),
@@ -471,7 +471,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: As shown in @fig:one. ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space"},{"t":"Str","c":"shown"},{"t":"Space"},{"t":"Str","c":"in"},{"t":"Space"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space"},{"t":"Str","c":"shown"},{"t":"Space"},{"t":"Str","c":"in"},{"t":"Space"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'As shown in @fig:one.'),
@@ -482,7 +482,7 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Hand-coded (added empty attributes)
-        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space"},{"t":"Str","c":"shown"},{"t":"Space"},{"t":"Str","c":"in"},{"t":"Space"},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,1]}''')
+        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space"},{"t":"Str","c":"shown"},{"t":"Space"},{"t":"Str","c":"in"},{"t":"Space"},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Make the comparison
         process_refs = process_refs_factory(['fig:one'])
@@ -496,7 +496,7 @@ class TestXnos(unittest.TestCase):
 
         # Command: pandoc test.md -t json
         src = eval(
-            r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"("},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"eq:one","citationHash":0}],[{"t":"Str","c":"@eq:one"}]]},{"t":"Str","c":")"}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+            r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"("},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"eq:one","citationHash":0}],[{"t":"Str","c":"@eq:one"}]]},{"t":"Str","c":")"}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '(@eq:one)'), stdout=subprocess.PIPE)
@@ -506,7 +506,7 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Hand-coded (attributes added)
-        expected = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"("},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"eq:one","citationHash":0}],[{"t":"Str","c":"@eq:one"}]]},{"t":"Str","c":")"}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+        expected = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"("},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"eq:one","citationHash":0}],[{"t":"Str","c":"@eq:one"}]]},{"t":"Str","c":")"}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Make the comparison
         process_refs = process_refs_factory(['eq:one'])
@@ -519,7 +519,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: See {@tbl:1}. ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"}."}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"}."}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'See {@tbl:1}.'), stdout=subprocess.PIPE)
@@ -528,7 +528,7 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Hand-coded (braces stripped, attributes added)
-        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Make the comparison
         process_refs = process_refs_factory(['tbl:1'])
@@ -541,7 +541,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: See +@eq:1. ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Str","c":"+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Str","c":"+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'See +@eq:1.'), stdout=subprocess.PIPE)
@@ -550,7 +550,7 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Hand-coded (modifier extracted, attributes added)
-        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,1]}''')
+        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Make the comparison
         process_refs = process_refs_factory(['eq:1'])
@@ -563,7 +563,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: See {+@tbl:1}. ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"}."}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"}."}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'See {+@tbl:1}.'), stdout=subprocess.PIPE)
@@ -572,7 +572,7 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Hand-coded (braces stripped, modifier extracted, attributes added)
-        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,1]}''')
+        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Make the comparison
         process_refs = process_refs_factory(['tbl:1'])
@@ -585,7 +585,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: See xxx{+@tbl:1}xxx. ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Str","c":"xxx{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"}xxx."}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Str","c":"xxx{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"}xxx."}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'See xxx{+@tbl:1}xxx.'), stdout=subprocess.PIPE)
@@ -594,7 +594,7 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Hand-coded (braces stripped, modifier extracted, attributes added)
-        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Str","c":"xxx"},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"xxx."}]}],"pandoc-api-version":[1,17,5,1]}''')
+        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Str","c":"xxx"},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"xxx."}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Make the comparison
         process_refs = process_refs_factory(['tbl:1'])
@@ -607,7 +607,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: {+@tbl:one}-{@tbl:four} provide the data. ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"}-{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Str","c":"}"},{"t":"Space"},{"t":"Str","c":"provide"},{"t":"Space"},{"t":"Str","c":"the"},{"t":"Space"},{"t":"Str","c":"data."}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"}-{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Str","c":"}"},{"t":"Space"},{"t":"Str","c":"provide"},{"t":"Space"},{"t":"Str","c":"the"},{"t":"Space"},{"t":"Str","c":"data."}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(
@@ -618,7 +618,7 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Hand-coded
-        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"-"},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Space"},{"t":"Str","c":"provide"},{"t":"Space"},{"t":"Str","c":"the"},{"t":"Space"},{"t":"Str","c":"data."}]}],"pandoc-api-version":[1,17,5,1]}''')
+        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"-"},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Space"},{"t":"Str","c":"provide"},{"t":"Space"},{"t":"Str","c":"the"},{"t":"Space"},{"t":"Str","c":"data."}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Make the comparison
         process_refs = process_refs_factory(['tbl:one', 'tbl:four'])
@@ -707,7 +707,7 @@ class TestXnos(unittest.TestCase):
         ## test.md: $$ y = f(x) $${#eq:1 tag="B.1"} ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath"}," y = f(x) "]},{"t":"Str","c":"{#eq:1"},{"t":"Space"},{"t":"Str","c":"tag="},{"t":"Quoted","c":[{"t":"DoubleQuote"},[{"t":"Str","c":"B.1"}]]},{"t":"Str","c":"}"}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+        src = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath"}," y = f(x) "]},{"t":"Str","c":"{#eq:1"},{"t":"Space"},{"t":"Str","c":"tag="},{"t":"Quoted","c":[{"t":"DoubleQuote"},[{"t":"Str","c":"B.1"}]]},{"t":"Str","c":"}"}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '$$ y = f(x) $${#eq:1 tag="B.1"}'),
@@ -717,7 +717,7 @@ class TestXnos(unittest.TestCase):
         self.assertEqual(src, output)
 
         # Hand-coded (attributes deleted)
-        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Math","c":[["eq:1",[],[["tag","B.1"]]],{"t":"DisplayMath"}," y = f(x) "]}]}],"pandoc-api-version":[1,17,5,1]}''')
+        expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Math","c":[["eq:1",[],[["tag","B.1"]]],{"t":"DisplayMath"}," y = f(x) "]}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # Make the comparison
         self.assertEqual(walk(src, attach_attrs_math, '', {}), expected)
@@ -730,11 +730,11 @@ class TestXnos(unittest.TestCase):
 
         ## Use 'expected' from test_attach_attrs_factory ##
 
-        src = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Math","c":[["eq:1",[],[["tag","B.1"]]],{"t":"DisplayMath"}," y = f(x) "]}]}],"pandoc-api-version":[1,17,5,1]}''')
+        src = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Math","c":[["eq:1",[],[["tag","B.1"]]],{"t":"DisplayMath"}," y = f(x) "]}]}],"pandoc-api-version":[1,17,5,4]}''')
 
         # test.md: $$ y = f(x) $$
         # Command: pandoc test.md -t json
-        expected = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath"}," y = f(x) "]}]}],"pandoc-api-version":[1,17,5,1],"meta":{}}''')
+        expected = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Math","c":[{"t":"DisplayMath"}," y = f(x) "]}]}],"pandoc-api-version":[1,17,5,4],"meta":{}}''')
 
         # Check expected against current pandoc
         md = subprocess.Popen(('echo', '$$ y = f(x) $$'),
