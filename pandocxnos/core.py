@@ -161,16 +161,15 @@ def init(pandocversion=None, doc=None):
     if 'PANDOC_VERSION' in os.environ:  # Available for pandoc >= 1.19.1
         pandocversion = str(os.environ['PANDOC_VERSION'])
 
-    if not pandocversion is None:
+    if pandocversion is not None:
         # Test the result and if it is OK then store it in _PANDOCVERSION
         if pattern.match(pandocversion):
             _PANDOCVERSION = pandocversion
             return _PANDOCVERSION
-        else:
-            msg = 'Cannot understand pandocversion=%s'%pandocversion
-            raise RuntimeError(msg)
+        msg = 'Cannot understand pandocversion=%s'%pandocversion
+        raise RuntimeError(msg)
 
-    if not doc is None:
+    if doc is not None:
         if 'pandoc-api-version' in doc:
             # This could be either 1.18 or 1.19; there is no way to
             # distinguish them (but there isn't a use case in pandoc-fignos
@@ -223,8 +222,7 @@ def check_bool(v):
               'As of pandoc 2.2.2, the following are not allowed: ' \
               'On, Off.'
         raise ValueError(msg)
-    else:
-        return v
+    return v
 
 
 # get_meta() -----------------------------------------------------------------
@@ -240,20 +238,19 @@ def get_meta(meta, name):
 
     if data['t'] in ['MetaString', 'MetaBool']:
         return data['c']
-    elif data['t'] == 'MetaInlines':
+    if data['t'] == 'MetaInlines':
         # Handle bug in pandoc 2.2.3 and 2.2.3.1: Return boolean value rather
         # than strings, as appropriate.
         if len(data['c']) == 1 and data['c'][0]['t'] == 'Str':
             if data['c'][0]['c'] in ['true', 'True', 'TRUE']:
                 return True
-            elif data['c'][0]['c'] in ['false', 'False', 'FALSE']:
+            if data['c'][0]['c'] in ['false', 'False', 'FALSE']:
                 return False
         return stringify(data['c'])
-    elif data['t'] == 'MetaList':
+    if data['t'] == 'MetaList':
         return [stringify(v['c']) for v in data['c']]
-    else:
-        raise RuntimeError("Could not understand metadata variable '%s'." %
-                           name)
+    raise RuntimeError("Could not understand metadata variable '%s'." %
+                       name)
 
 
 # elt() ----------------------------------------------------------------------
@@ -278,8 +275,8 @@ def _getel(key, value):
     """Returns an element given a key and value."""
     if key in ['HorizontalRule', 'Null']:
         return elt(key, 0)()
-    elif key in ['Plain', 'Para', 'BlockQuote', 'BulletList',
-                 'DefinitionList', 'HorizontalRule', 'Null']:
+    if key in ['Plain', 'Para', 'BlockQuote', 'BulletList',
+               'DefinitionList', 'HorizontalRule', 'Null']:
         return elt(key, 1)(value)
     return elt(key, len(value))(*value)
 
@@ -474,13 +471,13 @@ def _is_broken_ref(key1, value1, key2, value2):
 
     s = value1[n][0]['c'] + value2
     # Return True if this matches the reference regex
-    return True if _REF.match(s) else False
+    return bool(_REF.match(s))
 
 @_repeat
 def _repair_refs(x):
     """Performs the repair on the element list 'x'."""
 
-    if _PANDOCVERSION is None:
+    if not bool(_PANDOCVERSION):
         raise RuntimeError('Module uninitialized.  Please call init().')
 
     # Scan the element list x
@@ -582,7 +579,7 @@ def _remove_brackets(x, i):
     extracted.  Empty strings are deleted from 'x'."""
 
     assert x[i]['t'] == 'Cite'
-    assert i > 0 and i < len(x) - 1
+    assert 0 < i < len(x) - 1
 
     # Check if the surrounding elements are strings
     if not x[i-1]['t'] == x[i+1]['t'] == 'Str':
@@ -624,7 +621,7 @@ def _process_refs(x, labels):
             v['c'].insert(0, attrs)
 
             # Remove surrounding brackets
-            if i > 0 and i < len(x)-1:
+            if 0 < i < len(x)-1:
                 _remove_brackets(x, i)
 
             # The element list may be changed
