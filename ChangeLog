@@ -1,6 +1,6 @@
-pandoc-xnos 1.2.0 (unreleased)
+pandoc-xnos 1.1.2 (unreleased)
 
-    * 
+    * Allow xnos-number-sections with docx (pandoc-fignos Issue #59).
 
 
 pandoc-xnos 1.1.1 (2018-08-09)
