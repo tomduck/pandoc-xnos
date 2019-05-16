@@ -1,3 +1,9 @@
+pandoc-xnos 1.2.0 (2019-05-15)
+
+    * Support for references from in bracketed spans (pandoc-fignos
+      Issue #58).
+
+
 pandoc-xnos 1.1.2 (2019-05-15)
 
     * Allow xnos-number-sections with docx (pandoc-fignos Issue #59).

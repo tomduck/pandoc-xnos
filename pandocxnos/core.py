@@ -67,7 +67,7 @@ import copy
 
 import psutil
 
-from pandocfilters import Str, Space, Math, RawInline, RawBlock, Link
+from pandocfilters import Str, Space, Math, RawInline, RawBlock, Link, Span
 from pandocfilters import walk, stringify
 from pandocfilters import elt as _elt
 
@@ -546,7 +546,8 @@ def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
 def _get_label(key, value):
     """Gets the label from a reference."""
     assert key == 'Cite'
-    return value[-1][0]['c'][1:]
+    return value[-2][0]['citationId']
+    #return value[-1][0]['c'][1:]
 
 def _extract_modifier(x, i, attrs):
     """Extracts the */+/! modifier in front of the Cite at index 'i' of the
@@ -556,18 +557,38 @@ def _extract_modifier(x, i, attrs):
     global _cleveref_tex_flag  # pylint: disable=global-statement
 
     assert x[i]['t'] == 'Cite'
-    assert i > 0
 
-    # Check the previous element for a modifier in the last character
-    if x[i-1]['t'] == 'Str':
-        modifier = x[i-1]['c'][-1]
+    # The modifier can either be found in the Cite prefix or in the Str
+    # preceeding the Cite.  We must handle both cases.
+    
+    s = None            # The string containing the modifier
+    modifier = None     # The modifier character
+    has_prefix = False  # Flags that the Cite has a prefix
+    if x[i]['c'][-2][0]['citationPrefix'] and \
+      x[i]['c'][-2][0]['citationPrefix'][-1]['t'] == 'Str':
+        # Modifier is in the last character of the citation prefix
+        s = x[i]['c'][-2][0]['citationPrefix'][-1]['c']
+        modifier = s[-1]
+        has_prefix = True
+    elif i > 0 and x[i-1]['t'] == 'Str':
+        # Modifier is in the last character of the previous string
+        s = x[i-1]['c']
+        modifier = s[-1]
+    if modifier:
         if not _cleveref_tex_flag and modifier in ['*', '+']:
             _cleveref_tex_flag = True
         if modifier in ['*', '+', '!']:
             attrs[2].append(['modifier', modifier])
-            if len(x[i-1]['c']) > 1:  # Lop the modifier off of the string
-                x[i-1]['c'] = x[i-1]['c'][:-1]
-            else:  # The element contains only the modifier; delete it
+            if len(s) > 1:  # Lop the modifier off of the string
+                if has_prefix:
+                    x[i]['c'][-2][0]['citationPrefix'][-1]['c'] = \
+                        x[i]['c'][-2][0]['citationPrefix'][-1]['c'][:-1]
+                else:
+                    x[i-1]['c'] = x[i-1]['c'][:-1]
+            # The element contains only the modifier; delete it
+            elif has_prefix:
+                del x[i]['c'][-2][0]['citationPrefix'][-1]
+            else:
                 del x[i-1]
                 i -= 1
 
@@ -579,31 +600,46 @@ def _remove_brackets(x, i):
     extracted.  Empty strings are deleted from 'x'."""
 
     assert x[i]['t'] == 'Cite'
-    assert 0 < i < len(x) - 1
 
-    # Check if the surrounding elements are strings
-    if not x[i-1]['t'] == x[i+1]['t'] == 'Str':
-        return
+    # Look at the Cite prefix/suffix if available, otherwise the surrounding
+    # text.
+    if x[i]['c'][-2][0]['citationPrefix'] and \
+      x[i]['c'][-2][0]['citationSuffix']:
+      if x[i]['c'][-2][0]['citationPrefix'][-1]['t'] == \
+        x[i]['c'][-2][0]['citationSuffix'][0]['t'] == 'Str':
+          # The surrounding elements are strings; trim off curly brackets
+          if x[i]['c'][-2][0]['citationPrefix'][-1]['c'].endswith('{') and \
+            x[i]['c'][-2][0]['citationSuffix'][0]['c'].startswith('}'):
+              if len(x[i]['c'][-2][0]['citationSuffix'][0]['c']) > 1:
+                  x[i]['c'][-2][0]['citationSuffix'][0]['c'] = \
+                    x[i]['c'][-2][0]['citationSuffix'][0]['c'][1:]
+              else:
+                  del x[i]['c'][-2][0]['citationSuffix'][0]
+              if len(x[i]['c'][-2][0]['citationPrefix'][-1]['c']) > 1:
+                  x[i]['c'][-2][0]['citationPrefix'][-1]['c'] = \
+                    x[i]['c'][-2][0]['citationPrefix'][-1]['c'][:-1]
+              else:
+                  del x[i]['c'][-2][0]['citationPrefix'][-1]
 
-    # Trim off curly brackets
-    if x[i-1]['c'].endswith('{') and x[i+1]['c'].startswith('}'):
-        if len(x[i+1]['c']) > 1:
-            x[i+1]['c'] = x[i+1]['c'][1:]
-        else:
-            del x[i+1]
-
-        if len(x[i-1]['c']) > 1:
-            x[i-1]['c'] = x[i-1]['c'][:-1]
-        else:
-            del x[i-1]
+    elif 0 < i < len(x)-1 and x[i-1]['t'] == x[i+1]['t'] == 'Str':
+        # The surrounding elements are strings; trim off curly brackets
+        if x[i-1]['c'].endswith('{') and x[i+1]['c'].startswith('}'):
+            if len(x[i+1]['c']) > 1:
+                x[i+1]['c'] = x[i+1]['c'][1:]
+            else:
+                del x[i+1]
+            if len(x[i-1]['c']) > 1:
+                x[i-1]['c'] = x[i-1]['c'][:-1]
+            else:
+                del x[i-1]
 
 @_repeat
 def _process_refs(x, labels):
     """Strips surrounding curly braces and adds modifiers to the
     attributes of Cite elements.  Only references with labels in the 'labels'
     list are processed.  Repeats processing (via decorator) until no more
-    broken references are found."""
-
+    unprocessed references are found."""
+    
     # Scan the element list x for Cite elements with known labels
     for i, v in enumerate(x):
         if v['t'] == 'Cite' and len(v['c']) == 2 and \
@@ -614,15 +650,13 @@ def _process_refs(x, labels):
 
             # Extract the modifiers.  'attrs' is updated in place.  Element
             # deletion could change the index of the Cite being processed.
-            if i > 0:
-                i = _extract_modifier(x, i, attrs)
+            i = _extract_modifier(x, i, attrs)
 
             # Attach the attributes
             v['c'].insert(0, attrs)
 
             # Remove surrounding brackets
-            if 0 < i < len(x)-1:
-                _remove_brackets(x, i)
+            _remove_brackets(x, i)
 
             # The element list may be changed
             return None  # Forces processing to repeat via _repeat decorator
@@ -647,7 +681,7 @@ def process_refs_factory(labels):
 
     # pylint: disable=unused-argument
     def process_refs(key, value, fmt, meta):
-        """Instates Ref elements."""
+        """Processes references."""
         # References may occur in a variety of places; we must process them
         # all.
 
@@ -663,6 +697,9 @@ def process_refs_factory(labels):
             _process_refs(value, labels)
         elif key == 'Strong':
             _process_refs(value, labels)
+        elif key == 'Cite':
+            _process_refs(value[-2][0]['citationPrefix'], labels)
+            _process_refs(value[-2][0]['citationSuffix'], labels)
 
     return process_refs
 
@@ -787,6 +824,20 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
               Link(['', [], []], linktext, ['#%s' % label, ''])
             ret = ([Str(name), Space()] if use_cleveref else []) + [link]
 
+        # If the Cite was bracketed then wrap everything in a span
+        s = stringify(value[-1])
+        # pandoc strips off intervening space between the prefix and the Cite;
+        # we may have to add it back in
+        spacer = [Space()] \
+          if not stringify(value[-2][0]['citationPrefix']
+                          ).endswith(('{', '+', '*', '!')) \
+          else []
+        if s.startswith('[') and s.endswith(']'):
+            els = value[-2][0]['citationPrefix'] + \
+              spacer + ([ret] if fmt=='latex' else ret) + \
+              value[-2][0]['citationSuffix']
+            ret = Span(['', [], []], els)
+
         return ret
 
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
@@ -823,7 +874,8 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 # attach_attrs_factory() -----------------------------------------------------
 
 # pylint: disable=redefined-outer-name
-def attach_attrs_factory(f, extract_attrs=extract_attrs, allow_space=False):
+def attach_attrs_factory(f, extract_attrs=extract_attrs, allow_space=False,
+                         replace=False):
     """Returns attach_attrs(key, value, fmt, meta) action that reads and
     attaches attributes to unattributed elements generated by the
     pandocfilters function f (e.g. pandocfilters.Math, etc).
@@ -844,7 +896,10 @@ def attach_attrs_factory(f, extract_attrs=extract_attrs, allow_space=False):
                     n += 1
                 try:  # Extract the attributes
                     attrs = extract_attrs(x, n)
-                    x[i]['c'].insert(0, attrs)
+                    if replace:
+                        x[i]['c'][0] = attrs
+                    else:
+                        x[i]['c'].insert(0, attrs)
                 except (ValueError, IndexError):
                     pass
 
