@@ -1,6 +1,6 @@
 pandoc-xnos 1.2.0 (2019-05-15)
 
-    * Support for references from in bracketed spans (pandoc-fignos
+    * Support for references in bracketed spans (pandoc-fignos
       Issue #58).
 
 
