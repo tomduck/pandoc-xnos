@@ -31,6 +31,8 @@ given in the function docstrings.
   * `init()` - Determines and returns the pandoc version
   * `check_bool()` - Checks that a value is boolean
   * `get_meta()` - Retrieves variables from a document's metadata
+  * `update()` - Updates metadata
+
 
 #### Element list functions ####
 
@@ -102,9 +104,8 @@ else:
     STDOUT = sys.stdout
     STDERR = sys.stdout
 
-# Privately flags that cleveref TeX needs to be written into the doc
-# (for TeX/pdf output only).
-_cleveref_tex_flag = False  # pylint: disable=invalid-name
+# Privately flags that the cleverefs are used
+_cleveref_flag = False  # pylint: disable=invalid-name
 
 # Used to track section numbers
 # pylint: disable=invalid-name
@@ -280,6 +281,24 @@ def _getel(key, value):
         return elt(key, 1)(value)
     return elt(key, len(value))(*value)
 
+
+# update() -------------------------------------------------------------------
+
+def update(fmt, meta):
+    """Updates metadata.  Use at the end of processing."""
+    if _cleveref_flag and fmt == 'latex':
+        rawblock = {'t': 'RawBlock', 'c': ['tex', '\\usepackage{cleveref}']}
+        metablocks = { 't': 'MetaBlocks', 'c': [rawblock]}
+        if 'header-includes' not in meta:
+            meta['header-includes'] = metablocks
+        elif r'\usepackage{cleveref}' in str(meta['header-includes']):
+            pass
+        elif meta['header-includes']['t'] == 'MetaList':
+            meta['header-includes']['c'].append(metablocks)
+        else:
+            metablocks_ = meta['header-includes']
+            meta['header-includes'] = {'t': 'MetaList',
+                                       'c': [metablocks_, metablocks]}
 
 #=============================================================================
 # Element list functions
@@ -554,7 +573,7 @@ def _extract_modifier(x, i, attrs):
     element list 'x'.  The modifier is stored in 'attrs'.  Returns the updated
     index 'i'."""
 
-    global _cleveref_tex_flag  # pylint: disable=global-statement
+    global _cleveref_flag  # pylint: disable=global-statement
 
     assert x[i]['t'] == 'Cite'
 
@@ -575,8 +594,8 @@ def _extract_modifier(x, i, attrs):
         s = x[i-1]['c']
         modifier = s[-1]
     if modifier:
-        if not _cleveref_tex_flag and modifier in ['*', '+']:
-            _cleveref_tex_flag = True
+        if not _cleveref_flag and modifier in ['*', '+']:
+            _cleveref_flag = True
         if modifier in ['*', '+', '!']:
             attrs[2].append(['modifier', modifier])
             if len(s) > 1:  # Lop the modifier off of the string
@@ -720,60 +739,10 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
     'target' is the LaTeX type for clever referencing (e.g., "figure",
     "equation", "table", ...)."""
 
-    global _cleveref_tex_flag  # pylint: disable=global-statement
+    global _cleveref_flag  # pylint: disable=global-statement
 
     # Update global if clever referencing is required by default
-    _cleveref_tex_flag = _cleveref_tex_flag or use_cleveref_default
-
-    def _insert_cleveref_fakery(key, value, meta):
-        r"""Inserts TeX to support clever referencing in LaTeX documents
-        if the key isn't a RawBlock.  If the key is a RawBlock, then check
-        the value to see if the TeX was already inserted.
-
-        The \providecommand macro is used to fake the cleveref package's
-        behaviour if it is not provided in the template via
-        \usepackage{cleveref}.
-
-        TeX is inserted into the value.  Replacement elements are returned.
-        """
-
-        global _cleveref_tex_flag  # pylint: disable=global-statement
-
-        comment1 = '% pandoc-xnos: cleveref formatting'
-        tex1 = [comment1,
-                r'\crefformat{%s}{%s~#2#1#3}'%(target, plusname[0]),
-                r'\Crefformat{%s}{%s~#2#1#3}'%(target, starname[0])]
-
-        if key == 'RawBlock':  # Check for existing cleveref TeX
-            if value[1].startswith(comment1):
-                # Append the new portion
-                value[1] = value[1] + '\n' + '\n'.join(tex1[1:])
-                _cleveref_tex_flag = False  # Cleveref fakery already installed
-
-        else:  # Write the cleveref TeX
-            _cleveref_tex_flag = False  # Cancels further attempts
-            ret = []
-
-            # Check first to see if fakery is turned off
-            if not 'xnos-cleveref-fake' in meta or \
-              check_bool(get_meta(meta, 'xnos-cleveref-fake')):
-                # Cleveref fakery
-                tex2 = [
-                    r'% pandoc-xnos: cleveref fakery',
-                    r'\newcommand{\plusnamesingular}{}',
-                    r'\newcommand{\starnamesingular}{}',
-                    r'\newcommand{\xrefname}[1]{'\
-                      r'\protect\renewcommand{\plusnamesingular}{#1}}',
-                    r'\newcommand{\Xrefname}[1]{'\
-                      r'\protect\renewcommand{\starnamesingular}{#1}}',
-                    r'\providecommand{\cref}{\plusnamesingular~\ref}',
-                    r'\providecommand{\Cref}{\starnamesingular~\ref}',
-                    r'\providecommand{\crefformat}[2]{}',
-                    r'\providecommand{\Crefformat}[2]{}']
-                ret.append(RawBlock('tex', '\n'.join(tex2)))
-            ret.append(RawBlock('tex', '\n'.join(tex1)))
-            return ret
-        return None
+    _cleveref_flag = _cleveref_flag or use_cleveref_default
 
     def _cite_replacement(key, value, fmt, meta):
         """Returns context-dependent content to replace a Cite element."""
@@ -798,15 +767,8 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
         # The replacement depends on the output format
         if fmt == 'latex':
             if use_cleveref:
-                # Renew commands needed for cleveref fakery
-                if not 'xnos-cleveref-fake' in meta or \
-                  check_bool(get_meta(meta, 'xnos-cleveref-fake')):
-                    faketex = (r'\xrefname' if plus else r'\Xrefname') + \
-                      '{%s}' % name
-                else:
-                    faketex = ''
                 macro = r'\cref' if plus else r'\Cref'
-                ret = RawInline('tex', r'%s%s{%s}'%(faketex, macro, label))
+                ret = RawInline('tex', r'%s{%s}'%(macro, label))
             elif use_eqref:
                 ret = RawInline('tex', r'\eqref{%s}'%label)
             else:
@@ -840,29 +802,11 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
         return ret
 
+    
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces references with format-specific content."""
 
-        if fmt == 'latex' and _cleveref_tex_flag:
-
-            # Put the cleveref TeX fakery in front of the first block element
-            # that isn't a RawBlock.
-
-            if not key in ['Plain', 'Para', 'CodeBlock', 'RawBlock',
-                           'BlockQuote', 'OrderedList', 'BulletList',
-                           'DefinitionList', 'Header', 'HorizontalRule',
-                           'Table', 'Div', 'Null']:
-                return None
-
-            # Reconstruct the block element
-            el = _getel(key, value)
-
-            # Insert cleveref TeX in front of the block element
-            tex = _insert_cleveref_fakery(key, value, meta)
-            if tex:
-                return  tex + [el]
-
-        elif key == 'Cite' and len(value) == 3:  # Replace the reference
+        if key == 'Cite' and len(value) == 3:  # Replace the reference
 
             return _cite_replacement(key, value, fmt, meta)
 
