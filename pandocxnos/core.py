@@ -288,7 +288,7 @@ def update(fmt, meta):
     """Updates metadata.  Use at the end of processing."""
     if _cleveref_flag and fmt == 'latex':
         rawblock = {'t': 'RawBlock', 'c': ['tex', '\\usepackage{cleveref}']}
-        metablocks = { 't': 'MetaBlocks', 'c': [rawblock]}
+        metablocks = {'t': 'MetaBlocks', 'c': [rawblock]}
         if 'header-includes' not in meta:
             meta['header-includes'] = metablocks
         elif r'\usepackage{cleveref}' in str(meta['header-includes']):
@@ -579,7 +579,7 @@ def _extract_modifier(x, i, attrs):
 
     # The modifier can either be found in the Cite prefix or in the Str
     # preceeding the Cite.  We must handle both cases.
-    
+
     s = None            # The string containing the modifier
     modifier = None     # The modifier character
     has_prefix = False  # Flags that the Cite has a prefix
@@ -624,21 +624,21 @@ def _remove_brackets(x, i):
     # text.
     if x[i]['c'][-2][0]['citationPrefix'] and \
       x[i]['c'][-2][0]['citationSuffix']:
-      if x[i]['c'][-2][0]['citationPrefix'][-1]['t'] == \
-        x[i]['c'][-2][0]['citationSuffix'][0]['t'] == 'Str':
-          # The surrounding elements are strings; trim off curly brackets
-          if x[i]['c'][-2][0]['citationPrefix'][-1]['c'].endswith('{') and \
-            x[i]['c'][-2][0]['citationSuffix'][0]['c'].startswith('}'):
-              if len(x[i]['c'][-2][0]['citationSuffix'][0]['c']) > 1:
-                  x[i]['c'][-2][0]['citationSuffix'][0]['c'] = \
-                    x[i]['c'][-2][0]['citationSuffix'][0]['c'][1:]
-              else:
-                  del x[i]['c'][-2][0]['citationSuffix'][0]
-              if len(x[i]['c'][-2][0]['citationPrefix'][-1]['c']) > 1:
-                  x[i]['c'][-2][0]['citationPrefix'][-1]['c'] = \
-                    x[i]['c'][-2][0]['citationPrefix'][-1]['c'][:-1]
-              else:
-                  del x[i]['c'][-2][0]['citationPrefix'][-1]
+        if x[i]['c'][-2][0]['citationPrefix'][-1]['t'] == \
+          x[i]['c'][-2][0]['citationSuffix'][0]['t'] == 'Str':
+            # The surrounding elements are strings; trim off curly brackets
+            if x[i]['c'][-2][0]['citationPrefix'][-1]['c'].endswith('{') and \
+              x[i]['c'][-2][0]['citationSuffix'][0]['c'].startswith('}'):
+                if len(x[i]['c'][-2][0]['citationSuffix'][0]['c']) > 1:
+                    x[i]['c'][-2][0]['citationSuffix'][0]['c'] = \
+                      x[i]['c'][-2][0]['citationSuffix'][0]['c'][1:]
+                else:
+                    del x[i]['c'][-2][0]['citationSuffix'][0]
+                if len(x[i]['c'][-2][0]['citationPrefix'][-1]['c']) > 1:
+                    x[i]['c'][-2][0]['citationPrefix'][-1]['c'] = \
+                      x[i]['c'][-2][0]['citationPrefix'][-1]['c'][:-1]
+                else:
+                    del x[i]['c'][-2][0]['citationPrefix'][-1]
 
     elif 0 < i < len(x)-1 and x[i-1]['t'] == x[i+1]['t'] == 'Str':
         # The surrounding elements are strings; trim off curly brackets
@@ -658,7 +658,7 @@ def _process_refs(x, labels):
     attributes of Cite elements.  Only references with labels in the 'labels'
     list are processed.  Repeats processing (via decorator) until no more
     unprocessed references are found."""
-    
+
     # Scan the element list x for Cite elements with known labels
     for i, v in enumerate(x):
         if v['t'] == 'Cite' and len(v['c']) == 2 and \
@@ -725,7 +725,7 @@ def process_refs_factory(labels):
 
 # replace_refs_factory() ------------------------------------------------------
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,unused-argument
 def replace_refs_factory(references, use_cleveref_default, use_eqref,
                          plusname, starname, target):
     """Returns replace_refs(key, value, fmt, meta) action that replaces
@@ -744,6 +744,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
     # Update global if clever referencing is required by default
     _cleveref_flag = _cleveref_flag or use_cleveref_default
 
+    # pylint: disable=too-many-locals,unused-argument
     def _cite_replacement(key, value, fmt, meta):
         """Returns context-dependent content to replace a Cite element."""
 
@@ -796,13 +797,13 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
           else []
         if s.startswith('[') and s.endswith(']'):
             els = value[-2][0]['citationPrefix'] + \
-              spacer + ([ret] if fmt=='latex' else ret) + \
+              spacer + ([ret] if fmt == 'latex' else ret) + \
               value[-2][0]['citationSuffix']
             ret = Span(['', [], []], els)
 
         return ret
 
-    
+
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces references with format-specific content."""
 
