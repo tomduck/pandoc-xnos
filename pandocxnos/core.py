@@ -307,18 +307,18 @@ def add_tex_to_header_includes(meta, tex):
 
 # add_package_to_header_includes() ----------------------------------
 
-def add_package_to_header_includes(meta, package, options=None):
+def add_package_to_header_includes(prefix, meta, package, options=None):
     """Adds \\usepackage{<package>} tex to header-includes."""
     # Bail if the package is already listed in the header-includes
     pattern = re.compile(r'\\usepackage(\[[\w\s,]*\])?\{'+package+r'\}')
     if pattern.search(str(meta)):
         return
     tex = textwrap.dedent("""
-              %%%% pandoc-xnos: required package
+              %%%% pandoc-%s: required package
               \\usepackage%s{%s}
-          """ % ('[%s]'%options if options else '', package))
+          """ % (prefix, '[%s]'%options if options else '', package))
     add_tex_to_header_includes(meta, tex)
-
+    return tex
 
 # cleveref_required() --------------------------------------------------------
 
