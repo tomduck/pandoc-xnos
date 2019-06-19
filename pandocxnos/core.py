@@ -31,8 +31,9 @@ given in the function docstrings.
   * `init()` - Determines and returns the pandoc version
   * `check_bool()` - Checks that a value is boolean
   * `get_meta()` - Retrieves variables from a document's metadata
-  * `update()` - Updates metadata
-
+  * `add_tex_to_header_includes()` - Adds tex to header-includes in metadata
+  * `add_package_to_header_includes()` - Adds package tex to header-includes
+  * `cleveref_required()` - True if cleveref is required, False otherwise
 
 #### Element list functions ####
 
@@ -104,13 +105,14 @@ else:
     STDOUT = sys.stdout
     STDERR = sys.stdout
 
-# Privately flags that the cleverefs are used
+# Flags that the cleveref package is needed
 _cleveref_flag = False  # pylint: disable=invalid-name
 
 # Used to track section numbers
 # pylint: disable=invalid-name
 MAXLEVEL = 1  # The maximum level header to track
 sec = [0]     # Expand dynamically if needed
+
 
 
 #=============================================================================
@@ -205,9 +207,10 @@ def init(pandocversion=None, doc=None):
         _PANDOCVERSION = pandocversion
 
     if _PANDOCVERSION is None:
-        msg = """Cannot determine pandoc version.  Please file an issue at
-              https://github.com/tomduck/pandocfiltering/issues"""
-        raise RuntimeError(textwrap.dedent(msg))
+        msg = textwrap.dedent("""\
+            Cannot determine pandoc version.  Please file an issue at
+            https://github.com/tomduck/pandocfiltering/issues""")
+        raise RuntimeError(msg)
 
     return _PANDOCVERSION
 
@@ -250,8 +253,7 @@ def get_meta(meta, name):
         return stringify(data['c'])
     if data['t'] == 'MetaList':
         return [stringify(v['c']) for v in data['c']]
-    raise RuntimeError("Could not understand metadata variable '%s'." %
-                       name)
+    raise RuntimeError("Could not understand metadata variable '%s'." % name)
 
 
 # elt() ----------------------------------------------------------------------
@@ -282,23 +284,48 @@ def _getel(key, value):
     return elt(key, len(value))(*value)
 
 
-# update() -------------------------------------------------------------------
+# add_tex_to_header_includes() ------------------------------------------------
 
-def update(fmt, meta):
-    """Updates metadata.  Use at the end of processing."""
-    if _cleveref_flag and fmt == 'latex':
-        rawblock = {'t': 'RawBlock', 'c': ['tex', '\\usepackage{cleveref}']}
-        metablocks = {'t': 'MetaBlocks', 'c': [rawblock]}
-        if 'header-includes' not in meta:
-            meta['header-includes'] = metablocks
-        elif r'\usepackage{cleveref}' in str(meta['header-includes']):
-            pass
-        elif meta['header-includes']['t'] == 'MetaList':
-            meta['header-includes']['c'].append(metablocks)
-        else:
-            metablocks_ = meta['header-includes']
-            meta['header-includes'] = {'t': 'MetaList',
-                                       'c': [metablocks_, metablocks]}
+# WARNING: Pandoc's --include-in-header option overrides the header-includes
+# meta variable in post-filter processing.  This owing to a design decision
+# in pandoc.  See https://github.com/jgm/pandoc/issues/3139.
+
+def add_tex_to_header_includes(meta, tex):
+    """Adds tex blocks to header-includes in metadata."""
+    rawblock = {'t': 'RawBlock', 'c': ['tex', tex]}
+    metablocks = {'t': 'MetaBlocks', 'c': [rawblock]}
+    if 'header-includes' not in meta:
+        meta['header-includes'] = metablocks
+    elif meta['header-includes']['t'] == 'MetaBlocks':
+        meta['header-includes'] = \
+          {'t': 'MetaList', 'c': [meta['header-includes'], metablocks]}
+    elif meta['header-includes']['t'] == 'MetaList':
+        meta['header-includes']['c'].append(metablocks)
+    else:
+        raise RuntimeError('header-includes metadata cannot be parsed')
+
+
+# add_package_to_header_includes() ----------------------------------
+
+def add_package_to_header_includes(meta, package, options=None):
+    """Adds \\usepackage{<package>} tex to header-includes."""
+    # Bail if the package is already listed in the header-includes
+    pattern = re.compile(r'\\usepackage(\[[\w\s,]*\])?\{'+package+r'\}')
+    if pattern.search(str(meta)):
+        return
+    tex = textwrap.dedent("""
+              %%%% pandoc-xnos: required package
+              \\usepackage%s{%s}
+          """ % ('[%s]'%options if options else '', package))
+    add_tex_to_header_includes(meta, tex)
+
+
+# cleveref_required() --------------------------------------------------------
+
+def cleveref_required():
+    """Returns True if the cleveref package is required, False otherwise."""
+    return _cleveref_flag
+
 
 #=============================================================================
 # Element list functions
