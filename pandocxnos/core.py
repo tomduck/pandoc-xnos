@@ -13,6 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+__version__ = '2.0.0b1'
+
+
 """core.py: library code for the pandoc-fignos/eqnos/tablenos filters.
 
 Overview
