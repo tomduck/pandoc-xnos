@@ -112,10 +112,8 @@ else:
 # Flags that the cleveref package is needed
 _cleveref_flag = False  # pylint: disable=invalid-name
 
-# Used to track section numbers
 # pylint: disable=invalid-name
-MAXLEVEL = 1  # The maximum level header to track
-sec = [0]     # Expand dynamically if needed
+sec = 0  # Used to track section numbers
 
 
 
@@ -213,7 +211,7 @@ def init(pandocversion=None, doc=None):
     if _PANDOCVERSION is None:
         msg = textwrap.dedent("""\
             Cannot determine pandoc version.  Please file an issue at
-            https://github.com/tomduck/pandocfiltering/issues""")
+            https://github.com/tomduck/pandocxnos/issues""")
         raise RuntimeError(msg)
 
     return _PANDOCVERSION
@@ -597,7 +595,6 @@ def _get_label(key, value):
     """Gets the label from a reference."""
     assert key == 'Cite'
     return value[-2][0]['citationId']
-    #return value[-1][0]['c'][1:]
 
 def _extract_modifier(x, i, attrs):
     """Extracts the */+/! modifier in front of the Cite at index 'i' of the
@@ -761,14 +758,16 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
                          plusname, starname, target):
     """Returns replace_refs(key, value, fmt, meta) action that replaces
     references with format-specific content.  The content is determined using
-    the 'references' dict, which associates reference labels with numbers or
-    string tags (e.g., { 'fig:1':1, 'fig:2':2, ...}).  If 'use_cleveref_default'
+    the 'references' dict, which maps each reference label to a 
+    [number/tag, figure secno] list (e.g., 
+    { 'fig:1':[1, '1'], 'fig:2':[2,'1'], ...}).  If 'use_cleveref_default'
     is True, or if "modifier" in the reference's attributes is "+" or "*", then
     clever referencing is used; i.e., a name is placed in front of the number
     or string tag.  The 'plusname' and 'starname' lists give the singular
     and plural names for "+" and "*" clever references, respectively.  The
     'target' is the LaTeX type for clever referencing (e.g., "figure",
-    "equation", "table", ...)."""
+    "equation", "table", ...).  The figsecnos are used to help form links
+    for epub output."""
 
     global _cleveref_flag  # pylint: disable=global-statement
 
@@ -787,7 +786,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
         assert label in references
 
         # Get the replacement value
-        text = str(references[label])
+        text = str(references[label][0])
 
         # Choose between \Cref, \cref and \ref
         use_cleveref = attrs['modifier'] in ['*', '+'] \
@@ -813,9 +812,13 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
                if text.startswith('$') and text.endswith('$') \
                else Str(text)]
 
-            link = elt('Link', 2)(linktext, ['#%s' % label, '']) \
+            prefix = 'ch%03d.xhtml' % references[label][1] \
+              if fmt in ['epub', 'epub2', 'epub3'] and \
+              references[label][1] else ''
+            
+            link = elt('Link', 2)(linktext, ['%s#%s' % (prefix, label), '']) \
               if _PANDOCVERSION < '1.16' else \
-              Link(['', [], []], linktext, ['#%s' % label, ''])
+              Link(['', [], []], linktext, ['%s#%s' % (prefix, label), ''])
             ret = ([Str(name), Space()] if use_cleveref else []) + [link]
 
         # If the Cite was bracketed then wrap everything in a span
@@ -936,16 +939,12 @@ def insert_secnos_factory(f):
 
         if 'xnos-number-sections' in meta and \
           check_bool(get_meta(meta, 'xnos-number-sections')) and \
-              fmt in ['html', 'html5', 'docx']:
+              fmt in ['html', 'html5', 'epub', 'epub2', 'epub3', 'docx']:
             if key == 'Header':
                 if 'unnumbered' in value[1][1]:
                     return
-                level = value[0]
-                m = level - len(sec)
-                if m > 0:
-                    sec.extend([0]*m)
-                sec[level-1] += 1
-                sec = sec[:MAXLEVEL]
+                if value[0] == 1:
+                    sec += 1
             if key == name:
 
                 # Only insert if attributes are attached.  Images always have
@@ -960,8 +959,7 @@ def insert_secnos_factory(f):
                     assert isinstance(value[0][2], list)
 
                     # Insert the section number into the attributes
-                    s = '.'.join([str(m) for m in sec])
-                    value[0][2].insert(0, ['secno', s])
+                    value[0][2].insert(0, ['secno', sec])
 
     return insert_secnos
 
@@ -982,7 +980,7 @@ def delete_secnos_factory(f):
         """Deletes section numbers from elements attributes."""
         if 'xnos-number-sections' in meta and \
           check_bool(get_meta(meta, 'xnos-number-sections')) and \
-              fmt in ['html', 'html5']:
+              fmt in ['html', 'html5', 'epub', 'epub2', 'epub3', 'docx']:
 
             # Only delete if attributes are attached.   Images always have
             # attributes.
