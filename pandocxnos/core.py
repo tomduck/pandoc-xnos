@@ -13,10 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-__version__ = '2.0.0b1'
-
-
 """core.py: library code for the pandoc-fignos/eqnos/tablenos filters.
 
 Overview
@@ -62,6 +58,10 @@ given in the function docstrings.
   * `insert_rawblocks_factory()` - Makes function to insert
                                    non-duplicate Raw Block elements.
 """
+
+
+__version__ = '2.0.0b1'
+
 
 import os
 import sys
@@ -114,7 +114,6 @@ _cleveref_flag = False  # pylint: disable=invalid-name
 
 # pylint: disable=invalid-name
 sec = 0  # Used to track section numbers
-
 
 
 #=============================================================================
@@ -211,7 +210,7 @@ def init(pandocversion=None, doc=None):
     if _PANDOCVERSION is None:
         msg = textwrap.dedent("""\
             Cannot determine pandoc version.  Please file an issue at
-            https://github.com/tomduck/pandocxnos/issues""")
+            https://github.com/tomduck/pandocxnos/issues.""")
         raise RuntimeError(msg)
 
     return _PANDOCVERSION
@@ -292,8 +291,15 @@ def _getel(key, value):
 # meta variable in post-filter processing.  This owing to a design decision
 # in pandoc.  See https://github.com/jgm/pandoc/issues/3139.
 
-def add_tex_to_header_includes(meta, tex):
+def add_tex_to_header_includes(meta, tex, warninglevel, regex=None):
     """Adds tex blocks to header-includes in metadata."""
+    # If pattern is found in the meta-includes then bail out
+    if regex and 'header-includes' in meta:
+        pattern = re.compile(regex)
+        if pattern.search(str(meta['header-includes'])):
+            return
+    # Create the rawblock and install it in the header-includes
+    tex = textwrap.dedent(tex)
     rawblock = {'t': 'RawBlock', 'c': ['tex', tex]}
     metablocks = {'t': 'MetaBlocks', 'c': [rawblock]}
     if 'header-includes' not in meta:
@@ -305,27 +311,16 @@ def add_tex_to_header_includes(meta, tex):
         meta['header-includes']['c'].append(metablocks)
     else:
         raise RuntimeError('header-includes metadata cannot be parsed')
+    # Print the block to stderr at warning level 2
+    if warninglevel == 2:
+        STDERR.write(textwrap.indent(tex, '    '))
 
-
-# add_package_to_header_includes() ----------------------------------
-
-def add_package_to_header_includes(prefix, meta, package, options=None):
-    """Adds \\usepackage{<package>} tex to header-includes."""
-    # Bail if the package is already listed in the header-includes
-    pattern = re.compile(r'\\usepackage(\[[\w\s,]*\])?\{'+package+r'\}')
-    if pattern.search(str(meta)):
-        return
-    tex = textwrap.dedent("""
-              %%%% pandoc-%s: required package
-              \\usepackage%s{%s}
-          """ % (prefix, '[%s]'%options if options else '', package))
-    add_tex_to_header_includes(meta, tex)
-    return tex
 
 # cleveref_required() --------------------------------------------------------
 
 def cleveref_required():
-    """Returns True if the cleveref package is required, False otherwise."""
+    """Returns True if the cleveref usage was found during xnos processing,
+    False otherwise."""
     return _cleveref_flag
 
 
@@ -396,10 +391,11 @@ def extract_attrs(x, n):
     Space elements) are removed from 'x'.  Items before index 'n' are left
     unchanged.
 
-    Returns the attributes in pandoc format.  A ValueError is raised if
-    attributes aren't found.  An IndexError is raised if the index 'n' is out
-    of range."""
-
+    Returns the attributes in pandoc format, the attribute string, and True
+    if the attribute string was fully parsed (False otherwise).  A ValueError
+    is raised if attributes aren't found.  An IndexError is raised if the
+    index 'n' is out of range."""
+    
     # Check for the start of the attributes string
     if not (x[n]['t'] == 'Str' and x[n]['c'].startswith('{')):
         raise ValueError('Attributes not found.')
@@ -441,7 +437,8 @@ def extract_attrs(x, n):
 
         # Process the attrs
         attrstr = stringify(dollarfy(quotify(seq))).strip()
-        attrs = PandocAttributes(attrstr, 'markdown').to_pandoc()
+        pandocattrs = PandocAttributes(attrstr, 'markdown')
+        attrs = pandocattrs.to_pandoc()
 
         # Remove extranneous quotes from kvs
         for i, (k, v) in enumerate(attrs[2]):  # pylint: disable=unused-variable
@@ -449,7 +446,7 @@ def extract_attrs(x, n):
                 attrs[2][i][1] = attrs[2][i][1][1:-1]
 
         # We're done
-        return attrs
+        return attrs, attrstr, pandocattrs.parse_failed
 
     # Attributes not found
     raise ValueError('Attributes not found.')
@@ -680,37 +677,52 @@ def _remove_brackets(x, i):
             else:
                 del x[i-1]
 
+
+badlabels = []
+
 @_repeat
-def _process_refs(x, labels):
+def _process_refs(name, x, labels, warninglevel):
     """Strips surrounding curly braces and adds modifiers to the
     attributes of Cite elements.  Only references with labels in the 'labels'
     list are processed.  Repeats processing (via decorator) until no more
     unprocessed references are found."""
 
+    # Get the prefix
+    prefix = list(labels)[0].split(':')[0] + ':' if labels else ''
+    
     # Scan the element list x for Cite elements with known labels
     for i, v in enumerate(x):
-        if v['t'] == 'Cite' and len(v['c']) == 2 and \
-          _get_label(v['t'], v['c']) in labels:
+        if v['t'] == 'Cite' and len(v['c']) == 2:
+            label = _get_label(v['t'], v['c'])
+            if label in labels:
 
-            # A new reference was found; create some empty attributes for it
-            attrs = ['', [], []]
+                # A new reference was found; create some empty attrs for it
+                attrs = ['', [], []]
 
-            # Extract the modifiers.  'attrs' is updated in place.  Element
-            # deletion could change the index of the Cite being processed.
-            i = _extract_modifier(x, i, attrs)
+                # Extract the modifiers.  'attrs' is updated in place.
+                # Element deletion could change the index of the Cite being
+                # processed.
+                i = _extract_modifier(x, i, attrs)
 
-            # Attach the attributes
-            v['c'].insert(0, attrs)
+                # Attach the attributes
+                v['c'].insert(0, attrs)
 
-            # Remove surrounding brackets
-            _remove_brackets(x, i)
+                # Remove surrounding brackets
+                _remove_brackets(x, i)
 
-            # The element list may be changed
-            return None  # Forces processing to repeat via _repeat decorator
+                # The element list may be changed
+                return None  # Forces processing to repeat via @_repeat
+
+            else:
+                if warninglevel and label.startswith(prefix) and \
+                  label not in badlabels:
+                    badlabels.append(label)
+                    msg = "\n%s: Target for @%s not found.\n\n" % (name, label)
+                    STDERR.write(msg)
 
     return True  # Terminates processing in _repeat decorator
 
-def process_refs_factory(labels):
+def process_refs_factory(name, labels, warninglevel):
     """Returns process_refs(key, value, fmt, meta) action that processes
     text around a reference.  Only references with labels found in the
     'labels' list are processed.
@@ -733,20 +745,22 @@ def process_refs_factory(labels):
         # all.
 
         if key in ['Para', 'Plain']:
-            _process_refs(value, labels)
+            _process_refs(name, value, labels, warninglevel)
         elif key == 'Image':
-            _process_refs(value[-2], labels)
+            _process_refs(name, value[-2], labels, warninglevel)
         elif key == 'Table':
-            _process_refs(value[-5], labels)
+            _process_refs(name, value[-5], labels, warninglevel)
         elif key == 'Span':
-            _process_refs(value[-1], labels)
+            _process_refs(name, value[-1], labels, warninglevel)
         elif key == 'Emph':
-            _process_refs(value, labels)
+            _process_refs(name, value, labels, warninglevel)
         elif key == 'Strong':
-            _process_refs(value, labels)
+            _process_refs(name, value, labels)
         elif key == 'Cite':
-            _process_refs(value[-2][0]['citationPrefix'], labels)
-            _process_refs(value[-2][0]['citationSuffix'], labels)
+            _process_refs(name, value[-2][0]['citationPrefix'], labels,
+                          warninglevel)
+            _process_refs(name, value[-2][0]['citationSuffix'], labels,
+                          warninglevel)
 
     return process_refs
 
@@ -755,19 +769,16 @@ def process_refs_factory(labels):
 
 # pylint: disable=too-many-arguments,unused-argument
 def replace_refs_factory(references, use_cleveref_default, use_eqref,
-                         plusname, starname, target):
+                         plusname, starname):
     """Returns replace_refs(key, value, fmt, meta) action that replaces
     references with format-specific content.  The content is determined using
-    the 'references' dict, which maps each reference label to a 
-    [number/tag, figure secno] list (e.g., 
+    the 'references' dict, which maps each reference label to a
+    [number/tag, figure secno] list (e.g.,
     { 'fig:1':[1, '1'], 'fig:2':[2,'1'], ...}).  If 'use_cleveref_default'
     is True, or if "modifier" in the reference's attributes is "+" or "*", then
     clever referencing is used; i.e., a name is placed in front of the number
     or string tag.  The 'plusname' and 'starname' lists give the singular
-    and plural names for "+" and "*" clever references, respectively.  The
-    'target' is the LaTeX type for clever referencing (e.g., "figure",
-    "equation", "table", ...).  The figsecnos are used to help form links
-    for epub output."""
+    and plural names for "+" and "*" clever references, respectively."""
 
     global _cleveref_flag  # pylint: disable=global-statement
 
@@ -815,7 +826,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
             prefix = 'ch%03d.xhtml' % references[label][1] \
               if fmt in ['epub', 'epub2', 'epub3'] and \
               references[label][1] else ''
-            
+
             link = elt('Link', 2)(linktext, ['%s#%s' % (prefix, label), '']) \
               if _PANDOCVERSION < '1.16' else \
               Link(['', [], []], linktext, ['%s#%s' % (prefix, label), ''])
@@ -853,8 +864,8 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 # attach_attrs_factory() -----------------------------------------------------
 
 # pylint: disable=redefined-outer-name
-def attach_attrs_factory(f, extract_attrs=extract_attrs, allow_space=False,
-                         replace=False):
+def attach_attrs_factory(name, f, warninglevel, extract_attrs=extract_attrs,
+                         allow_space=False, replace=False):
     """Returns attach_attrs(key, value, fmt, meta) action that reads and
     attaches attributes to unattributed elements generated by the
     pandocfilters function f (e.g. pandocfilters.Math, etc).
@@ -863,18 +874,27 @@ def attach_attrs_factory(f, extract_attrs=extract_attrs, allow_space=False,
     ValueError or IndexError if attributes are not found.
     """
 
-    # Get the name
-    name = f.__closure__[0].cell_contents
+    # Get the name of the function
+    funcname = f.__closure__[0].cell_contents
 
     def _attach_attrs(x):
         """Extracts and attaches the attributes."""
         for i, v in enumerate(x):
-            if v and v['t'] == name:  # Find where the attributes start
+            if v and v['t'] == funcname:  # Find where the attributes start
                 n = i+1
                 if allow_space and n < len(x) and x[n]['t'] == 'Space':
                     n += 1
                 try:  # Extract the attributes
-                    attrs = extract_attrs(x, n)
+                    attrs, attrstr, parse_failed = extract_attrs(x, n)
+                    if parse_failed and warninglevel:
+                        msg = textwrap.dedent("""\
+                            %s: Attributes could not be fully parsed:
+                            %s
+                        """ % (name, attrstr))
+                    STDERR.write('\n')
+                    STDERR.write(msg)
+                    STDERR.write('\n')
+
                     if replace:
                         x[i]['c'][0] = attrs
                     else:

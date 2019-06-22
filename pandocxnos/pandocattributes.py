@@ -64,25 +64,28 @@ class PandocAttributes(object):
     spnl = ' \n'
     split_regex = r'''((?:[^{separator}"']|"[^"]*"|'[^']*')+)'''.format
 
-    def __init__(self, attr=None, format='pandoc'):
-        if attr is None:
+    parse_failed = False
+    
+    def __init__(self, attrstr=None, format='pandoc'):
+        if attrstr is None:
             id = ''
             classes = []
             kvs = OrderedDict()
         elif format == 'pandoc':
-            id, classes, kvs = self.parse_pandoc(attr)
+            id, classes, kvs = self.parse_pandoc(attrstr)
         elif format == 'markdown':
-            id, classes, kvs = self.parse_markdown(attr)
+            id, classes, kvs = self.parse_markdown(attrstr)
         elif format == 'html':
-            id, classes, kvs = self.parse_html(attr)
+            id, classes, kvs = self.parse_html(attrstr)
         elif format == 'dict':
-            id, classes, kvs = self.parse_dict(attr)
+            id, classes, kvs = self.parse_dict(attrstr)
         else:
             raise UserWarning('invalid format')
 
         self.id = id
         self.classes = classes
         self.kvs = kvs
+        self.attrstr = attrstr
 
     @classmethod
     def parse_pandoc(self, attrs):
@@ -94,17 +97,17 @@ class PandocAttributes(object):
         return id, classes, kvs
 
     @classmethod
-    def parse_markdown(self, attr_string):
+    def parse_markdown(self, attrstr):
         """Read markdown attributes."""
-        attr_string = attr_string.strip('{}')
+        attrstr = attrstr.strip('{}')
         splitter = re.compile(self.split_regex(separator=self.spnl))
-        attrs = splitter.split(attr_string)[1::2]
+        attrs = splitter.split(attrstr)[1::2]
 
         # match single word attributes e.g. ```python
         if len(attrs) == 1 \
-                and not attr_string.startswith(('#', '.')) \
-                and '=' not in attr_string:
-            return '', [attr_string], OrderedDict()
+                and not attrstr.startswith(('#', '.')) \
+                and '=' not in attrstr:
+            return '', [attrstr], OrderedDict()
 
         try:
             id = [a[1:] for a in attrs if a.startswith('#')][0]
@@ -115,14 +118,22 @@ class PandocAttributes(object):
         special = ['unnumbered' for a in attrs if a == '-']
         classes.extend(special)
 
-        kvs = OrderedDict(a.split('=', 1) for a in attrs if '=' in a)
+        Nkvs = sum(1 for a in attrs if not a.startswith(('#', '.')))
+        kvs = OrderedDict(a.split('=', 1) for a in attrs if '=' in a and
+                          a[0]!='=' and a[-1]!='=')
+
+        if len(kvs) != Nkvs:
+            self.parse_failed = True
 
         return id, classes, kvs
 
-    def parse_html(self, attr_string):
+    def parse_html(self, attrstr):
         """Read a html string to attributes."""
+
+        # TO DO: Set parse_failed flag when parse fails.
+        
         splitter = re.compile(self.split_regex(separator=self.spnl))
-        attrs = splitter.split(attr_string)[1::2]
+        attrs = splitter.split(attrstr)[1::2]
 
         idre = re.compile(r'''id=["']?([\w ]*)['"]?''')
         clsre = re.compile(r'''class=["']?([\w ]*)['"]?''')
