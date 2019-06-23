@@ -32,7 +32,6 @@ given in the function docstrings.
   * `check_bool()` - Checks that a value is boolean
   * `get_meta()` - Retrieves variables from a document's metadata
   * `add_tex_to_header_includes()` - Adds tex to header-includes in metadata
-  * `add_package_to_header_includes()` - Adds package tex to header-includes
   * `cleveref_required()` - True if cleveref is required, False otherwise
 
 #### Element list functions ####
@@ -711,7 +710,7 @@ def _process_refs(name, x, labels, warninglevel):
                 if warninglevel and label.startswith(prefix) and \
                   label not in badlabels:
                     badlabels.append(label)
-                    msg = "\n%s: Target for @%s not found.\n\n" % (name, label)
+                    msg = "\n%s: Bad reference: @%s.\n\n" % (name, label)
                     STDERR.write(msg)
 
     return True  # Terminates processing in _repeat decorator
@@ -882,7 +881,7 @@ def attach_attrs_factory(name, f, warninglevel, extract_attrs=extract_attrs,
                     attrs = extract_attrs(x, n)
                     if attrs.parse_failed and warninglevel:
                         msg = textwrap.dedent("""\
-                            %s: Attributes could not be fully parsed:
+                            %s: Malformed attributes:
                             %s
                         """ % (name, attrs.attrstr))
                         STDERR.write('\n')
@@ -951,29 +950,26 @@ def insert_secnos_factory(f):
 
         global sec  # pylint: disable=global-statement
 
-        if 'xnos-number-sections' in meta and \
-          check_bool(get_meta(meta, 'xnos-number-sections')) and \
-              fmt in ['html', 'html5', 'epub', 'epub2', 'epub3', 'docx']:
-            if key == 'Header':
-                if 'unnumbered' in value[1][1]:
-                    return
-                if value[0] == 1:
-                    sec += 1
-            if key == name:
+        if key == 'Header':
+            if 'unnumbered' in value[1][1]:
+                return
+            if value[0] == 1:
+                sec += 1
+        if key == name:
 
-                # Only insert if attributes are attached.  Images always have
-                # attributes.
-                assert len(value) <= n+1
-                if name == 'Image' or len(value) == n+1:
+            # Only insert if attributes are attached.  Images always have
+            # attributes.
+            assert len(value) <= n+1
+            if name == 'Image' or len(value) == n+1:
 
-                    # Make sure value[0] represents attributes
-                    assert len(value[0]) == 3
-                    assert isinstance(value[0][0], STRTYPES)
-                    assert isinstance(value[0][1], list)
-                    assert isinstance(value[0][2], list)
+                # Make sure value[0] represents attributes
+                assert len(value[0]) == 3
+                assert isinstance(value[0][0], STRTYPES)
+                assert isinstance(value[0][1], list)
+                assert isinstance(value[0][2], list)
 
-                    # Insert the section number into the attributes
-                    value[0][2].insert(0, ['secno', sec])
+                # Insert the section number into the attributes
+                value[0][2].insert(0, ['secno', sec])
 
     return insert_secnos
 
@@ -992,25 +988,22 @@ def delete_secnos_factory(f):
 
     def delete_secnos(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Deletes section numbers from elements attributes."""
-        if 'xnos-number-sections' in meta and \
-          check_bool(get_meta(meta, 'xnos-number-sections')) and \
-              fmt in ['html', 'html5', 'epub', 'epub2', 'epub3', 'docx']:
 
-            # Only delete if attributes are attached.   Images always have
-            # attributes.
-            if key == name:
-                assert len(value) <= n+1
-                if name == 'Image' or len(value) == n+1:
+        # Only delete if attributes are attached.   Images always have
+        # attributes.
+        if key == name:
+            assert len(value) <= n+1
+            if name == 'Image' or len(value) == n+1:
 
-                    # Make sure value[0] represents attributes
-                    assert len(value[0]) == 3
-                    assert isinstance(value[0][0], STRTYPES)
-                    assert isinstance(value[0][1], list)
-                    assert isinstance(value[0][2], list)
+                # Make sure value[0] represents attributes
+                assert len(value[0]) == 3
+                assert isinstance(value[0][0], STRTYPES)
+                assert isinstance(value[0][1], list)
+                assert isinstance(value[0][2], list)
 
-                    # Remove the secno attribute
-                    if value[0][2] and value[0][2][0][0] == 'secno':
-                        del value[0][2][0]
+                # Remove the secno attribute
+                if value[0][2] and value[0][2][0][0] == 'secno':
+                    del value[0][2][0]
 
     return delete_secnos
 
