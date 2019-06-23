@@ -304,13 +304,18 @@ def add_tex_to_header_includes(meta, tex, warninglevel, regex=None):
     metablocks = {'t': 'MetaBlocks', 'c': [rawblock]}
     if 'header-includes' not in meta:
         meta['header-includes'] = metablocks
-    elif meta['header-includes']['t'] == 'MetaBlocks':
+    elif meta['header-includes']['t'] in ['MetaBlocks', 'MetaInlines']:
         meta['header-includes'] = \
           {'t': 'MetaList', 'c': [meta['header-includes'], metablocks]}
     elif meta['header-includes']['t'] == 'MetaList':
         meta['header-includes']['c'].append(metablocks)
     else:
-        raise RuntimeError('header-includes metadata cannot be parsed')
+        msg = textwrap.dedent("""\
+            header-includes metadata cannot be parsed:
+
+            %s
+            """ % str(meta['header-includes']))
+        raise RuntimeError(msg)
     # Print the block to stderr at warning level 2
     if warninglevel == 2:
         STDERR.write(textwrap.indent(tex, '    '))
@@ -744,7 +749,7 @@ def process_refs_factory(name, labels, warninglevel):
         elif key == 'Emph':
             _process_refs(name, value, labels, warninglevel)
         elif key == 'Strong':
-            _process_refs(name, value, labels)
+            _process_refs(name, value, labels, warninglevel)
         elif key == 'Cite':
             _process_refs(name, value[-2][0]['citationPrefix'], labels,
                           warninglevel)
