@@ -189,6 +189,14 @@ class PandocAttributes(object):
         False otherwise."""
         return key == 'id' or key == 'classes' or key in self.kvs
 
+    def __iter__(self):
+        """Returns an interator over the kvs."""
+        return iter(self.kvs)
+
+    def items(self):
+        """Returns the kv items."""
+        return self.kvs.items()
+
     def __repr__(self):
         """Returns the string representation of self."""
         return "pandocfilters.Attributes({})".format(self.to_pandoc())
