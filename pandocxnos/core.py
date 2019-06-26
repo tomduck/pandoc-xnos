@@ -42,7 +42,7 @@ given in the function docstrings.
 
 #### Actions and their factory functions ####
 
-  * `join_strings()` - Joins adjacent strings in a pandoc document
+  * `join_strings()` - Joins adjacent strings in an element list
   * `repair_refs()` - Repairs broken Cite elements in a document
   * `process_refs_factory()` - Makes functions that process
                                references
@@ -395,10 +395,10 @@ def extract_attrs(x, n):
     Space elements) are removed from 'x'.  Items before index 'n' are left
     unchanged.
 
-    Returns the attributes in pandoc format, the attribute string, and True
-    if the attribute string was fully parsed (False otherwise).  A ValueError
-    is raised if attributes aren't found.  An IndexError is raised if the
-    index 'n' is out of range."""
+    Returns the attributes, the attribute string, and True if the attribute
+    string was fully parsed (False otherwise).  A ValueError is raised if
+    attributes aren't found.  An IndexError is raised if the index 'n' is out
+    of range."""
     
     # Check for the start of the attributes string
     if not (x[n]['t'] == 'Str' and x[n]['c'].startswith('{')):
@@ -443,6 +443,12 @@ def extract_attrs(x, n):
         attrstr = stringify(dollarfy(quotify(seq))).strip()
         attrs = PandocAttributes(attrstr, 'markdown')
 
+        # Remove extranneous quotes from kvs (this is absolutely necessary
+        # or else html attributes can get ""double-quoted"")
+        for k, v in attrs.items():  # pylint: disable=unused-variable
+            if v[0] == v[-1] == '"' or v[0] == "'" == v[-1] == "'":
+                attrs[k] = attrs[k][1:-1]
+
         # We're done
         return attrs
 
@@ -482,9 +488,10 @@ def _join_strings(x):
             return None  # Forces processing to repeat
     return True  # Terminates processing
 
-def join_strings(key, value, fmt, meta):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def join_strings(key, value, fmt=None, meta=None):
     """Joins adjacent Str elements in the 'value' list."""
-    if key in ['Para', 'Plain']:
+    if key in ['Para', 'Plain', 'Span']:
         _join_strings(value)
     elif key == 'Image':
         _join_strings(value[-2])
@@ -825,19 +832,21 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
               Link(['', [], []], linktext, ['%s#%s' % (prefix, label), ''])
             ret = ([Str(name), Space()] if use_cleveref else []) + [link]
 
-        # If the Cite was bracketed then wrap everything in a span
+        # If the Cite was square-bracketed then wrap everything in a span
         s = stringify(value[-1])
         # pandoc strips off intervening space between the prefix and the Cite;
         # we may have to add it back in
+        prefix = value[-2][0]['citationPrefix']
         spacer = [Space()] \
-          if not stringify(value[-2][0]['citationPrefix']
-                          ).endswith(('{', '+', '*', '!')) \
+          if prefix and not stringify(prefix).endswith(('{', '+', '*', '!')) \
           else []
         if s.startswith('[') and s.endswith(']'):
             els = value[-2][0]['citationPrefix'] + \
               spacer + ([ret] if fmt == 'latex' else ret) + \
               value[-2][0]['citationSuffix']
-            ret = Span(['', [], []], els)
+            # We don't yet know if there will be attributes, so leave them
+            # as None.  This is fixed later when attributes are processed.
+            ret = Span(None, els)
 
         return ret
 
@@ -867,13 +876,14 @@ def attach_attrs_factory(name, f, warninglevel, extract_attrs=extract_attrs,
     raise a ValueError or IndexError if attributes are not found.
     """
 
-    # Get the name of the function
-    funcname = f.__closure__[0].cell_contents
+    # Get the name of the element from the function
+    elname = f.__closure__[0].cell_contents
 
+    @_repeat
     def _attach_attrs(x):
         """Extracts and attaches the attributes."""
         for i, v in enumerate(x):
-            if v and v['t'] == funcname:  # Find where the attributes start
+            if v and v['t'] == elname:  # Find where the attributes start
                 n = i+1
                 if allow_space and n < len(x) and x[n]['t'] == 'Space':
                     n += 1
@@ -893,7 +903,18 @@ def attach_attrs_factory(name, f, warninglevel, extract_attrs=extract_attrs,
                     else:
                         x[i]['c'].insert(0, attrs.list)
                 except (ValueError, IndexError):
-                    pass
+                    if v['t'] == 'Span' and v['c'][0] == None:
+                        # We changed this into a span before, but since
+                        # the attributes are None (it was unattributed), it
+                        # isn't a valid span.  Fix it.
+                        els = x.pop(i)['c'][1]
+                        els.insert(0, Str('['))
+                        els.append(Str(']'))
+                        for j, el in enumerate(els):
+                            x.insert(i+j, el)
+                        join_strings('Span', x)
+                        return None
+        return True
 
     def attach_attrs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Attaches attributes to an element."""
@@ -958,12 +979,11 @@ def insert_secnos_factory(f):
         if key == name:
 
             # Only insert if attributes are attached.  Images always have
-            # attributes.
+            # attributes for pandoc >= 1.16.
             assert len(value) <= n+1
-            if name == 'Image' or len(value) == n+1:
-
+            if (name == 'Image' and len(value) == 3) or \
+              len(value) == n+1:
                 # Make sure value[0] represents attributes
-                assert len(value[0]) == 3
                 assert isinstance(value[0][0], STRTYPES)
                 assert isinstance(value[0][1], list)
                 assert isinstance(value[0][2], list)
@@ -990,13 +1010,12 @@ def delete_secnos_factory(f):
         """Deletes section numbers from elements attributes."""
 
         # Only delete if attributes are attached.   Images always have
-        # attributes.
+        # attributes for pandoc >= 1.16.
         if key == name:
             assert len(value) <= n+1
-            if name == 'Image' or len(value) == n+1:
+            if (name == 'Image' and len(value) == 3) or len(value) == n+1:
 
                 # Make sure value[0] represents attributes
-                assert len(value[0]) == 3
                 assert isinstance(value[0][0], STRTYPES)
                 assert isinstance(value[0][1], list)
                 assert isinstance(value[0][2], list)
