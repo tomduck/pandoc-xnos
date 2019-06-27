@@ -447,7 +447,7 @@ def extract_attrs(x, n):
         # or else html attributes can get ""double-quoted"")
         for k, v in attrs.items():  # pylint: disable=unused-variable
             if v[0] == v[-1] == '"' or v[0] == "'" == v[-1] == "'":
-                attrs[k] = attrs[k][1:-1]
+                attrs[k] = v[1:-1]
 
         # We're done
         return attrs
