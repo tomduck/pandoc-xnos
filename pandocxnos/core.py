@@ -31,7 +31,7 @@ given in the function docstrings.
   * `init()` - Determines and returns the pandoc version
   * `check_bool()` - Checks that a value is boolean
   * `get_meta()` - Retrieves variables from a document's metadata
-  * `add_tex_to_header_includes()` - Adds tex to header-includes in metadata
+  * `add_to_header_includes()` - Adds to header-includes in metadata
   * `cleveref_required()` - True if cleveref is required, False otherwise
 
 #### Element list functions ####
@@ -59,7 +59,7 @@ given in the function docstrings.
 """
 
 
-__version__ = '2.0.0b2'
+__version__ = '2.0.0b3'
 
 
 import os
@@ -284,22 +284,22 @@ def _getel(key, value):
     return elt(key, len(value))(*value)
 
 
-# add_tex_to_header_includes() ------------------------------------------------
+# add_to_header_includes() ------------------------------------------------
 
 # WARNING: Pandoc's --include-in-header option overrides the header-includes
 # meta variable in post-filter processing.  This owing to a design decision
 # in pandoc.  See https://github.com/jgm/pandoc/issues/3139.
 
-def add_tex_to_header_includes(meta, tex, warninglevel, regex=None):
-    """Adds tex blocks to header-includes in metadata."""
+def add_to_header_includes(meta, fmt, block, warninglevel, regex=None):
+    """Adds block to header-includes in metadata."""
     # If pattern is found in the meta-includes then bail out
     if regex and 'header-includes' in meta:
         pattern = re.compile(regex)
         if pattern.search(str(meta['header-includes'])):
             return
     # Create the rawblock and install it in the header-includes
-    tex = textwrap.dedent(tex)
-    rawblock = {'t': 'RawBlock', 'c': ['tex', tex]}
+    block = textwrap.dedent(block)
+    rawblock = {'t': 'RawBlock', 'c': [fmt, block]}
     metablocks = {'t': 'MetaBlocks', 'c': [rawblock]}
     if 'header-includes' not in meta:
         meta['header-includes'] = metablocks
@@ -317,7 +317,7 @@ def add_tex_to_header_includes(meta, tex, warninglevel, regex=None):
         raise RuntimeError(msg)
     # Print the block to stderr at warning level 2
     if warninglevel == 2:
-        STDERR.write(textwrap.indent(tex, '    '))
+        STDERR.write(textwrap.indent(block, '    '))
 
 
 # cleveref_required() --------------------------------------------------------
@@ -399,7 +399,7 @@ def extract_attrs(x, n):
     string was fully parsed (False otherwise).  A ValueError is raised if
     attributes aren't found.  An IndexError is raised if the index 'n' is out
     of range."""
-    
+
     # Check for the start of the attributes string
     if not (x[n]['t'] == 'Str' and x[n]['c'].startswith('{')):
         raise ValueError('Attributes not found.')
@@ -479,9 +479,9 @@ def extract_attrs(x, n):
 # in place.
 
 @_repeat
-def _join_strings(x):
+def _join_strings(x, start=0):
     """Joins adjacent Str elements found in the element list 'x'."""
-    for i in range(len(x)-1):  # Process successive pairs of elements
+    for i in range(start, len(x)-1):  # Process successive pairs of elements
         if x[i]['t'] == 'Str' and x[i+1]['t'] == 'Str':
             x[i]['c'] += x[i+1]['c']
             del x[i+1]  # In-place deletion of element from list
@@ -491,8 +491,10 @@ def _join_strings(x):
 # pylint: disable=unused-argument
 def join_strings(key, value, fmt=None, meta=None):
     """Joins adjacent Str elements in the 'value' list."""
-    if key in ['Para', 'Plain', 'Span']:
+    if key in ['Para', 'Plain']:
         _join_strings(value)
+    elif key == 'Span':
+        _join_strings(value, 1)
     elif key == 'Image':
         _join_strings(value[-2])
     elif key == 'Table':
@@ -689,7 +691,7 @@ def _process_refs(name, x, labels, warninglevel):
 
     # Get the prefix
     prefix = list(labels)[0].split(':')[0] + ':' if labels else ''
-    
+
     # Scan the element list x for Cite elements with known labels
     for i, v in enumerate(x):
         if v['t'] == 'Cite' and len(v['c']) == 2:
@@ -713,12 +715,11 @@ def _process_refs(name, x, labels, warninglevel):
                 # The element list may be changed
                 return None  # Forces processing to repeat via @_repeat
 
-            else:
-                if warninglevel and label.startswith(prefix) and \
-                  label not in badlabels:
-                    badlabels.append(label)
-                    msg = "\n%s: Bad reference: @%s.\n\n" % (name, label)
-                    STDERR.write(msg)
+            if warninglevel and label.startswith(prefix) and \
+              label not in badlabels:
+                badlabels.append(label)
+                msg = "\n%s: Bad reference: @%s.\n\n" % (name, label)
+                STDERR.write(msg)
 
     return True  # Terminates processing in _repeat decorator
 
@@ -791,7 +792,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
         assert key == 'Cite'
 
-        attrs =  PandocAttributes(value[0], 'pandoc')
+        attrs = PandocAttributes(value[0], 'pandoc')
         label = value[-2][0]['citationId']
 
         assert label in references
@@ -872,7 +873,7 @@ def attach_attrs_factory(name, f, warninglevel, extract_attrs=extract_attrs,
     attaches attributes to unattributed elements generated by the
     pandocfilters function f (e.g. pandocfilters.Math, etc).
 
-    The extract_attrs() function should read and return the attributes and 
+    The extract_attrs() function should read and return the attributes and
     raise a ValueError or IndexError if attributes are not found.
     """
 
@@ -903,7 +904,7 @@ def attach_attrs_factory(name, f, warninglevel, extract_attrs=extract_attrs,
                     else:
                         x[i]['c'].insert(0, attrs.list)
                 except (ValueError, IndexError):
-                    if v['t'] == 'Span' and v['c'][0] == None:
+                    if v['t'] == 'Span' and v['c'][0] is None:
                         # We changed this into a span before, but since
                         # the attributes are None (it was unattributed), it
                         # isn't a valid span.  Fix it.

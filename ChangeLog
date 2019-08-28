@@ -1,3 +1,12 @@
+pandoc-xnos 2.0.0b3 (unreleased)
+
+    * Removed cleveref fakery.
+    * Added warning message system.
+    * Fixed epub links across chapters.
+    * Fixed quoted attribute handling.
+    * Fixed span handling.
+
+
 pandoc-xnos 1.2.0 (2019-05-15)
 
     * Support for references in bracketed spans (pandoc-fignos
