@@ -679,7 +679,7 @@ def _remove_brackets(x, i):
             else:
                 del x[i-1]
 
-
+# Track bad labels so that we only warn about them once
 badlabels = []
 
 @_repeat
