@@ -594,8 +594,9 @@ def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
 
 def _extract_modifier(x, i, attrs):
     """Extracts the */+/! modifier in front of the Cite at index 'i' of the
-    element list 'x'.  The modifier is stored in 'attrs'.  Returns the updated
-    index 'i'."""
+    element list 'x'.  The modifier is stored in 'attrs'.
+    Returns the updated index 'i'.
+    """
 
     global _cleveref_flag  # pylint: disable=global-statement
 
@@ -640,7 +641,9 @@ def _extract_modifier(x, i, attrs):
 def _remove_brackets(x, i):
     """Removes curly brackets surrounding the Cite element at index 'i' in
     the element list 'x'.  It is assumed that the modifier has been
-    extracted.  Empty strings are deleted from 'x'."""
+    extracted.  Empty strings are deleted from 'x'.
+    Returns the updated index 'i'.
+    """
 
     assert x[i]['t'] == 'Cite'
 
@@ -675,7 +678,10 @@ def _remove_brackets(x, i):
                 x[i-1]['c'] = x[i-1]['c'][:-1]
             else:
                 del x[i-1]
+                return i-1
 
+    return i
+                
 # Track bad labels so that we only warn about them once
 badlabels = []
 
@@ -701,7 +707,7 @@ def _process_refs(name, x, patt, labels, warninglevel):
                 i = _extract_modifier(x, i, attrs)
 
                 # Remove surrounding brackets
-                _remove_brackets(x, i)
+                i = _remove_brackets(x, i)
 
                 # Get the reference attributes
                 try:
@@ -795,6 +801,10 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
         assert key == 'Cite'
 
         attrs = PandocAttributes(value[0], 'pandoc')
+
+        nolink = attrs['nolink'].lower() == 'true' if 'nolink' in attrs \
+          else False
+        
         label = value[-2][0]['citationId']
 
         assert label in references
@@ -818,22 +828,28 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
                 ret = RawInline('tex', r'\eqref{%s}'%label)
             else:
                 ret = RawInline('tex', r'\ref{%s}'%label)
+            if nolink:  # https://tex.stackexchange.com/a/323919
+                ret['c'][1] = \
+                  r'{\protect\NoHyper' + ret['c'][1] + r'\protect\endNoHyper}'
         else:
             if use_eqref:
                 text = '(' + text + ')'
 
-            linktext = [Math({"t":"InlineMath", "c":[]}, text[1:-1]) \
-               if text.startswith('$') and text.endswith('$') \
-               else Str(text)]
+            elem = Math({"t":"InlineMath", "c":[]}, text[1:-1]) \
+              if text.startswith('$') and text.endswith('$') \
+              else Str(text)
 
-            prefix = 'ch%03d.xhtml' % references[label][1] \
-              if fmt in ['epub', 'epub2', 'epub3'] and \
-              references[label][1] else ''
+            if not nolink:
+                prefix = 'ch%03d.xhtml' % references[label][1] \
+                  if fmt in ['epub', 'epub2', 'epub3'] and \
+                  references[label][1] else ''
 
-            link = elt('Link', 2)(linktext, ['%s#%s' % (prefix, label), '']) \
-              if _PANDOCVERSION < '1.16' else \
-              Link(['', [], []], linktext, ['%s#%s' % (prefix, label), ''])
-            ret = ([Str(name), Space()] if use_cleveref else []) + [link]
+                elem = elt('Link', 2)([elem],
+                                      ['%s#%s' % (prefix, label), '']) \
+                  if _PANDOCVERSION < '1.16' else \
+                  Link(['', [], []], [elem], ['%s#%s' % (prefix, label), ''])
+
+            ret = ([Str(name), Space()] if use_cleveref else []) + [elem]
 
         # If the Cite was square-bracketed then wrap everything in a span
         s = stringify(value[-1])
