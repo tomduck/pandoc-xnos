@@ -683,14 +683,11 @@ def _remove_brackets(x, i):
 badlabels = []
 
 @_repeat
-def _process_refs(name, x, labels, warninglevel):
+def _process_refs(name, x, patt, labels, warninglevel):
     """Strips surrounding curly braces and adds modifiers to the
     attributes of Cite elements.  Only references with labels in the 'labels'
     list are processed.  Repeats processing (via decorator) until no more
     unprocessed references are found."""
-
-    # Get the prefix
-    prefix = list(labels)[0].split(':')[0] + ':' if labels else ''
 
     # Scan the element list x for Cite elements with known labels
     for i, v in enumerate(x):
@@ -715,15 +712,14 @@ def _process_refs(name, x, labels, warninglevel):
                 # The element list may be changed
                 return None  # Forces processing to repeat via @_repeat
 
-            if warninglevel and label.startswith(prefix) and \
-              label not in badlabels:
+            if warninglevel and patt.match(label) and label not in badlabels:
                 badlabels.append(label)
                 msg = "\n%s: Bad reference: @%s.\n\n" % (name, label)
                 STDERR.write(msg)
 
     return True  # Terminates processing in _repeat decorator
 
-def process_refs_factory(name, labels, warninglevel):
+def process_refs_factory(name, patt, labels, warninglevel):
     """Returns process_refs(key, value, fmt, meta) action that processes
     text around a reference.  Only references with labels found in the
     'labels' list are processed.
@@ -746,21 +742,21 @@ def process_refs_factory(name, labels, warninglevel):
         # all.
 
         if key in ['Para', 'Plain']:
-            _process_refs(name, value, labels, warninglevel)
+            _process_refs(name, value, patt, labels, warninglevel)
         elif key == 'Image':
-            _process_refs(name, value[-2], labels, warninglevel)
+            _process_refs(name, value[-2], patt, labels, warninglevel)
         elif key == 'Table':
-            _process_refs(name, value[-5], labels, warninglevel)
+            _process_refs(name, value[-5], patt, labels, warninglevel)
         elif key == 'Span':
-            _process_refs(name, value[-1], labels, warninglevel)
+            _process_refs(name, value[-1], patt, labels, warninglevel)
         elif key == 'Emph':
-            _process_refs(name, value, labels, warninglevel)
+            _process_refs(name, value, patt, labels, warninglevel)
         elif key == 'Strong':
-            _process_refs(name, value, labels, warninglevel)
+            _process_refs(name, value, patt, labels, warninglevel)
         elif key == 'Cite':
-            _process_refs(name, value[-2][0]['citationPrefix'], labels,
+            _process_refs(name, value[-2][0]['citationPrefix'], patt, labels,
                           warninglevel)
-            _process_refs(name, value[-2][0]['citationSuffix'], labels,
+            _process_refs(name, value[-2][0]['citationSuffix'], patt, labels,
                           warninglevel)
 
     return process_refs
