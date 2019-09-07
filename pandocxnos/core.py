@@ -44,8 +44,7 @@ given in the function docstrings.
 
   * `join_strings()` - Joins adjacent strings in an element list
   * `repair_refs()` - Repairs broken Cite elements in a document
-  * `process_refs_factory()` - Makes functions that process
-                               references
+  * `process_refs_factory()` - Makes functions that process references
   * `replace_refs_factory()` - Makes functions that replace refs with
                                format-specific content
   * `attach_attrs_factory()` - Makes functions that attach attributes
@@ -395,10 +394,8 @@ def extract_attrs(x, n):
     Space elements) are removed from 'x'.  Items before index 'n' are left
     unchanged.
 
-    Returns the attributes, the attribute string, and True if the attribute
-    string was fully parsed (False otherwise).  A ValueError is raised if
-    attributes aren't found.  An IndexError is raised if the index 'n' is out
-    of range."""
+    Returns the attributes.  A ValueError is raised if attributes aren't
+    found.  An IndexError is raised if the index 'n' is out of range."""
 
     # Check for the start of the attributes string
     if not (x[n]['t'] == 'Str' and x[n]['c'].startswith('{')):
@@ -703,11 +700,20 @@ def _process_refs(name, x, patt, labels, warninglevel):
                 # processed.
                 i = _extract_modifier(x, i, attrs)
 
-                # Attach the attributes
-                v['c'].insert(0, attrs.list)
-
                 # Remove surrounding brackets
                 _remove_brackets(x, i)
+
+                # Get the reference attributes
+                try:
+                    a = extract_attrs(x, i+1)
+                    attrs.id = a.id
+                    attrs.classes.extend(a.classes)
+                    attrs.kvs.update(a.kvs)
+                except (ValueError, IndexError):
+                    pass  # None given
+
+                # Attach the attributes
+                v['c'].insert(0, attrs.list)
 
                 # The element list may be changed
                 return None  # Forces processing to repeat via @_repeat
@@ -927,7 +933,7 @@ def attach_attrs_factory(name, f, warninglevel, extract_attrs=extract_attrs,
 
 # detach_attrs_factory() ------------------------------------------------------
 
-def detach_attrs_factory(f):
+def detach_attrs_factory(f, restore=False):
     """Returns detach_attrs(key, value, fmt, meta) action that detaches
     attributes attached to elements of type f (e.g. pandocfilters.Math, etc).
     Attributes provided natively by pandoc will be left as is."""
@@ -946,7 +952,11 @@ def detach_attrs_factory(f):
                 assert isinstance(value[0][0], STRTYPES)
                 assert isinstance(value[0][1], list)
                 assert isinstance(value[0][2], list)
+                attrs = PandocAttributes(value[0], 'pandoc')
                 del value[0]
+                if restore:
+                    return [elt(key, *value), Str(attrs.to_markdown())]
+        return None
 
     return detach_attrs
 
