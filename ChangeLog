@@ -5,6 +5,8 @@ pandoc-xnos 2.0.0b3 (unreleased)
     * Fixed epub links across chapters.
     * Fixed quoted attribute handling.
     * Fixed span handling.
+    * Support attributes on references.
+    * Support disabling links on selected references.
 
 
 pandoc-xnos 1.2.0 (2019-05-15)
