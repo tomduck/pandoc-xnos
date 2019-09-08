@@ -724,7 +724,8 @@ def _process_refs(name, x, patt, labels, warninglevel):
                 # The element list may be changed
                 return None  # Forces processing to repeat via @_repeat
 
-            if warninglevel and patt.match(label) and label not in badlabels:
+            if warninglevel and patt and \
+              patt.match(label) and label not in badlabels:
                 badlabels.append(label)
                 msg = "\n%s: Bad reference: @%s.\n\n" % (name, label)
                 STDERR.write(msg)
