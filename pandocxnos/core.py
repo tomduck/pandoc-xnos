@@ -316,7 +316,11 @@ def add_to_header_includes(meta, fmt, block, warninglevel, regex=None):
         raise RuntimeError(msg)
     # Print the block to stderr at warning level 2
     if warninglevel == 2:
-        STDERR.write(textwrap.indent(block, '    '))
+        if hasattr(textwrap, 'indent'):
+            STDERR.write(textwrap.indent(block, '    '))
+        else:
+            STDERR.write('\n'.join('    ' + line for line in block.split('\n')))
+            STDERR.flush()
 
 
 # cleveref_required() --------------------------------------------------------
@@ -681,7 +685,7 @@ def _remove_brackets(x, i):
                 return i-1
 
     return i
-                
+
 # Track bad labels so that we only warn about them once
 badlabels = []
 
@@ -805,7 +809,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
         nolink = attrs['nolink'].lower() == 'true' if 'nolink' in attrs \
           else False
-        
+
         label = value[-2][0]['citationId']
 
         assert label in references
