@@ -252,6 +252,11 @@ def get_meta(meta, name):
         return stringify(data['c'])
     if data['t'] == 'MetaList':
         return [stringify(v['c']) for v in data['c']]
+    if data['t'] == 'MetaMap':
+        ret = {}
+        for key in data['c']:
+            ret[key] = stringify(data['c'][key])
+        return ret
     raise RuntimeError("Could not understand metadata variable '%s'." % name)
 
 
