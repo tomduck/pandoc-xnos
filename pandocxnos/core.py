@@ -783,11 +783,11 @@ def process_refs_factory(name, patt, labels, warninglevel):
 
 # pylint: disable=too-many-arguments,unused-argument
 def replace_refs_factory(references, use_cleveref_default, use_eqref,
-                         plusname, starname):
+                         plusname, starname, strip_id=False):
     """Returns replace_refs(key, value, fmt, meta) action that replaces
     references with format-specific content.  The content is determined using
     the 'references' dict, which maps each reference label to a
-    [number/tag, figure secno] list (e.g.,
+    [number/tag, secno] list (e.g.,
     { 'fig:1':[1, '1'], 'fig:2':[2,'1'], ...}).  If 'use_cleveref_default'
     is True, or if "modifier" in the reference's attributes is "+" or "*", then
     clever referencing is used; i.e., a name is placed in front of the number
@@ -823,6 +823,9 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
         plus = attrs['modifier'] == '+' if 'modifier' in attrs \
           else use_cleveref_default
         name = plusname[0] if plus else starname[0]  # Name used by cref
+
+        if strip_id:
+            label = label.split(':')[1]
 
         # The replacement depends on the output format
         if fmt == 'latex':
