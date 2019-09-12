@@ -705,7 +705,7 @@ def _process_refs(name, x, patt, labels, warninglevel):
     for i, v in enumerate(x):
         if v['t'] == 'Cite' and len(v['c']) == 2:
             label = v['c'][-2][0]['citationId']
-            if label in labels:
+            if (patt and patt.match(label)) or label in labels:
 
                 # A new reference was found; create some empty attrs for it
                 attrs = PandocAttributes()
@@ -731,12 +731,13 @@ def _process_refs(name, x, patt, labels, warninglevel):
                 v['c'].insert(0, attrs.list)
 
                 # The element list may be changed
-                return None  # Forces processing to repeat via @_repeat
+                if label in labels:
+                    return None  # Forces processing to repeat via @_repeat
 
             if warninglevel and patt and \
               patt.match(label) and label not in badlabels:
                 badlabels.append(label)
-                msg = "\n%s: Bad reference: @%s.\n\n" % (name, label)
+                msg = "\n%s: Bad reference: @%s.\n" % (name, label)
                 STDERR.write(msg)
 
     return True  # Terminates processing in _repeat decorator
@@ -817,10 +818,8 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
         label = value[-2][0]['citationId']
 
-        assert label in references
-
         # Get the replacement value
-        text = str(references[label][0])
+        text = str(references[label][0]) if label in references else '??'
 
         # Choose between \Cref, \cref and \ref
         use_cleveref = attrs['modifier'] in ['*', '+'] \
@@ -852,7 +851,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
               if text.startswith('$') and text.endswith('$') \
               else Str(text)
 
-            if not nolink:
+            if not nolink and label in references:
                 prefix = 'ch%03d.xhtml' % references[label][1] \
                   if fmt in ['epub', 'epub2', 'epub3'] and \
                   references[label][1] else ''
