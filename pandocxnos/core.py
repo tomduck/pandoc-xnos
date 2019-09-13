@@ -58,7 +58,7 @@ given in the function docstrings.
 """
 
 
-__version__ = '2.0.0b4'
+__version__ = '2.0.0b5'
 
 
 import os
