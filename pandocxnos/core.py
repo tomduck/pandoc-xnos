@@ -704,7 +704,13 @@ def _process_refs(name, x, patt, labels, warninglevel):
     # Scan the element list x for Cite elements with known labels
     for i, v in enumerate(x):
         if v['t'] == 'Cite' and len(v['c']) == 2:
+
             label = v['c'][-2][0]['citationId']
+            if not label in labels and ':' in label:
+                testlabel = label.split(':')[-1]
+                if testlabel in labels:
+                    label = testlabel
+
             if (patt and patt.match(label)) or label in labels:
 
                 # A new reference was found; create some empty attrs for it
@@ -789,7 +795,7 @@ def process_refs_factory(name, patt, labels, warninglevel):
 
 # pylint: disable=too-many-arguments,unused-argument
 def replace_refs_factory(references, use_cleveref_default, use_eqref,
-                         plusname, starname, strip_id=False):
+                         plusname, starname):
     """Returns replace_refs(key, value, fmt, meta) action that replaces
     references with format-specific content.  The content is determined using
     the 'references' dict, which maps each reference label to a
@@ -813,10 +819,14 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
         attrs = PandocAttributes(value[0], 'pandoc')
 
-        nolink = attrs['nolink'].lower() == 'true' if 'nolink' in attrs \
+        nolink = attrs['nolink'].upper() == 'True' if 'nolink' in attrs \
           else False
 
         label = value[-2][0]['citationId']
+        if not label in references and ':' in label:
+            testlabel = label.split(':')[-1]
+            if testlabel in references:
+                label = testlabel
 
         # Get the replacement value
         text = str(references[label][0]) if label in references else '??'
@@ -827,9 +837,6 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
         plus = attrs['modifier'] == '+' if 'modifier' in attrs \
           else use_cleveref_default
         name = plusname[0] if plus else starname[0]  # Name used by cref
-
-        if strip_id:
-            label = label.split(':')[1]
 
         # The replacement depends on the output format
         if fmt == 'latex':
