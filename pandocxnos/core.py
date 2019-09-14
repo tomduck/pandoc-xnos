@@ -697,9 +697,10 @@ badlabels = []
 @_repeat
 def _process_refs(name, x, patt, labels, warninglevel):
     """Strips surrounding curly braces and adds modifiers to the
-    attributes of Cite elements.  Only references with labels in the 'labels'
-    list are processed.  Repeats processing (via decorator) until no more
-    unprocessed references are found."""
+    attributes of Cite elements.  Only references with labels that match the
+    pattern `patt` or are in the `labels` list are processed.  Repeats
+    processing (via decorator) until no more unprocessed references are
+    found."""
 
     # Scan the element list x for Cite elements with known labels
     for i, v in enumerate(x):
@@ -795,7 +796,7 @@ def process_refs_factory(name, patt, labels, warninglevel):
 
 # pylint: disable=too-many-arguments,unused-argument
 def replace_refs_factory(references, use_cleveref_default, use_eqref,
-                         plusname, starname):
+                         plusname, starname, allow_implicit_refs=False):
     """Returns replace_refs(key, value, fmt, meta) action that replaces
     references with format-specific content.  The content is determined using
     the 'references' dict, which maps each reference label to a
@@ -823,7 +824,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
           else False
 
         label = value[-2][0]['citationId']
-        if not label in references and ':' in label:
+        if allow_implicit_refs and not label in references and ':' in label:
             testlabel = label.split(':')[-1]
             if testlabel in references:
                 label = testlabel
