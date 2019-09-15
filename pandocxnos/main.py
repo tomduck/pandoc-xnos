@@ -31,6 +31,10 @@ def main():
         try:
             stdout = io.TextIOWrapper(io.BytesIO(), STDOUT.encoding)
             m = __import__(name)
+            if m.__version__ < '2.0.0':
+                msg = '%s must have version number 2.0.0 or higher to be'\
+                      'called by the pandoc-xnos filter.' % name
+                raise RuntimeError(msg)
             m.main(stdin, stdout)
             stdin = stdout
             stdin.seek(0)
