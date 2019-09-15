@@ -2,7 +2,7 @@
 pandoc-xnos 2.0.0
 =================
 
-*pandoc-xnos* provides library code for the pandoc-[fignos]/[eqnos]/[tablenos] filters.
+*pandoc-xnos* provides library code for the pandoc-[fignos]/[eqnos]/[tablenos]/[secnos] filters.  It also provides a `pandoc-xnos` filter for [pandoc] that calls the four dependent filters (if installed).
 
 I am pleased to receive bug reports and feature requests on the project's [Issues tracker].
 
@@ -10,6 +10,8 @@ I am pleased to receive bug reports and feature requests on the project's [Issue
 [fignos]: https://github.com/tomduck/pandoc-fignos
 [eqnos]: https://github.com/tomduck/pandoc-eqnos
 [tablenos]: https://github.com/tomduck/pandoc-tablenos
+[secnos]: https://github.com/tomduck/pandoc-tablenos
+[pandoc]: http://pandoc.org/
 [Issues tracker]: https://github.com/tomduck/pandocfiltering/issues
 
 
