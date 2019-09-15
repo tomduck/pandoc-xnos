@@ -9,6 +9,8 @@ pandoc-xnos 2.0.0 (unreleased)
     * Support disabling links on selected references.
     * Improved handling of missing reference targets.
     * Parse MetaMaps in get_meta().
+    * Added pandoc-xnos filter which calls all of pandoc-fignos/
+      eqnos/tablenos/secnos if available.
 
 
 pandoc-xnos 1.2.0 (2019-05-15)
