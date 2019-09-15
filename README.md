@@ -12,7 +12,7 @@ I am pleased to receive bug reports and feature requests on the project's [Issue
 [tablenos]: https://github.com/tomduck/pandoc-tablenos
 [secnos]: https://github.com/tomduck/pandoc-tablenos
 [pandoc]: http://pandoc.org/
-[Issues tracker]: https://github.com/tomduck/pandocfiltering/issues
+[Issues tracker]: https://github.com/tomduck/pandoc-xnos/issues
 
 
 Overview
