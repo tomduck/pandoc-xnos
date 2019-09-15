@@ -45,6 +45,7 @@ setup(
                       'psutil>=4.1.0,<6'],
 
     packages=['pandocxnos'],
+    entry_points={'console_scripts':['pandoc-xnos = pandocxnos:main']},
 
     classifiers=[
         'Development Status :: 5 - Production/Stable',
