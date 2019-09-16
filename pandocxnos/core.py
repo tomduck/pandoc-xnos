@@ -725,14 +725,16 @@ def _process_refs(name, x, patt, labels, warninglevel):
                 # Remove surrounding brackets
                 i = _remove_brackets(x, i)
 
-                # Get the reference attributes
-                try:
-                    a = extract_attrs(x, i+1)
-                    attrs.id = a.id
-                    attrs.classes.extend(a.classes)
-                    attrs.kvs.update(a.kvs)
-                except (ValueError, IndexError):
-                    pass  # None given
+                # Get the reference attributes.  Attributes must immediately
+                # follow the label.
+                if not v['c'][0][0]['citationSuffix']:
+                    try:
+                        a = extract_attrs(x, i+1)
+                        attrs.id = a.id
+                        attrs.classes.extend(a.classes)
+                        attrs.kvs.update(a.kvs)
+                    except (ValueError, IndexError):
+                        pass  # None given
 
                 # Attach the attributes
                 v['c'].insert(0, attrs.list)
@@ -820,7 +822,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
         attrs = PandocAttributes(value[0], 'pandoc')
 
-        nolink = attrs['nolink'].upper() == 'True' if 'nolink' in attrs \
+        nolink = attrs['nolink'].capitalize() == 'True' if 'nolink' in attrs \
           else False
 
         label = value[-2][0]['citationId']
@@ -892,11 +894,8 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
     def replace_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces references with format-specific content."""
-
         if key == 'Cite' and len(value) == 3:  # Replace the reference
-
             return _cite_replacement(key, value, fmt, meta)
-
         return None
 
     return replace_refs
