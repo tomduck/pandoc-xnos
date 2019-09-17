@@ -39,7 +39,7 @@ There are a few different options for installing from source:
 Testing
 -------
 
-Unit tests for pandoc-xnos are provided in test/.
+Unit tests for pandoc-xnos are provided in `test/`.  Integration tests are in `test/integration`.
 
 
 Preparing a Release
