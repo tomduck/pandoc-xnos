@@ -10,9 +10,9 @@ The *pandoc-xnos* filter suite provides facilities for cross-referencing in mark
 * [pandoc-secnos]: Numbers section references (sections are
   numbered by pandoc itself).
 
-Click on the above links to access documentation for each filter.  Output to LaTeX/pdf, html, and epub are equally supported.  Docx output is partially supported and in development.
+Click on the above links to access documentation for each filter.   LaTeX/pdf, html, and epub output have native support.  Native support for docx output is a work in progress.
 
-This project provides library code for the suite and a `pandoc-xnos` filter that applies the installed suite filters.
+This project provides library code for the suite and a `pandoc-xnos` filter that applies all of the above filters in sequence.
 
 See also: [pandoc-comments], [pandoc-latex-extensions]
 
