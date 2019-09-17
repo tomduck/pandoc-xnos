@@ -124,7 +124,7 @@ def init(pandocversion=None, doc=None):
 
     # Set (or reset) globals
     _cleveref_flag = None  # Flags that the cleveref package is needed
-    _sec = None            # Used to track section numbers
+    _sec = 0            # Used to track section numbers
 
     # Get the pandoc version
     pandocversion = None
