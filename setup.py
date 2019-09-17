@@ -20,7 +20,7 @@ import io
 
 from setuptools import setup
 
-DESCRIPTION = 'Library code for the pandoc-fignos/eqnos/tablenos filters.'
+DESCRIPTION = 'Library code for the pandoc-xnos filter suite.'
 
 # From https://stackoverflow.com/a/39671214
 __version__ = re.search(
