@@ -127,8 +127,10 @@ def init(pandocversion=None, doc=None):
     _sec = 0            # Used to track section numbers
 
     # Get the pandoc version
-    pandocversion = None
-    if 'PANDOC_VERSION' in os.environ:  # Available for pandoc >= 1.19.1
+    if pandocversion:  # It was provided
+        pass
+
+    elif 'PANDOC_VERSION' in os.environ:  # Available for pandoc >= 1.19.1
         pandocversion = str(os.environ['PANDOC_VERSION'])
 
     elif doc is not None and 'pandoc-api-version' in doc:
