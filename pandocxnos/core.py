@@ -263,7 +263,7 @@ def get_meta(meta, name):
 # elt() ----------------------------------------------------------------------
 
 def elt(eltType, numargs):  # pylint: disable=invalid-name
-    """Returns Element(*value) to create pandoc json elements.
+    """Returns Element(*value) to create pandoc AST elements.
 
     This should be used in place of pandocfilters.elt().  This version
     ensures that the content is stored in a list, not a tuple.
@@ -514,6 +514,7 @@ def join_strings(key, value, fmt=None, meta=None):
 # >>> _REF.match('xxx{+@fig:1}xxx').groups()
 # ('xxx{+', 'fig:1', '}xxx').
 _REF = re.compile(r'^((?:.*{)?[\*\+!]?)@([^:]*:[\w/-]+)(.*)')
+
 def _is_broken_ref(key1, value1, key2, value2):
     """True if this is a broken reference; False otherwise."""
     # A link followed by a string may represent a broken reference
