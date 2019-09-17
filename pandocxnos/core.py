@@ -1,3 +1,5 @@
+"""core.py: library code for the pandoc-xnos filter suite."""
+
 # Copyright 2015-2019 Thomas J. Duck.
 # All rights reserved.
 #
@@ -13,52 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""core.py: library code for the pandoc-fignos/eqnos/tablenos filters.
 
-Overview
---------
-
-Below is a short summary of what is available.  More details are
-given in the function docstrings.
-
-#### Globals ####
-
-  * `STRTYPES` - a tuple of string types for this python version
-  * `STDIN`/`STDOUT`/`STDERR` - streams for use with pandoc
-
-#### Utility functions ####
-
-  * `init()` - Determines and returns the pandoc version
-  * `check_bool()` - Checks that a value is boolean
-  * `get_meta()` - Retrieves variables from a document's metadata
-  * `add_to_header_includes()` - Adds to header-includes in metadata
-  * `cleveref_required()` - True if cleveref is required, False otherwise
-
-#### Element list functions ####
-
-  * `quotify()` - Changes Quoted elements to quoted strings
-  * `dollarfy()` - Changes Math elements to dollared strings
-  * `extract_attrs()` - Extracts attribute strings
-
-#### Actions and their factory functions ####
-
-  * `join_strings()` - Joins adjacent strings in an element list
-  * `repair_refs()` - Repairs broken Cite elements in a document
-  * `process_refs_factory()` - Makes functions that process references
-  * `replace_refs_factory()` - Makes functions that replace refs with
-                               format-specific content
-  * `attach_attrs_factory()` - Makes functions that attach attributes
-                               to elements
-  * `detach_attrs_factory()` - Makes functions that detach attributes
-                               from elements
-  * `insert_secnos_factory()` - Makes functions that insert section
-                                numbers into attributes
-  * `insert_rawblocks_factory()` - Makes function to insert
-                                   non-duplicate Raw Block elements.
-"""
-
-
-__version__ = '2.0.0b5'
+__version__ = '2.0.0'
 
 
 import os
@@ -107,11 +65,9 @@ else:
     STDOUT = sys.stdout
     STDERR = sys.stdout
 
-# Flags that the cleveref package is needed
-_cleveref_flag = False  # pylint: disable=invalid-name
-
 # pylint: disable=invalid-name
-sec = 0  # Used to track section numbers
+_cleveref_flag = None  # Flags that the cleveref package is needed
+_sec = None            # Used to track section numbers
 
 
 #=============================================================================
@@ -144,74 +100,80 @@ _PANDOCVERSION = None  # A string giving the pandoc version
 
 # pylint: disable=too-many-branches
 def init(pandocversion=None, doc=None):
-    """Sets or determines the pandoc version.  This must be called.
+    """Initializes library.  This must be called.
 
-    The pandoc version is needed for multi-version support.
-    See: https://github.com/jgm/pandoc/issues/2640
+    This function:
 
-    Returns the pandoc version."""
+      1) Sets (or resets) global variables.
+
+      2) Sets or determines the pandoc version, which is needed for
+         multi-version support.  See: https://github.com/jgm/pandoc/issues/2640
+
+    Returns the pandoc version.
+    """
 
     # This requires some care because we can't be sure that a call to 'pandoc'
     # will work.  It could be 'pandoc-1.17.0.2' or some other name.  Try
     # checking the parent process first, and only make a call to 'pandoc' as
     # a last resort.
 
-    global _PANDOCVERSION  # pylint: disable=global-statement
+    # pylint: disable=global-statement
+    global _PANDOCVERSION
+    global _cleveref_flag
+    global _sec
 
-    pattern = re.compile(r'^[1-2]\.[0-9]+(?:\.[0-9]+)?(?:\.[0-9]+)?$')
+    # Set (or reset) globals
+    _cleveref_flag = None  # Flags that the cleveref package is needed
+    _sec = None            # Used to track section numbers
 
+    # Get the pandoc version
+    pandocversion = None
     if 'PANDOC_VERSION' in os.environ:  # Available for pandoc >= 1.19.1
         pandocversion = str(os.environ['PANDOC_VERSION'])
 
+    elif doc is not None and 'pandoc-api-version' in doc:
+        # This could be pandoc 1.18 or 1.19; there is no way to distinguish
+        # them (but there isn't a use case in pandoc-fignos and friends where
+        # it matters).
+        pandocversion = '1.18'
+
+    else:
+        # As a last resort, ask the pandoc executable what its version is
+        try:  # Get the executable of the parent process
+            if os.name == 'nt':
+                # psutil appears to work differently for windows
+                command = psutil.Process(os.getpid()).parent().parent().exe()
+            else:
+                command = psutil.Process(os.getpid()).parent().exe()
+            if not os.path.basename(command).startswith('pandoc'):
+                raise RuntimeError('pandoc not found')
+        except:  # pylint: disable=bare-except
+            # Use whatever pandoc is available and hope for the best
+            command = 'pandoc'
+
+        # Make the call
+        try:
+            # Get the version number and confirm it conforms to expectations
+            output = subprocess.check_output([command, '-v'])
+            line = output.decode('utf-8').split('\n')[0]
+            pandocversion = line.split(' ')[-1].strip()
+        except: # pylint: disable=bare-except
+            pass
+
+    # Test `pandocversion` and if it is OK then store and return it
+    pattern = re.compile(r'^[1-2]\.[0-9]+(?:\.[0-9]+)?(?:\.[0-9]+)?$')
     if pandocversion is not None:
-        # Test the result and if it is OK then store it in _PANDOCVERSION
         if pattern.match(pandocversion):
             _PANDOCVERSION = pandocversion
             return _PANDOCVERSION
         msg = 'Cannot understand pandocversion=%s'%pandocversion
         raise RuntimeError(msg)
 
-    if doc is not None:
-        if 'pandoc-api-version' in doc:
-            # This could be either 1.18 or 1.19; there is no way to
-            # distinguish them (but there isn't a use case in pandoc-fignos
-            # and friends where it matters)
-            _PANDOCVERSION = '1.18'
-            return _PANDOCVERSION
-
-    # Get the command
-    try:  # Get the path for the parent process
-        if os.name == 'nt':
-            # psutil appears to work differently for windows
-            command = psutil.Process(os.getpid()).parent().parent().exe()
-        else:
-            command = psutil.Process(os.getpid()).parent().exe()
-        if not os.path.basename(command).startswith('pandoc'):
-            raise RuntimeError('pandoc not found')
-    except:  # pylint: disable=bare-except
-        # Call whatever pandoc is available and hope for the best
-        command = 'pandoc'
-
-    # Make the call
-    try:
-        # Get the version number and confirm it conforms to expectations
-        output = subprocess.check_output([command, '-v'])
-        line = output.decode('utf-8').split('\n')[0]
-        pandocversion = line.split(' ')[-1].strip()
-    except: # pylint: disable=bare-except
-        pandocversion = ''
-
-    # Test the result and if it is OK then store it in _PANDOCVERSION
-    if pattern.match(pandocversion):
-        _PANDOCVERSION = pandocversion
-
-    if _PANDOCVERSION is None:
-        msg = textwrap.dedent("""\
-            Cannot determine pandoc version.  Please file an issue at
-            https://github.com/tomduck/pandocxnos/issues.""")
-        raise RuntimeError(msg)
-
-    return _PANDOCVERSION
+    # Raise an exception
+    msg = textwrap.dedent("""\
+        Cannot determine pandoc version.  Please file an issue at
+        https://github.com/tomduck/pandocxnos/issues.""")
+    raise RuntimeError(msg)
 
 
 # check_bool() ---------------------------------------------------------------
@@ -1012,13 +974,13 @@ def insert_secnos_factory(f):
     def insert_secnos(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Inserts section numbers into elements attributes."""
 
-        global sec  # pylint: disable=global-statement
+        global _sec  # pylint: disable=global-statement
 
         if key == 'Header':
             if 'unnumbered' in value[1][1]:
                 return
             if value[0] == 1:
-                sec += 1
+                _sec += 1
         if key == name:
 
             # Only insert if attributes are attached.  Images always have
@@ -1032,7 +994,7 @@ def insert_secnos_factory(f):
                 assert isinstance(value[0][2], list)
 
                 # Insert the section number into the attributes
-                value[0][2].insert(0, ['secno', sec])
+                value[0][2].insert(0, ['secno', _sec])
 
     return insert_secnos
 
