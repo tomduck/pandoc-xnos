@@ -2,57 +2,73 @@
 pandoc-xnos 2.0.0
 =================
 
-*pandoc-xnos* provides library code for the pandoc-[fignos]/[eqnos]/[tablenos]/[secnos] filters.  It also provides a `pandoc-xnos` filter for [pandoc] that calls the four dependent filters (if installed).
+The *pandoc-xnos* filter suite provides facilities for cross-referencing in markdown documents processed by [pandoc]. Individual filters are maintained in separate projects.  They are:
 
-I am pleased to receive bug reports and feature requests on the project's [Issues tracker].
+* [pandoc-fignos]: Numbers figures and figure references.
+* [pandoc-eqnos]: Numbers equations and equation references.
+* [pandoc-tablenos]: Numbers tables and table references.
+* [pandoc-secnos]: Numbers section references (sections are
+  numbered by pandoc itself).
 
-[pandocfilters]: https://github.com/jgm/pandocfilters
-[fignos]: https://github.com/tomduck/pandoc-fignos
-[eqnos]: https://github.com/tomduck/pandoc-eqnos
-[tablenos]: https://github.com/tomduck/pandoc-tablenos
-[secnos]: https://github.com/tomduck/pandoc-tablenos
+Click on the above links to access documentation for each filter.  Output to LaTeX/pdf, html, and epub are equally supported.  Docx output is partially supported and in development.
+
+This project provides library code for the suite and a `pandoc-xnos` filter that applies the installed suite filters.
+
+See also: [pandoc-comments], [pandoc-latex-extensions]
+
 [pandoc]: http://pandoc.org/
-[Issues tracker]: https://github.com/tomduck/pandoc-xnos/issues
+[pandoc-fignos]: https://github.com/tomduck/pandoc-fignos
+[pandoc-eqnos]: https://github.com/tomduck/pandoc-eqnos
+[pandoc-tablenos]: https://github.com/tomduck/pandoc-tablenos
+[pandoc-secnos]: https://github.com/tomduck/pandoc-tablenos
+[pandoc-comments]: https://github.com/tomduck/pandoc-comments
+[pandoc-latex-extensions]: https://github.com/tomduck/pandoc-latex-extensions
 
 
-Overview
+Contents
 --------
 
-Below is a short summary of what is available.  More details are
-given in the function docstrings.
+ 1. [Installation](#installation)
+ 2. [Usage](#usage)
+ 3. [Getting Help](#getting-help)
 
-#### Globals ####
 
-  * `STRTYPES` - a list of string types for this python version
-  * `STDIN`/`STDOUT`/`STDERR` - streams for use with pandoc
+Installation
+------------
 
-#### Utility functions ####
+Pandoc-xnos requires [python], a programming language that comes pre-installed on macOS and linux.  It is easily installed on Windows -- see [here](https://realpython.com/installing-python/).  Either python 2.7 or 3.x will do.
 
-  * `init()` - Determines and returns the pandoc version
-  * `check_bool()` - Used to check if a variable is boolean
-  * `get_meta()` - Retrieves variables from a document's metadata
+The pandoc-xnos filter suite may be installed using the shell command
 
-#### Element list functions ####
+    pip install pandoc-fignos pandoc-eqnos pandoc-tablenos \
+                pandoc-secnos --user
 
-  * `quotify()` - Changes Quoted elements to quoted strings
-  * `dollarfy()` - Changes Math elements to dollared strings
-  * `extract_attrs()` - Extracts attribute strings
+and upgraded by appending `--upgrade` to the above command.
 
-#### Actions and their factory functions ####
+Pip is a program that downloads and installs software from the Python Package Index, [PyPI].  It normally comes installed with a python distribution.<sup>[2](#footnote2)</sup>
 
-  * `join_strings()` - Joins adjacent strings in a pandoc document
-  * `repair_refs()` - Repairs broken Cite elements in a document
-  * `process_refs_factory()` - Makes functions that process
-                               references
-  * `replace_refs_factory()` - Makes functions that replace refs with
-                               format-specific content
-  * `attach_attrs_factory()` - Makes functions that attach attributes
-                               to elements
-  * `detach_attrs_factory()` - Makes functions that detach attributes
-                               from elements
-  * `insert_secnos_factory()` - Makes functions that insert section
-                                numbers into attributes
-  * `delete_secnos_factory()` - Makes functions that delete section
-                                numbers from attributes
-  * `insert_rawblocks_factory()` - Makes function to insert
-                                   non-duplicate RawBlock elements.
+Instructions for installing from source are given in [DEVELOPERS.md].
+
+[python]: https://www.python.org/
+[PyPI]: https://pypi.python.org/pypi
+[DEVELOPERS.md]: DEVELOPERS.md
+
+
+Usage
+-----
+
+The pandoc-xnos filter suite may be applied using the
+
+    --filter pandoc-xnos
+
+option with pandoc.  It is also possible to apply the filters individually.
+
+Any use of `--filter pandoc-citeproc` or `--bibliography=FILE` should come *after* the `pandoc-xnos` filter call.
+
+
+Getting Help
+------------
+
+If you have any difficulties with pandoc-xnos, or would like to see a new feature, then please submit a report to our [Issues tracker].
+
+[Issues tracker]: https://github.com/tomduck/pandoc-xnos/issues
