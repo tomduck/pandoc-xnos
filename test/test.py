@@ -23,7 +23,7 @@ import sys
 import unittest
 import subprocess
 
-from pandocfilters import walk, Math, Image
+from pandocfilters import walk, Math
 
 import pandocxnos
 from pandocxnos import PandocAttributes
@@ -36,11 +36,9 @@ from pandocxnos import insert_secnos_factory
 from pandocxnos import repair_refs, process_refs_factory, replace_refs_factory
 
 PANDOCVERSION = '2.7'
-PANDOC1p15 = 'pandoc-1.15.2'
+PANDOC1p15 = 'pandoc-1.15.2'  # pylint: disable=invalid-name
 
 PANDOC_API_VERSION = '1,17,5,4'
-
-pandocxnos.init(PANDOCVERSION)
 
 
 #-----------------------------------------------------------------------------
@@ -49,6 +47,10 @@ pandocxnos.init(PANDOCVERSION)
 # pylint: disable=too-many-public-methods
 class TestXnos(unittest.TestCase):
     """Test the pandocxnos package."""
+
+    def setUp(self):
+        """Sets up the test."""
+        pandocxnos.init(PANDOCVERSION)
 
     def test_get_meta_1(self):
         """Tests get_meta() #1."""
@@ -144,7 +146,7 @@ class TestXnos(unittest.TestCase):
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$ {#eq:1}\n'), stdout=subprocess.PIPE)
-        
+
         output = eval(subprocess.check_output(
             'pandoc -t json'.split(),
             stdin=md.stdout).strip().decode("utf-8").replace('true', 'True'))
@@ -172,7 +174,7 @@ class TestXnos(unittest.TestCase):
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$\n'), stdout=subprocess.PIPE)
-        
+
         output = eval(subprocess.check_output(
             'pandoc -t json'.split(),
             stdin=md.stdout).strip().decode("utf-8").replace('true', 'True'))
@@ -189,7 +191,7 @@ class TestXnos(unittest.TestCase):
         tmp = walk(src, attach_attrs_math, fmt, meta)
         self.assertEqual(walk(tmp, insert_secnos, fmt, meta), expected)
 
-        
+
     def test_elt(self):
         """Tests elt()."""
 
@@ -342,7 +344,6 @@ class TestXnos(unittest.TestCase):
         # Make the comparison
         pandocxnos.init('1.17.2')
         self.assertEqual(walk(src, repair_refs, '', {}), expected)
-        pandocxnos.init(PANDOCVERSION)
 
     # NOTE: Broken refs are fixed with pandoc 1.18
     def test_repair_refs_2(self):
@@ -359,7 +360,6 @@ class TestXnos(unittest.TestCase):
         # Make the comparison
         pandocxnos.init('1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
-        pandocxnos.init(PANDOCVERSION)
 
 
     # NOTE: Broken refs are fixed with pandoc 1.18
@@ -377,7 +377,6 @@ class TestXnos(unittest.TestCase):
         # Make the comparison
         pandocxnos.init('1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
-        pandocxnos.init(PANDOCVERSION)
 
 
     # NOTE: Broken refs are fixed with pandoc 1.18
@@ -395,7 +394,6 @@ class TestXnos(unittest.TestCase):
         # Make the comparison
         pandocxnos.init('1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
-        pandocxnos.init(PANDOCVERSION)
 
 
     # NOTE: Broken refs are fixed with pandoc 1.18
@@ -413,7 +411,6 @@ class TestXnos(unittest.TestCase):
         # Make the comparison
         pandocxnos.init('1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
-        pandocxnos.init(PANDOCVERSION)
 
 
     # NOTE: Broken refs are fixed with pandoc 1.18
@@ -431,7 +428,6 @@ class TestXnos(unittest.TestCase):
         # Make the comparison
         pandocxnos.init('1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
-        pandocxnos.init(PANDOCVERSION)
 
 
     # NOTE: Broken refs are fixed with pandoc 1.18
@@ -449,7 +445,6 @@ class TestXnos(unittest.TestCase):
         # Make the comparison
         pandocxnos.init('1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
-        pandocxnos.init(PANDOCVERSION)
 
 
     # NOTE: Broken refs are fixed with pandoc 1.18
@@ -467,7 +462,6 @@ class TestXnos(unittest.TestCase):
         # Make the comparison
         pandocxnos.init('1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
-        pandocxnos.init(PANDOCVERSION)
 
 
     def test_process_refs_factory_1(self):
@@ -627,7 +621,7 @@ class TestXnos(unittest.TestCase):
         process_refs = process_refs_factory(None, None, ['eq:1'], 0)
         self.assertEqual(walk(src, process_refs, '', {}), expected)
 
-        
+
     def test_use_refs_factory_7(self):
         """Tests use_refs_factory() #7."""
 
@@ -723,7 +717,7 @@ class TestXnos(unittest.TestCase):
                                             ['fig.', 'figs.'],
                                             ['Figure', 'Figures'])
         self.assertEqual(walk(walk(src, replace_refs, {}, ''),
-                                  join_strings, {}, ''), expected)
+                              join_strings, {}, ''), expected)
 
 
     def test_attach_attrs_factory(self):
@@ -741,7 +735,7 @@ class TestXnos(unittest.TestCase):
         md = subprocess.Popen(('echo', '$$ y = f(x) $${#eq:1 tag="B.1"}'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())        
+            'pandoc -t json'.split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Hand-coded (attributes deleted)
