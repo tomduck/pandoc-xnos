@@ -20,7 +20,7 @@ See also: [pandoc-comments], [pandoc-latex-extensions]
 [pandoc-fignos]: https://github.com/tomduck/pandoc-fignos
 [pandoc-eqnos]: https://github.com/tomduck/pandoc-eqnos
 [pandoc-tablenos]: https://github.com/tomduck/pandoc-tablenos
-[pandoc-secnos]: https://github.com/tomduck/pandoc-tablenos
+[pandoc-secnos]: https://github.com/tomduck/pandoc-secnos
 [pandoc-comments]: https://github.com/tomduck/pandoc-comments
 [pandoc-latex-extensions]: https://github.com/tomduck/pandoc-latex-extensions
 
