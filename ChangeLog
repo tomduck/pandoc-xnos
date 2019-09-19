@@ -1,4 +1,4 @@
-pandoc-xnos 2.0.1 (unreleased)
+pandoc-xnos 2.0.1 (2019-09-19)
 
     * Fixed handling of spans ending with a reference.
 
