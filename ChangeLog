@@ -1,3 +1,8 @@
+pandoc-xnos 2.0.1 (unreleased)
+
+    * Fixed handling of spans ending with a reference.
+
+
 pandoc-xnos 2.0.0 (2019-09-17)
 
     * Rebranded as the pandoc-xnos filter suite.

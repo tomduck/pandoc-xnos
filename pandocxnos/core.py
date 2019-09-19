@@ -692,7 +692,8 @@ def _process_refs(name, x, patt, labels, warninglevel):
 
                 # Get the reference attributes.  Attributes must immediately
                 # follow the label.
-                if not v['c'][0][0]['citationSuffix']:
+                if not v['c'][0][0]['citationSuffix'] and \
+                  not stringify(v['c'][-1]).endswith(']'):
                     try:
                         a = extract_attrs(x, i+1)
                         attrs.id = a.id
@@ -840,6 +841,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
         # If the Cite was square-bracketed then wrap everything in a span
         s = stringify(value[-1])
+
         # pandoc strips off intervening space between the prefix and the Cite;
         # we may have to add it back in
         prefix = value[-2][0]['citationPrefix']
