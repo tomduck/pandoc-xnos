@@ -1,5 +1,5 @@
 
-pandoc-xnos 2.0.0
+pandoc-xnos 2.0.1
 =================
 
 The *pandoc-xnos* filter suite provides facilities for cross-referencing in markdown documents processed by [pandoc]. Individual filters are maintained in separate projects.  They are:
