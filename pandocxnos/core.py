@@ -1122,10 +1122,10 @@ def insert_secnos_factory(f):
         if key == name:
 
             # Only insert if attributes are attached.  Images always have
-            # attributes for pandoc >= 1.16.
+            # attributes for pandoc >= 1.16. Same for Spans.
             assert len(value) <= n+1
             if (name == 'Image' and len(value) == 3) or name == 'Div' or \
-              len(value) == n+1:
+                name == 'Span' or len(value) == n+1:
                 # Make sure value[0] represents attributes
                 assert isinstance(value[0][0], STRTYPES)
                 assert isinstance(value[0][1], list)
@@ -1152,11 +1152,11 @@ def delete_secnos_factory(f):
         """Deletes section numbers from elements attributes."""
 
         # Only delete if attributes are attached.   Images always have
-        # attributes for pandoc >= 1.16.
+        # attributes for pandoc >= 1.16. Same for Spans.
         if key == name:
             assert len(value) <= n+1
             if (name == 'Image' and len(value) == 3) or name == 'Div' or \
-              len(value) == n+1:
+                name == 'Span' or len(value) == n+1:
 
                 # Make sure value[0] represents attributes
                 assert isinstance(value[0][0], STRTYPES)
