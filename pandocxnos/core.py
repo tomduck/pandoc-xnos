@@ -848,12 +848,8 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
             if testlabel in references:
                 label = testlabel
 
-        # Issue a warning for duplicate targets.
-        # Deprecation warning: older filters may not have the duplicate flag
-        # references[label][2], which is why we hae to check for its existence
-        # first.
-        if len(references[label]) > 2 and references[label][2]:
-            # This reference was flagged as a duplicate ***
+        # Issue a warning for duplicate targets
+        if references[label][2]:
             msg = textwrap.dedent("""\
                 %s: Referenced label has duplicate: %s
             """ % (_FILTERNAME, label))
