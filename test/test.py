@@ -50,7 +50,7 @@ class TestXnos(unittest.TestCase):
 
     def setUp(self):
         """Sets up the test."""
-        pandocxnos.init(PANDOCVERSION)
+        pandocxnos.init('pandoc-xnos', PANDOCVERSION)
 
     def test_get_meta_1(self):
         """Tests get_meta() #1."""
@@ -157,8 +157,7 @@ class TestXnos(unittest.TestCase):
         # Make the comparison
         meta = src['meta']
         fmt = 'html'
-        attach_attrs_math = attach_attrs_factory(None, Math, 0,
-                                                 allow_space=True)
+        attach_attrs_math = attach_attrs_factory(Math, 0, allow_space=True)
         insert_secnos = insert_secnos_factory(Math)
         tmp = walk(src, attach_attrs_math, fmt, meta)
         self.assertEqual(walk(tmp, insert_secnos, fmt, meta), expected)
@@ -185,8 +184,7 @@ class TestXnos(unittest.TestCase):
         # Make the comparison
         meta = src['meta']
         fmt = 'html'
-        attach_attrs_math = attach_attrs_factory(None, Math, 0,
-                                                 allow_space=True)
+        attach_attrs_math = attach_attrs_factory(Math, 0, allow_space=True)
         insert_secnos = insert_secnos_factory(Math)
         tmp = walk(src, attach_attrs_math, fmt, meta)
         self.assertEqual(walk(tmp, insert_secnos, fmt, meta), expected)
@@ -342,7 +340,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"doe:1999","citationHash":0}],[{"t":"Str","c":"@doe:1999"}]]},{"t":"Str","c":"}"}]}]]''')
 
         # Make the comparison
-        pandocxnos.init('1.17.2')
+        pandocxnos.init('pandoc-xnos', '1.17.2')
         self.assertEqual(walk(src, repair_refs, '', {}), expected)
 
     # NOTE: Broken refs are fixed with pandoc 1.18
@@ -358,7 +356,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"Eqs."},{"t":"Space","c":[]},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}a"},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}b."}]}]]''')
 
         # Make the comparison
-        pandocxnos.init('1.17.2')
+        pandocxnos.init('pandoc-xnos', '1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
@@ -375,7 +373,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"}."}]}]]''')
 
         # Make the comparison
-        pandocxnos.init('1.17.2')
+        pandocxnos.init('pandoc-xnos', '1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
@@ -392,7 +390,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"*"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:plot1","citationHash":0}],[{"t":"Str","c":"@fig:plot1"}]]},{"t":"Space","c":[]},{"t":"Str","c":"and"},{"t":"Space","c":[]},{"t":"Str","c":"{+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:plot3","citationHash":0}],[{"t":"Str","c":"@fig:plot3"}]]},{"t":"Str","c":"}a."}]}]]''')
 
         # Make the comparison
-        pandocxnos.init('1.17.2')
+        pandocxnos.init('pandoc-xnos', '1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
@@ -409,7 +407,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"+"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":","}]}]]''')
 
         # Make the comparison
-        pandocxnos.init('1.17.2')
+        pandocxnos.init('pandoc-xnos', '1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
@@ -426,7 +424,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"{baz=bat}}a"}]}]]''')
 
         # Make the comparison
-        pandocxnos.init('1.17.2')
+        pandocxnos.init('pandoc-xnos', '1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
@@ -443,7 +441,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"{baz=bat"},{"t":"Space","c":[]},{"t":"Str","c":"foo=bar}}a"}]}]]''')
 
         # Make the comparison
-        pandocxnos.init('1.17.2')
+        pandocxnos.init('pandoc-xnos', '1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
@@ -460,7 +458,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":"}-{"},{"t":"Cite","c":[[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:3","citationHash":0}],[{"t":"Str","c":"@fig:3"}]]},{"t":"Str","c":"}"}]}]]''')
 
         # Make the comparison
-        pandocxnos.init('1.17.2')
+        pandocxnos.init('pandoc-xnos', '1.17.2')
         self.assertEqual(walk(src, repair_refs, {}, ''), expected)
 
 
@@ -484,7 +482,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space"},{"t":"Str","c":"shown"},{"t":"Space"},{"t":"Str","c":"in"},{"t":"Space"},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"fig:one","citationHash":0}],[{"t":"Str","c":"@fig:one"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[%s]}'''%PANDOC_API_VERSION)
 
         # Make the comparison
-        process_refs = process_refs_factory(None, None, ['fig:one'], 0)
+        process_refs = process_refs_factory(None, ['fig:one'], 0)
         self.assertEqual(walk(src, process_refs, '', {}), expected)
 
 
@@ -508,7 +506,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''{"blocks":[{"t":"Para","c":[{"t":"Str","c":"("},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"eq:one","citationHash":0}],[{"t":"Str","c":"@eq:one"}]]},{"t":"Str","c":")"}]}],"pandoc-api-version":[%s],"meta":{}}'''%PANDOC_API_VERSION)
 
         # Make the comparison
-        process_refs = process_refs_factory(None, None, ['eq:one'], 0)
+        process_refs = process_refs_factory(None, ['eq:one'], 0)
         self.assertEqual(walk(src, process_refs, '', {}), expected)
 
 
@@ -530,7 +528,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[%s],"meta":{}}'''%PANDOC_API_VERSION)
 
         # Make the comparison
-        process_refs = process_refs_factory(None, None, ['tbl:1'], 0)
+        process_refs = process_refs_factory(None, ['tbl:1'], 0)
         self.assertEqual(walk(src, process_refs, '', {}), expected)
 
 
@@ -552,7 +550,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"@eq:1"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[%s]}'''%PANDOC_API_VERSION)
 
         # Make the comparison
-        process_refs = process_refs_factory(None, None, ['eq:1'], 0)
+        process_refs = process_refs_factory(None, ['eq:1'], 0)
         self.assertEqual(walk(src, process_refs, '', {}), expected)
 
 
@@ -574,7 +572,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[%s]}'''%PANDOC_API_VERSION)
 
         # Make the comparison
-        process_refs = process_refs_factory(None, None, ['tbl:1'], 0)
+        process_refs = process_refs_factory(None, ['tbl:1'], 0)
         self.assertEqual(walk(src, process_refs, '', {}), expected)
 
 
@@ -596,7 +594,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Str","c":"xxx"},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:1","citationHash":0}],[{"t":"Str","c":"@tbl:1"}]]},{"t":"Str","c":"xxx."}]}],"pandoc-api-version":[%s]}'''%PANDOC_API_VERSION)
 
         # Make the comparison
-        process_refs = process_refs_factory(None, None, ['tbl:1'], 0)
+        process_refs = process_refs_factory(None, ['tbl:1'], 0)
         self.assertEqual(walk(src, process_refs, '', {}), expected)
 
 
@@ -618,7 +616,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Str","c":"See"},{"t":"Space"},{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"NormalCitation"},"citationPrefix":[],"citationId":"eq:1","citationHash":0}],[{"t":"Str","c":"[+@eq:1]"}]]},{"t":"Str","c":"."}]}],"pandoc-api-version":[%s]}'''%PANDOC_API_VERSION)
 
         # Make the comparison
-        process_refs = process_refs_factory(None, None, ['eq:1'], 0)
+        process_refs = process_refs_factory(None, ['eq:1'], 0)
         self.assertEqual(walk(src, process_refs, '', {}), expected)
 
 
@@ -642,8 +640,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''{"meta":{},"blocks":[{"t":"Para","c":[{"t":"Cite","c":[["",[],[["modifier","+"]]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:one","citationHash":0}],[{"t":"Str","c":"@tbl:one"}]]},{"t":"Str","c":"-"},{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText"},"citationPrefix":[],"citationId":"tbl:four","citationHash":0}],[{"t":"Str","c":"@tbl:four"}]]},{"t":"Space"},{"t":"Str","c":"provide"},{"t":"Space"},{"t":"Str","c":"the"},{"t":"Space"},{"t":"Str","c":"data."}]}],"pandoc-api-version":[%s]}'''%PANDOC_API_VERSION)
 
         # Make the comparison
-        process_refs = process_refs_factory(None, None,
-                                            ['tbl:one', 'tbl:four'], 0)
+        process_refs = process_refs_factory(None, ['tbl:one', 'tbl:four'], 0)
         self.assertEqual(walk(src, process_refs, '', {}), expected)
 
     @unittest.skip('Known issue for pandoc-1.15.2')
@@ -673,7 +670,7 @@ class TestXnos(unittest.TestCase):
             'pandoc -t json'.split(), stdin=md.stdout).strip())
 
         # Make the comparison
-        process_refs = process_refs_factory(None, None, ['fig:1'], 0)
+        process_refs = process_refs_factory(None, ['fig:1'], 0)
         self.assertEqual(walk(src, process_refs, {}, ''), expected)
 
 
@@ -697,7 +694,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Cite","c":[["",[],[]],[{"citationSuffix":[],"citationNoteNum":0,"citationMode":{"t":"AuthorInText","c":[]},"citationPrefix":[],"citationId":"fig:1","citationHash":0}],[{"t":"Str","c":"@fig:1"}]]},{"t":"Str","c":":"}]}]]''')
 
         # Make the comparison
-        process_refs = process_refs_factory(None, None, ['fig:1'], 0)
+        process_refs = process_refs_factory(None, ['fig:1'], 0)
         self.assertEqual(walk(src, process_refs, {}, ''), expected)
 
 
@@ -713,7 +710,8 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Str","c":"fig."},{"t":"Space","c":[]},{'t':'Link','c':[['',[],[]],[{'t':'Str','c':'1'}],['#fig:one','']]},{"t":"Str","c":"."}]}]]''')
 
         # Make the comparison
-        replace_refs = replace_refs_factory({'fig:one':[1, 1]}, True, False,
+        replace_refs = replace_refs_factory({'fig:one':[1, 1, False]},
+                                            True, False,
                                             ['fig.', 'figs.'],
                                             ['Figure', 'Figures'])
         self.assertEqual(walk(walk(src, replace_refs, {}, ''),
@@ -723,8 +721,7 @@ class TestXnos(unittest.TestCase):
     def test_attach_attrs_factory(self):
         """Tests attach_attrs_math()."""
 
-        attach_attrs_math = attach_attrs_factory(None, Math, 0,
-                                                 allow_space=True)
+        attach_attrs_math = attach_attrs_factory(Math, 0, allow_space=True)
 
         ## test.md: $$ y = f(x) $${#eq:1 tag="B.1"} ##
 
