@@ -183,13 +183,11 @@ def init(filtername, pandocversion=None, doc=None):
                    for all new releases.
     """
 
-    # pylint: disable=global-statement, global-variable-undefined
+    # pylint: disable=global-statement
     global _PANDOCVERSION
     global _FILTERNAME
     global _cleveref_flag
     global _sec
-    global process_refs_factory
-    global attach_attrs_factory
 
     # Set (or reset) globals
     _cleveref_flag = None  # Flags that the cleveref package is needed
@@ -508,7 +506,7 @@ def join_strings(key, value, fmt=None, meta=None):
 
 # repair_refs() -------------------------------------------------------------
 
-# Reference regex.  This splits a reference into three components: the
+# Reference pattern.  This splits a reference into three components: the
 # prefix, label and suffix.  e.g.:
 # >>> _REF.match('xxx{+@fig:1}xxx').groups()
 # ('xxx{+', 'fig:1', '}xxx').
@@ -530,7 +528,7 @@ def _is_broken_ref(key1, value1, key2, value2):
         return False
 
     s = value1[n][0]['c'] + value2
-    # Return True if this matches the reference regex
+    # Return True if this matches the reference pattern
     return bool(_REF.match(s))
 
 @_repeat
@@ -697,9 +695,9 @@ def _remove_brackets(x, i):
 badlabels = []
 
 @_repeat
-def _process_refs(x, patt, labels, warninglevel):
+def _process_refs(x, pattern, labels, warninglevel):
     """Searches the element list `x` for the first Cite element with an id
-    that either matches the compiled regular expression `patt` or is found in
+    that either matches the compiled regular expression `pattern` or is found in
     the `labels` list.  Strips surrounding curly braces and adds modifiers to
     the attributes of the Cite element.  Repeats processing (via decorator)
     until all matching Cite elements in `x` are processed."""
@@ -714,7 +712,7 @@ def _process_refs(x, patt, labels, warninglevel):
                 if testlabel in labels:
                     label = testlabel
 
-            if (patt and patt.match(label)) or label in labels:
+            if (pattern and pattern.match(label)) or label in labels:
 
                 # A new reference was found; create some empty attrs for it
                 attrs = PandocAttributes()
@@ -746,8 +744,8 @@ def _process_refs(x, patt, labels, warninglevel):
                 if label in labels:
                     return None  # Forces processing to repeat via @_repeat
 
-            if warninglevel and patt and \
-              patt.match(label) and label not in badlabels:
+            if warninglevel and pattern and \
+              pattern.match(label) and label not in badlabels:
                 badlabels.append(label)
                 msg = "\n%s: Bad reference: @%s.\n" % (_FILTERNAME, label)
                 STDERR.write(msg)
@@ -755,7 +753,7 @@ def _process_refs(x, patt, labels, warninglevel):
     return True  # Terminates processing in _repeat decorator
 
 # pylint: disable=function-redefined
-def process_refs_factory(patt, labels, warninglevel):
+def process_refs_factory(regex, labels, warninglevel):
     """Returns process_refs(key, value, fmt, meta) action that processes
     text around a reference.  References are encapsulated in pandoc Cite
     elements.
@@ -764,22 +762,24 @@ def process_refs_factory(patt, labels, warninglevel):
     figure. '@' denotes a reference, 'fig:1' is the reference's label, and
     '+' is a modifier.  Valid modifiers are '+', '*' and '!'.
 
-    Only references with labels that match the regular expression `patt` or are
-    found in the `labels` list are processed.   Curly braces are stripped and
-    modifiers are stored in the `modifier` field of the `Cite` element's
+    Only references with labels that match the regular expression `regex` or
+    are found in the `labels` list are processed.   Curly braces are stripped
+    and modifiers are stored in the `modifier` field of the Cite element's
     attributes.
 
-    `Cite` attributes must be detached before the document is written to
-    `STDOUT` because pandoc doesn't recognize them.  Alternatively, an action
-    from `replace_refs_factory()` can be used to replace the references
+    Cite attributes must be detached before the document is written to
+    STDOUT because pandoc doesn't recognize them.  Alternatively, an action
+    from replace_refs_factory() can be used to replace the references
     altogether.
 
     Parameters:
 
-      patt - compiled regular expression that matches references
+      regex - regular expression that matches references
       labels - a list of known target labels
       warninglevel - 0 for no warnings; 1 for critical warnings; 2 for all
     """
+
+    pattern = re.compile(regex) if regex else None
 
     # pylint: disable=unused-argument
     def process_refs(key, value, fmt, meta):
@@ -788,21 +788,21 @@ def process_refs_factory(patt, labels, warninglevel):
         # all.
 
         if key in ['Para', 'Plain']:
-            _process_refs(value, patt, labels, warninglevel)
+            _process_refs(value, pattern, labels, warninglevel)
         elif key == 'Image':
-            _process_refs(value[-2], patt, labels, warninglevel)
+            _process_refs(value[-2], pattern, labels, warninglevel)
         elif key == 'Table':
-            _process_refs(value[-5], patt, labels, warninglevel)
+            _process_refs(value[-5], pattern, labels, warninglevel)
         elif key == 'Span':
-            _process_refs(value[-1], patt, labels, warninglevel)
+            _process_refs(value[-1], pattern, labels, warninglevel)
         elif key == 'Emph':
-            _process_refs(value, patt, labels, warninglevel)
+            _process_refs(value, pattern, labels, warninglevel)
         elif key == 'Strong':
-            _process_refs(value, patt, labels, warninglevel)
+            _process_refs(value, pattern, labels, warninglevel)
         elif key == 'Cite':
-            _process_refs(value[-2][0]['citationPrefix'], patt, labels,
+            _process_refs(value[-2][0]['citationPrefix'], pattern, labels,
                           warninglevel)
-            _process_refs(value[-2][0]['citationSuffix'], patt, labels,
+            _process_refs(value[-2][0]['citationSuffix'], pattern, labels,
                           warninglevel)
 
     return process_refs
