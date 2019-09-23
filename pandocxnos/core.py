@@ -814,15 +814,18 @@ def process_refs_factory(regex, labels, warninglevel):
 class Target:
     """Encapsulated information about the target of a reference."""
     has_duplicate = False  # Flags that a duplicate target was found
+    is_numbered = True     # Flags that the target is numbered
 
     def __init__(self, identifier, secno=None):
         """Initializes the Target.
 
         Parameters:
-          identifier - either an integer (e.g., the figure number) or a tag
+          identifier - either an integer (e.g., figure count) or a tag
           secno - the section the target appears in
         """
-        assert bool(num) != bool(tag)
+        assert isinstance(identifier, (int,) + STRTYPES)
+        if isinstance(identifier, STRTYPES):
+            self.is_numbered = False
         self._id = identifier
         self.secno = secno
 

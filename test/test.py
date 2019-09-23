@@ -710,7 +710,7 @@ class TestXnos(unittest.TestCase):
         expected = eval(r'''[{"unMeta":{}},[{"t":"Para","c":[{"t":"Str","c":"As"},{"t":"Space","c":[]},{"t":"Str","c":"shown"},{"t":"Space","c":[]},{"t":"Str","c":"in"},{"t":"Space","c":[]},{"t":"Str","c":"fig."},{"t":"Space","c":[]},{'t':'Link','c':[['',[],[]],[{'t':'Str','c':'1'}],['#fig:one','']]},{"t":"Str","c":"."}]}]]''')
 
         # Make the comparison
-        replace_refs = replace_refs_factory({'fig:one':[1, 1, False]},
+        replace_refs = replace_refs_factory({'fig:one':pandocxnos.Target(1, 1)},
                                             True, False,
                                             ['fig.', 'figs.'],
                                             ['Figure', 'Figures'])
