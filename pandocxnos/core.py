@@ -810,14 +810,33 @@ def process_refs_factory(regex, labels, warninglevel):
 
 # replace_refs_factory() ------------------------------------------------------
 
+# pylint: disable=too-few-public-methods
+class Target:
+    """Encapsulated information about the target of a reference."""
+    has_duplicate = False  # Flags that a duplicate target was found
+
+    def __init__(self, identifier, secno=None):
+        """Initializes the Target.
+
+        Parameters:
+          identifier - either an integer (e.g., the figure number) or a tag
+          secno - the section the target appears in
+        """
+        assert bool(num) != bool(tag)
+        self._id = identifier
+        self.secno = secno
+
+    def __str__(self):
+        return str(self._id)
+
+
 # pylint: disable=too-many-arguments,unused-argument
 def replace_refs_factory(references, use_cleveref_default, use_eqref,
                          plusname, starname, allow_implicit_refs=False):
     """Returns replace_refs(key, value, fmt, meta) action that replaces
     references encapsulated in Cite elements with format-specific content.
     The content is determined using the `references` dict, which maps
-    reference labels to [number/tag, secno] lists.  An example of the form
-    of the `references` dict is: {'fig:1':[1,'1'],'fig:2':[2,'1'], ...}.
+    reference labels to Target objects.
 
     If `use_cleveref_default` is True, or if `modifier` in the reference's
     attributes is '+' or '*, then clever referencing is used; i.e., a name is
@@ -849,7 +868,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
                 label = testlabel
 
         # Issue a warning for duplicate targets
-        if references[label][2]:
+        if references[label].has_duplicate:
             msg = textwrap.dedent("""\
                 %s: Referenced label has duplicate: %s
             """ % (_FILTERNAME, label))
@@ -858,7 +877,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
             STDERR.write('\n')
 
         # Get the replacement value
-        text = str(references[label][0]) if label in references else '??'
+        text = str(references[label]) if label in references else '??'
 
         # Choose between \Cref, \cref and \ref
         use_cleveref = attrs['modifier'] in ['*', '+'] \
@@ -888,9 +907,9 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
               else Str(text)
 
             if not nolink and label in references:
-                prefix = 'ch%03d.xhtml' % references[label][1] \
+                prefix = 'ch%03d.xhtml' % references[label].secno \
                   if fmt in ['epub', 'epub2', 'epub3'] and \
-                  references[label][1] else ''
+                  references[label].secno else ''
 
                 elem = elt('Link', 2)([elem],
                                       ['%s#%s' % (prefix, label), '']) \
