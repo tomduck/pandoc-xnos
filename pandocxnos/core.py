@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-__version__ = '2.0.1'
+__version__ = '2.1.0'
 
 
 import os
@@ -65,6 +65,7 @@ else:
     STDOUT = sys.stdout
     STDERR = sys.stdout
 
+# Global state-tracking variables
 # pylint: disable=invalid-name
 _cleveref_flag = None  # Flags that the cleveref package is needed
 _sec = None            # Used to track section numbers
@@ -96,38 +97,18 @@ def _repeat(func):
 
 # init() ---------------------------------------------------------------------
 
-_PANDOCVERSION = None  # A string giving the pandoc version
+_PANDOCVERSION = None    # A string giving the pandoc version
+_FILTERNAME = None       # The name of the calling filter
 
-# pylint: disable=too-many-branches
-def init(pandocversion=None, doc=None):
-    """Initializes library.  This must be called.
+def _get_pandoc_version(pandocversion, doc):
+    """Determines, checks, and returns the pandoc version."""
 
-    This function:
+    # This requires some care because we can't be sure that a call to `pandoc`
+    # will work.  It could be `pandoc-1.17.0.2` or some other name.  Try
+    # checking the PANDOC_VERSION environment variable, and then the parent
+    # process.  Only make a call to `pandoc` as a last resort.
 
-      1) Sets (or resets) global variables.
-
-      2) Sets or determines the pandoc version, which is needed for
-         multi-version support.  See: https://github.com/jgm/pandoc/issues/2640
-
-    Returns the pandoc version.
-    """
-
-    # This requires some care because we can't be sure that a call to 'pandoc'
-    # will work.  It could be 'pandoc-1.17.0.2' or some other name.  Try
-    # checking the parent process first, and only make a call to 'pandoc' as
-    # a last resort.
-
-    # pylint: disable=global-statement
-    global _PANDOCVERSION
-    global _cleveref_flag
-    global _sec
-
-    # Set (or reset) globals
-    _cleveref_flag = None  # Flags that the cleveref package is needed
-    _sec = 0            # Used to track section numbers
-
-    # Get the pandoc version
-    if pandocversion:  # It was provided
+    if pandocversion:  # It was provided; only need to check it
         pass
 
     elif 'PANDOC_VERSION' in os.environ:  # Available for pandoc >= 1.19.1
@@ -135,8 +116,8 @@ def init(pandocversion=None, doc=None):
 
     elif doc is not None and 'pandoc-api-version' in doc:
         # This could be pandoc 1.18 or 1.19; there is no way to distinguish
-        # them (but there isn't a use case in pandoc-fignos and friends where
-        # it matters).
+        # them.  Fortunately, but there isn't a use case in pandoc-fignos and
+        # friends where it matters.
         pandocversion = '1.18'
 
     else:
@@ -147,6 +128,9 @@ def init(pandocversion=None, doc=None):
                 command = psutil.Process(os.getpid()).parent().parent().exe()
             else:
                 command = psutil.Process(os.getpid()).parent().exe()
+            # Expect the executable to begin with the name `pandoc`;
+            # e.g., `pandoc-2.7.3`.  If it does not, then the parent process
+            # could be another program altogether (e.g., `panzer`).
             if not os.path.basename(command).startswith('pandoc'):
                 raise RuntimeError('pandoc not found')
         except:  # pylint: disable=bare-except
@@ -162,12 +146,11 @@ def init(pandocversion=None, doc=None):
         except: # pylint: disable=bare-except
             pass
 
-    # Test `pandocversion` and if it is OK then store and return it
+    # Test `pandocversion` and if it is OK then return it
     pattern = re.compile(r'^[1-2]\.[0-9]+(?:\.[0-9]+)?(?:\.[0-9]+)?$')
     if pandocversion is not None:
         if pattern.match(pandocversion):
-            _PANDOCVERSION = pandocversion
-            return _PANDOCVERSION
+            return pandocversion
         msg = 'Cannot understand pandocversion=%s'%pandocversion
         raise RuntimeError(msg)
 
@@ -178,10 +161,50 @@ def init(pandocversion=None, doc=None):
     raise RuntimeError(msg)
 
 
+# pylint: disable=too-many-branches
+def init(filtername, pandocversion=None, doc=None):
+    """Initializes library.  This must be called before a filter accesses
+    other functions in this library.
+
+    This function:
+
+      1) Sets (or resets) global variables.
+      2) Sets or determines the pandoc version.
+
+    Returns the pandoc version.
+
+    Parameters:
+
+      pandocversion - A string representing the pandoc-version; if this is
+                      None then init() will attempt to determine the version
+                      through other means
+      doc - the pandoc document AST dict
+      filtername - the name of the calling filter.  This should be provided
+                   for all new releases.
+    """
+
+    # pylint: disable=global-statement, global-variable-undefined
+    global _PANDOCVERSION
+    global _FILTERNAME
+    global _cleveref_flag
+    global _sec
+    global process_refs_factory
+    global attach_attrs_factory
+
+    # Set (or reset) globals
+    _cleveref_flag = None  # Flags that the cleveref package is needed
+    _sec = 0            # Used to track section numbers
+    _FILTERNAME = filtername
+
+    # Get and return the pandoc version
+    _PANDOCVERSION = _get_pandoc_version(pandocversion, doc)
+    return _PANDOCVERSION
+
+
 # check_bool() ---------------------------------------------------------------
 
 def check_bool(v):
-    """Checks that metadata value is boolean.  Returns the value or
+    """Checks that metadata value `v` is boolean.  Returns the value or
     raises an exception."""
     if not isinstance(v, bool):
         msg = 'Metadata boolean values must be one of the following: ' \
@@ -199,7 +222,7 @@ def check_bool(v):
 # distinction.
 
 def get_meta(meta, name):
-    """Retrieves the metadata variable 'name' from the 'meta' dict."""
+    """Retrieves the metadata variable `name` from the `meta` dict."""
     assert name in meta
     data = meta[name]
 
@@ -227,8 +250,7 @@ def get_meta(meta, name):
 # elt() ----------------------------------------------------------------------
 
 def elt(eltType, numargs):  # pylint: disable=invalid-name
-    """Returns Element(*value) to create pandoc AST elements.
-
+    """Returns Element(*value) function to create pandoc AST elements.
     This should be used in place of pandocfilters.elt().  This version
     ensures that the content is stored in a list, not a tuple.
     """
@@ -243,7 +265,7 @@ def elt(eltType, numargs):  # pylint: disable=invalid-name
 Cite = elt('Cite', 2)  # pylint: disable=invalid-name
 
 def _getel(key, value):
-    """Returns an element given a key and value."""
+    """Returns an element given a `key` and `value`."""
     if key in ['HorizontalRule', 'Null']:
         return elt(key, 0)()
     if key in ['Plain', 'Para', 'BlockQuote', 'BulletList',
@@ -259,7 +281,17 @@ def _getel(key, value):
 # in pandoc.  See https://github.com/jgm/pandoc/issues/3139.
 
 def add_to_header_includes(meta, fmt, block, warninglevel, regex=None):
-    """Adds block to header-includes in metadata."""
+    """Adds `block` to header-includes field of `meta`.  The block is
+    encapsulated in a pandoc RawBlock.
+
+    Parameters:
+
+      meta - the document metadata
+      fmt - the format of the block (tex, html, ...)
+      block - the block of text to add to the header-includes
+      regex - a regular expression used to check existing header-includes
+              in the document metadata for overlap
+    """
     # If pattern is found in the meta-includes then bail out
     if regex and 'header-includes' in meta:
         pattern = re.compile(regex)
@@ -306,16 +338,17 @@ def cleveref_required():
 # quotify() ------------------------------------------------------------------
 
 def quotify(x):
-    """Replaces Quoted elements in element list 'x' with quoted strings.
+    """Replaces Quoted elements in element list `x` with quoted strings.
 
-    Pandoc uses the Quoted element in its json when --smart is enabled.
-    Output to TeX/pdf automatically triggers --smart.
+    Pandoc uses the Quoted element when '--smart' is enabled.  Note that
+    output to TeX/pdf automatically triggers '--smart'.
 
     stringify() ignores Quoted elements.  Use quotify() first to replace
-    Quoted elements in 'x' with quoted strings.  'x' should be a deep copy so
+    Quoted elements in `x` with quoted strings.  `x` should be a deep copy so
     that the underlying document is left untouched.
 
-    Returns x."""
+    Returns `x`, modified in-place.
+    """
 
     def _quotify(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaced Quoted elements with quoted strings."""
@@ -341,13 +374,14 @@ def quotify(x):
 # dollarfy() -----------------------------------------------------------------
 
 def dollarfy(x):
-    """Replaces Math elements in element list 'x' with a $-enclosed string.
+    """Replaces Math elements in element list `x` with a $-enclosed string.
 
     stringify() passes through TeX math.  Use dollarfy(x) first to replace
-    Math elements with math strings set in dollars.  'x' should be a deep copy
+    Math elements with math strings set in dollars.  `x` should be a deep copy
     so that the underlying document is left untouched.
 
-    Returns 'x'."""
+    Returns `x`, modified in-place.
+    """
 
     def _dollarfy(key, value, fmt, meta):  # pylint: disable=unused-argument
         """Replaces Math elements"""
@@ -361,14 +395,15 @@ def dollarfy(x):
 # extract_attrs() ------------------------------------------------------------
 
 def extract_attrs(x, n):
-    """Extracts attributes from element list 'x' beginning at index 'n'.
+    """Extracts attributes from element list `x` beginning at index `n`.
 
     The elements encapsulating the attributes (typically a series of Str and
-    Space elements) are removed from 'x'.  Items before index 'n' are left
+    Space elements) are removed from `x`.  Items before index `n` are left
     unchanged.
 
     Returns the attributes.  A ValueError is raised if attributes aren't
-    found.  An IndexError is raised if the index 'n' is out of range."""
+    found.  An IndexError is raised if the index `n` is out of range.
+    """
 
     # Check for the start of the attributes string
     if not (x[n]['t'] == 'Str' and x[n]['c'].startswith('{')):
@@ -450,7 +485,7 @@ def extract_attrs(x, n):
 
 @_repeat
 def _join_strings(x, start=0):
-    """Joins adjacent Str elements found in the element list 'x'."""
+    """Joins adjacent Str elements found in the element list `x`."""
     for i in range(start, len(x)-1):  # Process successive pairs of elements
         if x[i]['t'] == 'Str' and x[i+1]['t'] == 'Str':
             x[i]['c'] += x[i+1]['c']
@@ -460,7 +495,7 @@ def _join_strings(x, start=0):
 
 # pylint: disable=unused-argument
 def join_strings(key, value, fmt=None, meta=None):
-    """Joins adjacent Str elements in the 'value' list."""
+    """Joins adjacent Str elements found in `value`."""
     if key in ['Para', 'Plain']:
         _join_strings(value)
     elif key == 'Span':
@@ -471,7 +506,7 @@ def join_strings(key, value, fmt=None, meta=None):
         _join_strings(value[-5])
 
 
-# repair_reference() ---------------------------------------------------------
+# repair_refs() -------------------------------------------------------------
 
 # Reference regex.  This splits a reference into three components: the
 # prefix, label and suffix.  e.g.:
@@ -480,7 +515,9 @@ def join_strings(key, value, fmt=None, meta=None):
 _REF = re.compile(r'^((?:.*{)?[\*\+!]?)@([^:]*:[\w/-]+)(.*)')
 
 def _is_broken_ref(key1, value1, key2, value2):
-    """True if this is a broken reference; False otherwise."""
+    """True if the keys and values represent a broken reference;
+    False otherwise.
+    """
     # A link followed by a string may represent a broken reference
     if key1 != 'Link' or key2 != 'Str':
         return False
@@ -498,7 +535,7 @@ def _is_broken_ref(key1, value1, key2, value2):
 
 @_repeat
 def _repair_refs(x):
-    """Performs the repair on the element list 'x'."""
+    """Performs the repair on the element list `x`."""
 
     if not bool(_PANDOCVERSION):
         raise RuntimeError('Module uninitialized.  Please call init().')
@@ -544,8 +581,8 @@ def _repair_refs(x):
     return True  # Terminates processing
 
 def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
-    """Using "-f markdown+autolink_bare_uris" with pandoc < 1.18 splits a
-    reference like "{@fig:one}" into email Link and Str elements.  This
+    """Using '-f markdown+autolink_bare_uris' with pandoc < 1.18 splits a
+    reference like '{@fig:one}' into email Link and Str elements.  This
     function replaces the mess with the Cite and Str elements we normally
     get.  Call this before any reference processing."""
 
@@ -567,9 +604,9 @@ def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
 # process_refs_factory() -----------------------------------------------------
 
 def _extract_modifier(x, i, attrs):
-    """Extracts the */+/! modifier in front of the Cite at index 'i' of the
-    element list 'x'.  The modifier is stored in 'attrs'.
-    Returns the updated index 'i'.
+    """Extracts the */+/! modifier in front of the Cite at index `i` of the
+    element list `x`.  The modifier is stored in `attrs`.  Returns the
+    updated index `i`.
     """
 
     global _cleveref_flag  # pylint: disable=global-statement
@@ -613,10 +650,10 @@ def _extract_modifier(x, i, attrs):
     return i
 
 def _remove_brackets(x, i):
-    """Removes curly brackets surrounding the Cite element at index 'i' in
-    the element list 'x'.  It is assumed that the modifier has been
-    extracted.  Empty strings are deleted from 'x'.
-    Returns the updated index 'i'.
+    """Removes curly brackets surrounding the Cite element at index `i` in
+    the element list `x`.  It is assumed that the modifier has been
+    extracted.  Empty strings are deleted from `x`.  Returns the updated
+    index `i`.
     """
 
     assert x[i]['t'] == 'Cite'
@@ -660,12 +697,12 @@ def _remove_brackets(x, i):
 badlabels = []
 
 @_repeat
-def _process_refs(name, x, patt, labels, warninglevel):
-    """Strips surrounding curly braces and adds modifiers to the
-    attributes of Cite elements.  Only references with labels that match the
-    pattern `patt` or are in the `labels` list are processed.  Repeats
-    processing (via decorator) until no more unprocessed references are
-    found."""
+def _process_refs(x, patt, labels, warninglevel):
+    """Searches the element list `x` for the first Cite element with an id
+    that either matches the compiled regular expression `patt` or is found in
+    the `labels` list.  Strips surrounding curly braces and adds modifiers to
+    the attributes of the Cite element.  Repeats processing (via decorator)
+    until all matching Cite elements in `x` are processed."""
 
     # Scan the element list x for Cite elements with known labels
     for i, v in enumerate(x):
@@ -712,25 +749,36 @@ def _process_refs(name, x, patt, labels, warninglevel):
             if warninglevel and patt and \
               patt.match(label) and label not in badlabels:
                 badlabels.append(label)
-                msg = "\n%s: Bad reference: @%s.\n" % (name, label)
+                msg = "\n%s: Bad reference: @%s.\n" % (_FILTERNAME, label)
                 STDERR.write(msg)
 
     return True  # Terminates processing in _repeat decorator
 
-def process_refs_factory(name, patt, labels, warninglevel):
+# pylint: disable=function-redefined
+def process_refs_factory(patt, labels, warninglevel):
     """Returns process_refs(key, value, fmt, meta) action that processes
-    text around a reference.  Only references with labels found in the
-    'labels' list are processed.
+    text around a reference.  References are encapsulated in pandoc Cite
+    elements.
 
-    Consider the markdown "{+@fig:1}", which represents a reference to a
-    figure. "@" denotes a reference, "fig:1" is the reference's label, and
-    "+" is a modifier.  Valid modifiers are '+, '*' and '!'.
+    Consider the markdown '{+@fig:1}', which represents a reference to a
+    figure. '@' denotes a reference, 'fig:1' is the reference's label, and
+    '+' is a modifier.  Valid modifiers are '+', '*' and '!'.
 
-    This function strips curly braces and adds the modifiers to the attributes
-    of Cite elements.  Cite attributes must be detached before the document is
-    written to STDOUT because pandoc doesn't recognize them.  Alternatively,
-    use an action from replace_refs_factory() to replace the references
+    Only references with labels that match the regular expression `patt` or are
+    found in the `labels` list are processed.   Curly braces are stripped and
+    modifiers are stored in the `modifier` field of the `Cite` element's
+    attributes.
+
+    `Cite` attributes must be detached before the document is written to
+    `STDOUT` because pandoc doesn't recognize them.  Alternatively, an action
+    from `replace_refs_factory()` can be used to replace the references
     altogether.
+
+    Parameters:
+
+      patt - compiled regular expression that matches references
+      labels - a list of known target labels
+      warninglevel - 0 for no warnings; 1 for critical warnings; 2 for all
     """
 
     # pylint: disable=unused-argument
@@ -740,21 +788,21 @@ def process_refs_factory(name, patt, labels, warninglevel):
         # all.
 
         if key in ['Para', 'Plain']:
-            _process_refs(name, value, patt, labels, warninglevel)
+            _process_refs(value, patt, labels, warninglevel)
         elif key == 'Image':
-            _process_refs(name, value[-2], patt, labels, warninglevel)
+            _process_refs(value[-2], patt, labels, warninglevel)
         elif key == 'Table':
-            _process_refs(name, value[-5], patt, labels, warninglevel)
+            _process_refs(value[-5], patt, labels, warninglevel)
         elif key == 'Span':
-            _process_refs(name, value[-1], patt, labels, warninglevel)
+            _process_refs(value[-1], patt, labels, warninglevel)
         elif key == 'Emph':
-            _process_refs(name, value, patt, labels, warninglevel)
+            _process_refs(value, patt, labels, warninglevel)
         elif key == 'Strong':
-            _process_refs(name, value, patt, labels, warninglevel)
+            _process_refs(value, patt, labels, warninglevel)
         elif key == 'Cite':
-            _process_refs(name, value[-2][0]['citationPrefix'], patt, labels,
+            _process_refs(value[-2][0]['citationPrefix'], patt, labels,
                           warninglevel)
-            _process_refs(name, value[-2][0]['citationSuffix'], patt, labels,
+            _process_refs(value[-2][0]['citationSuffix'], patt, labels,
                           warninglevel)
 
     return process_refs
@@ -766,14 +814,17 @@ def process_refs_factory(name, patt, labels, warninglevel):
 def replace_refs_factory(references, use_cleveref_default, use_eqref,
                          plusname, starname, allow_implicit_refs=False):
     """Returns replace_refs(key, value, fmt, meta) action that replaces
-    references with format-specific content.  The content is determined using
-    the 'references' dict, which maps each reference label to a
-    [number/tag, secno] list (e.g.,
-    { 'fig:1':[1, '1'], 'fig:2':[2,'1'], ...}).  If 'use_cleveref_default'
-    is True, or if "modifier" in the reference's attributes is "+" or "*", then
-    clever referencing is used; i.e., a name is placed in front of the number
-    or string tag.  The 'plusname' and 'starname' lists give the singular
-    and plural names for "+" and "*" clever references, respectively."""
+    references encapsulated in Cite elements with format-specific content.
+    The content is determined using the `references` dict, which maps
+    reference labels to [number/tag, secno] lists.  An example of the form
+    of the `references` dict is: {'fig:1':[1,'1'],'fig:2':[2,'1'], ...}.
+
+    If `use_cleveref_default` is True, or if `modifier` in the reference's
+    attributes is '+' or '*, then clever referencing is used; i.e., a name is
+    placed in front of the number or string tag.  The`'plusname` and `starname`
+    lists give the singular and plural names for '+' and '*' clever references,
+    respectively.
+    """
 
     global _cleveref_flag  # pylint: disable=global-statement
 
@@ -796,6 +847,19 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
             testlabel = label.split(':')[-1]
             if testlabel in references:
                 label = testlabel
+
+        # Issue a warning for duplicate targets.
+        # Deprecation warning: older filters may not have the duplicate flag
+        # references[label][2], which is why we hae to check for its existence
+        # first.
+        if len(references[label]) > 2 and references[label][2]:
+            # This reference was flagged as a duplicate ***
+            msg = textwrap.dedent("""\
+                %s: Referenced label has duplicate: %s
+            """ % (_FILTERNAME, label))
+            STDERR.write('\n')
+            STDERR.write(msg)
+            STDERR.write('\n')
 
         # Get the replacement value
         text = str(references[label][0]) if label in references else '??'
@@ -870,15 +934,26 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
 # attach_attrs_factory() -----------------------------------------------------
 
-# pylint: disable=redefined-outer-name
-def attach_attrs_factory(name, f, warninglevel, extract_attrs=extract_attrs,
+# pylint: disable=redefined-outer-name, function-redefined
+def attach_attrs_factory(f, warninglevel,
+                         extract_attrs=extract_attrs,
                          allow_space=False, replace=False):
     """Returns attach_attrs(key, value, fmt, meta) action that reads and
     attaches attributes to unattributed elements generated by the
-    pandocfilters function f (e.g. pandocfilters.Math, etc).
+    pandocfilters function `f` (e.g. pandocfilters.Math, etc).
 
     The extract_attrs() function should read and return the attributes and
     raise a ValueError or IndexError if attributes are not found.
+
+    Parameters:
+
+      f - the pandoc constructor for the elements of interest
+      warninglevel - 0 for no warnings; 1 for critical warnings; 2 for all
+      extract_attrs - a function to extract attributes from an element list;
+                      defaults to the extract_attrs() function in this module
+      allow_space - flags that a space should be allowed between an element and
+                    its attributes
+      replace - flags that existing attributes should be replaced
     """
 
     # Get the name of the element from the function
@@ -898,7 +973,7 @@ def attach_attrs_factory(name, f, warninglevel, extract_attrs=extract_attrs,
                         msg = textwrap.dedent("""\
                             %s: Malformed attributes:
                             %s
-                        """ % (name, attrs.attrstr))
+                        """ % (_FILTERNAME, attrs.attrstr))
                         STDERR.write('\n')
                         STDERR.write(msg)
                         STDERR.write('\n')
@@ -937,8 +1012,8 @@ def attach_attrs_factory(name, f, warninglevel, extract_attrs=extract_attrs,
 
 def detach_attrs_factory(f, restore=False):
     """Returns detach_attrs(key, value, fmt, meta) action that detaches
-    attributes attached to elements of type f (e.g. pandocfilters.Math, etc).
-    Attributes provided natively by pandoc will be left as is."""
+    attributes attached to elements of type `f` (e.g. pandocfilters.Math, etc).
+    Attributes provided natively by pandoc are left as is."""
 
     # Get the name and standard length
     name = f.__closure__[0].cell_contents
@@ -968,7 +1043,7 @@ def detach_attrs_factory(f, restore=False):
 # pylint: disable=redefined-outer-name
 def insert_secnos_factory(f):
     """Returns insert_secnos(key, value, fmt, meta) action that inserts
-    section numbers into the attributes of elements of type f.
+    section numbers into the attributes of elements of type `f`.
     """
 
     # Get the name and standard length
@@ -1008,7 +1083,7 @@ def insert_secnos_factory(f):
 # pylint: disable=redefined-outer-name
 def delete_secnos_factory(f):
     """Returns delete_secnos(key, value, fmt, meta) action that deletes
-    section numbers from the attributes of elements of type f.
+    section numbers from the attributes of elements of type `f`.
     """
 
     # Get the name and standard length
