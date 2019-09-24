@@ -213,7 +213,8 @@ def init(pandocversion=None, doc=None):
     _sec = 0            # Used to track section numbers
 
     # Save the calling module's name; see https://stackoverflow.com/a/1095621
-    _FILTERNAME = inspect.getmodule(inspect.stack()[1][0]).__name__
+    frame = inspect.stack()[1][0]
+    _FILTERNAME = inspect.getmodule(frame).__name__.replace('_', '-')
 
     # Get and return the pandoc version
     _PANDOCVERSION = _get_pandoc_version(pandocversion, doc)
@@ -622,7 +623,6 @@ def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
 
 # process_refs_factory() -----------------------------------------------------
 
-@_compat
 def _extract_modifier(x, i, attrs):
     """Extracts the */+/! modifier in front of the Cite at index `i` of the
     element list `x`.  The modifier is stored in `attrs`.  Returns the
@@ -773,6 +773,7 @@ def _process_refs(x, pattern, labels, warninglevel):
 
     return True  # Terminates processing in _repeat decorator
 
+@_compat
 def process_refs_factory(regex, labels, warninglevel):
     """Returns process_refs(key, value, fmt, meta) action that processes
     text around a reference.  References are encapsulated in pandoc Cite
