@@ -834,7 +834,7 @@ def process_refs_factory(regex, labels, warninglevel):
 # replace_refs_factory() ------------------------------------------------------
 
 # Type for target metadata
-Target = collections.namedtuple('Target', ['id', 'secno', 'has_duplicate'])
+Target = collections.namedtuple('Target', ['num', 'secno', 'has_duplicate'])
 Target.__new__.__defaults__ = (None,) * len(Target._fields)
 
 # pylint: disable=too-many-arguments,unused-argument
@@ -892,7 +892,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
             STDERR.write('\n')
 
         # Get the replacement value
-        text = str(target.id) if target else '??'
+        text = str(target.num) if target else '??'
 
         # Choose between \Cref, \cref and \ref
         use_cleveref = attrs['modifier'] in ['*', '+'] \
