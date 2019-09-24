@@ -27,6 +27,8 @@ import re
 import textwrap
 import functools
 import copy
+import collections
+import inspect
 
 import psutil
 
@@ -89,6 +91,24 @@ def _repeat(func):
         while ret is None:
             ret = func(*args, **kwargs)
         return ret
+    return wrapper
+
+# Compatibility layer for deprecated 2.0.1 api.  This applies to two functions:
+# process_refs_factory() and attach_attrs_factory().
+def _compat(f):
+    """Compatibility layer."""
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        """Wrapper."""
+        if 'patt' in kwargs:
+            kwargs['regex'] = kwargs.pop('patt')
+        if args and isinstance(args[0], STRTYPES):
+            try:  # This may be a call to the deprecated 2.0.1 api
+                return f(*args[1:], **kwargs)
+            except TypeError:  # Usually a signature mismatch; use new api
+                pass
+        kwargs.pop('name', None)
+        return f(*args, **kwargs)
     return wrapper
 
 
@@ -162,7 +182,7 @@ def _get_pandoc_version(pandocversion, doc):
 
 
 # pylint: disable=too-many-branches
-def init(filtername, pandocversion=None, doc=None):
+def init(pandocversion=None, doc=None):
     """Initializes library.  This must be called before a filter accesses
     other functions in this library.
 
@@ -170,6 +190,7 @@ def init(filtername, pandocversion=None, doc=None):
 
       1) Sets (or resets) global variables.
       2) Sets or determines the pandoc version.
+      3) Inspects and saves the calling module's name
 
     Returns the pandoc version.
 
@@ -179,8 +200,6 @@ def init(filtername, pandocversion=None, doc=None):
                       None then init() will attempt to determine the version
                       through other means
       doc - the pandoc document AST dict
-      filtername - the name of the calling filter.  This should be provided
-                   for all new releases.
     """
 
     # pylint: disable=global-statement
@@ -192,7 +211,9 @@ def init(filtername, pandocversion=None, doc=None):
     # Set (or reset) globals
     _cleveref_flag = None  # Flags that the cleveref package is needed
     _sec = 0            # Used to track section numbers
-    _FILTERNAME = filtername
+
+    # Save the calling module's name; see https://stackoverflow.com/a/1095621
+    _FILTERNAME = inspect.getmodule(inspect.stack()[1][0]).__name__
 
     # Get and return the pandoc version
     _PANDOCVERSION = _get_pandoc_version(pandocversion, doc)
@@ -601,6 +622,7 @@ def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
 
 # process_refs_factory() -----------------------------------------------------
 
+@_compat
 def _extract_modifier(x, i, attrs):
     """Extracts the */+/! modifier in front of the Cite at index `i` of the
     element list `x`.  The modifier is stored in `attrs`.  Returns the
@@ -644,7 +666,6 @@ def _extract_modifier(x, i, attrs):
             else:
                 del x[i-1]
                 i -= 1
-
     return i
 
 def _remove_brackets(x, i):
@@ -752,7 +773,6 @@ def _process_refs(x, pattern, labels, warninglevel):
 
     return True  # Terminates processing in _repeat decorator
 
-# pylint: disable=function-redefined
 def process_refs_factory(regex, labels, warninglevel):
     """Returns process_refs(key, value, fmt, meta) action that processes
     text around a reference.  References are encapsulated in pandoc Cite
@@ -763,7 +783,7 @@ def process_refs_factory(regex, labels, warninglevel):
     '+' is a modifier.  Valid modifiers are '+', '*' and '!'.
 
     Only references with labels that match the regular expression `regex` or
-    are found in the `labels` list are processed.   Curly braces are stripped
+    are found in the `labels` list are processed.  Curly braces are stripped
     and modifiers are stored in the `modifier` field of the Cite element's
     attributes.
 
@@ -774,12 +794,14 @@ def process_refs_factory(regex, labels, warninglevel):
 
     Parameters:
 
-      regex - regular expression that matches references
+      regex - regular expression (or compiled pattern) that matches references
       labels - a list of known target labels
       warninglevel - 0 for no warnings; 1 for critical warnings; 2 for all
     """
 
-    pattern = re.compile(regex) if regex else None
+    # Compile the regex if it is a string; otherwise assume it is either a
+    # compiled pattern or None.
+    pattern = re.compile(regex) if isinstance(regex, STRTYPES) else regex
 
     # pylint: disable=unused-argument
     def process_refs(key, value, fmt, meta):
@@ -810,28 +832,9 @@ def process_refs_factory(regex, labels, warninglevel):
 
 # replace_refs_factory() ------------------------------------------------------
 
-# pylint: disable=too-few-public-methods
-class Target:
-    """Encapsulated information about the target of a reference."""
-    has_duplicate = False  # Flags that a duplicate target was found
-    is_numbered = True     # Flags that the target is numbered
-
-    def __init__(self, identifier, secno=None):
-        """Initializes the Target.
-
-        Parameters:
-          identifier - either an integer (e.g., figure count) or a tag
-          secno - the section the target appears in
-        """
-        assert isinstance(identifier, (int,) + STRTYPES)
-        if isinstance(identifier, STRTYPES):
-            self.is_numbered = False
-        self._id = identifier
-        self.secno = secno
-
-    def __str__(self):
-        return str(self._id)
-
+# Type for target metadata
+Target = collections.namedtuple('Target', ['id', 'secno', 'is_duplicate'])
+Target.__new__.__defaults__ = (None,) * len(Target._fields)
 
 # pylint: disable=too-many-arguments,unused-argument
 def replace_refs_factory(references, use_cleveref_default, use_eqref,
@@ -859,19 +862,27 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
         assert key == 'Cite'
 
+        # Extract the attributes
         attrs = PandocAttributes(value[0], 'pandoc')
 
+        # Check if the nolink attribute is set
         nolink = attrs['nolink'].capitalize() == 'True' if 'nolink' in attrs \
           else False
 
+        # Extract the label
         label = value[-2][0]['citationId']
         if allow_implicit_refs and not label in references and ':' in label:
             testlabel = label.split(':')[-1]
             if testlabel in references:
                 label = testlabel
 
+        # Get the target metadata; typecast it as a Target for easier access
+        target = references[label] if label in references else None
+        if target and not isinstance(target, Target):
+            target = Target(*target)
+
         # Issue a warning for duplicate targets
-        if references[label].has_duplicate:
+        if target and target.is_duplicate:
             msg = textwrap.dedent("""\
                 %s: Referenced label has duplicate: %s
             """ % (_FILTERNAME, label))
@@ -880,19 +891,19 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
             STDERR.write('\n')
 
         # Get the replacement value
-        text = str(references[label]) if label in references else '??'
+        text = str(target.id) if target else '??'
 
         # Choose between \Cref, \cref and \ref
         use_cleveref = attrs['modifier'] in ['*', '+'] \
           if 'modifier' in attrs else use_cleveref_default
-        plus = attrs['modifier'] == '+' if 'modifier' in attrs \
+        is_plus_ref = attrs['modifier'] == '+' if 'modifier' in attrs \
           else use_cleveref_default
-        name = plusname[0] if plus else starname[0]  # Name used by cref
+        refname = plusname[0] if is_plus_ref else starname[0]  # Reference name
 
-        # The replacement depends on the output format
+        # The replacement content depends on the output format
         if fmt == 'latex':
             if use_cleveref:
-                macro = r'\cref' if plus else r'\Cref'
+                macro = r'\cref' if is_plus_ref else r'\Cref'
                 ret = RawInline('tex', r'%s{%s}'%(macro, label))
             elif use_eqref:
                 ret = RawInline('tex', r'\eqref{%s}'%label)
@@ -909,17 +920,17 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
               if text.startswith('$') and text.endswith('$') \
               else Str(text)
 
-            if not nolink and label in references:
-                prefix = 'ch%03d.xhtml' % references[label].secno \
+            if not nolink and target:
+                prefix = 'ch%03d.xhtml' % target.secno \
                   if fmt in ['epub', 'epub2', 'epub3'] and \
-                  references[label].secno else ''
+                  target.secno else ''
 
                 elem = elt('Link', 2)([elem],
                                       ['%s#%s' % (prefix, label), '']) \
                   if _PANDOCVERSION < '1.16' else \
                   Link(['', [], []], [elem], ['%s#%s' % (prefix, label), ''])
 
-            ret = ([Str(name), Space()] if use_cleveref else []) + [elem]
+            ret = ([Str(refname), Space()] if use_cleveref else []) + [elem]
 
         # If the Cite was square-bracketed then wrap everything in a span
         s = stringify(value[-1])
@@ -952,7 +963,8 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
 # attach_attrs_factory() -----------------------------------------------------
 
-# pylint: disable=redefined-outer-name, function-redefined
+# pylint: disable=redefined-outer-name
+@_compat
 def attach_attrs_factory(f, warninglevel,
                          extract_attrs=extract_attrs,
                          allow_space=False, replace=False):
@@ -1058,7 +1070,6 @@ def detach_attrs_factory(f, restore=False):
 
 # insert_secnos_factory() ----------------------------------------------------
 
-# pylint: disable=redefined-outer-name
 def insert_secnos_factory(f):
     """Returns insert_secnos(key, value, fmt, meta) action that inserts
     section numbers into the attributes of elements of type `f`.
@@ -1098,7 +1109,6 @@ def insert_secnos_factory(f):
 
 # delete_secnos_factory() ----------------------------------------------------
 
-# pylint: disable=redefined-outer-name
 def delete_secnos_factory(f):
     """Returns delete_secnos(key, value, fmt, meta) action that deletes
     section numbers from the attributes of elements of type `f`.

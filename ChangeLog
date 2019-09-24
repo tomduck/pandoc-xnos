@@ -1,13 +1,10 @@
 pandoc-xnos 2.1.0 (2019-09-23)
 
     * Checks for and warns about duplicate reference targets.
-    * API changes:
-      - init(): expects filtername as first argument
-      - process_refs_factory():
-        - removed filtername as first argument;
-        - expects regex instead of compiled pattern;
+    * Use inspect module to get filter name.
+    * API changes, with backward compatibility:
+      - process_refs_factory(): removed filtername as first argument
       - attach_attrs_factory(): removed filtername as first argument
-      - references dict uses new Target object
 
 pandoc-xnos 2.0.1 (2019-09-19)
 
