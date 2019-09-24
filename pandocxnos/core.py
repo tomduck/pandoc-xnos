@@ -833,7 +833,7 @@ def process_refs_factory(regex, labels, warninglevel):
 # replace_refs_factory() ------------------------------------------------------
 
 # Type for target metadata
-Target = collections.namedtuple('Target', ['id', 'secno', 'is_duplicate'])
+Target = collections.namedtuple('Target', ['id', 'secno', 'has_duplicate'])
 Target.__new__.__defaults__ = (None,) * len(Target._fields)
 
 # pylint: disable=too-many-arguments,unused-argument
@@ -882,7 +882,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
             target = Target(*target)
 
         # Issue a warning for duplicate targets
-        if target and target.is_duplicate:
+        if target and target.has_duplicate:
             msg = textwrap.dedent("""\
                 %s: Referenced label has duplicate: %s
             """ % (_FILTERNAME, label))
