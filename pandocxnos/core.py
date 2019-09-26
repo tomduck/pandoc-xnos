@@ -883,7 +883,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
             target = Target(*target)
 
         # Issue a warning for duplicate targets
-        if target and target.has_duplicate:
+        if warninglevel and target and target.has_duplicate:
             msg = textwrap.dedent("""
                 %s: Referenced label has duplicate: %s
             """ % (_FILTERNAME, label))
