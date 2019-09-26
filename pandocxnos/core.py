@@ -312,7 +312,7 @@ def add_to_header_includes(meta, fmt, block, warninglevel=None, regex=None):
       meta - the document metadata
       fmt - the format of the block (tex, html, ...)
       block - the block of text to add to the header-includes
-      warninglevel - DEPRECATED (set using init() instead)
+      warninglevel - DEPRECATED (set using global WARNINGLEVEL instead)
       regex - a regular expression used to check existing header-includes
               in the document metadata for overlap
     """
@@ -352,7 +352,7 @@ def add_to_header_includes(meta, fmt, block, warninglevel=None, regex=None):
             STDERR.write(textwrap.indent(block, '    '))
         else:
             STDERR.write('\n'.join('    ' + line for line in block.split('\n')))
-            STDERR.flush()
+        STDERR.flush()
 
 
 # cleveref_required() --------------------------------------------------------
@@ -781,6 +781,7 @@ def _process_refs(x, pattern, labels):
                 badlabels.append(label)
                 msg = "\n%s: Bad reference: @%s.\n" % (_FILTERNAME, label)
                 STDERR.write(msg)
+                STDERR.flush()
 
     return True  # Terminates processing in _repeat decorator
 
@@ -808,7 +809,7 @@ def process_refs_factory(regex, labels, warninglevel=None):
 
       regex - regular expression (or compiled pattern) that matches references
       labels - a list of known target labels
-      warninglevel - DEPRECATED (set using init() instead)
+      warninglevel - DEPRECATED (set global WARNINGLEVEL instead)
     """
 
     # Set the global warning level (DEPRECATED)
@@ -903,6 +904,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
                 %s: Referenced label has duplicate: %s
             """ % (_FILTERNAME, label))
             STDERR.write(msg)
+            STDERR.flush()
 
         # Get the replacement value
         text = str(target.num) if target else '??'
@@ -992,7 +994,7 @@ def attach_attrs_factory(f, warninglevel=None,
     Parameters:
 
       f - the pandoc constructor for the elements of interest
-      warninglevel - DEPRECATED (set using init() instead)
+      warninglevel - DEPRECATED (set using global WARNINGLEVEL instead)
       extract_attrs - a function to extract attributes from an element list;
                       defaults to the extract_attrs() function in this module
       allow_space - flags that a space should be allowed between an element and
@@ -1019,14 +1021,13 @@ def attach_attrs_factory(f, warninglevel=None,
                     n += 1
                 try:  # Extract the attributes
                     attrs = extract_attrs(x, n)
-                    if attrs.parse_failed and WARNINGLEVEL:
-                        msg = textwrap.dedent("""\
+                    if WARNINGLEVEL and attrs.parse_failed:
+                        msg = textwrap.dedent("""
                             %s: Malformed attributes:
                             %s
                         """ % (_FILTERNAME, attrs.attrstr))
-                        STDERR.write('\n')
                         STDERR.write(msg)
-                        STDERR.write('\n')
+                        STDERR.flush()
 
                     if replace:
                         x[i]['c'][0] = attrs.list
