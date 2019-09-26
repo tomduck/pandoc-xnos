@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-__version__ = '2.1.0'
+__version__ = '2.1.1'
 
 
 import os
@@ -119,6 +119,8 @@ def _compat(f):
 
 _PANDOCVERSION = None    # A string giving the pandoc version
 _FILTERNAME = None       # The name of the calling filter
+_WARNINGLEVEL = None     # 0 for no warnings; 1 for critical warnings; 2 for all
+
 
 def _get_pandoc_version(pandocversion, doc):
     """Determines, checks, and returns the pandoc version."""
@@ -182,7 +184,7 @@ def _get_pandoc_version(pandocversion, doc):
 
 
 # pylint: disable=too-many-branches
-def init(pandocversion=None, doc=None):
+def init(pandocversion=None, doc=None, warninglevel=2):
     """Initializes library.  This must be called before a filter accesses
     other functions in this library.
 
@@ -205,6 +207,7 @@ def init(pandocversion=None, doc=None):
     # pylint: disable=global-statement
     global _PANDOCVERSION
     global _FILTERNAME
+    global _WARNINGLEVEL
     global _cleveref_flag
     global _sec
 
@@ -215,6 +218,9 @@ def init(pandocversion=None, doc=None):
     # Save the calling module's name; see https://stackoverflow.com/a/1095621
     frame = inspect.stack()[1][0]
     _FILTERNAME = inspect.getmodule(frame).__name__.replace('_', '-')
+
+    # Save the warning level
+    _WARNINGLEVEL = warninglevel
 
     # Get and return the pandoc version
     _PANDOCVERSION = _get_pandoc_version(pandocversion, doc)
@@ -300,7 +306,7 @@ def _getel(key, value):
 # meta variable in post-filter processing.  This owing to a design decision
 # in pandoc.  See https://github.com/jgm/pandoc/issues/3139.
 
-def add_to_header_includes(meta, fmt, block, warninglevel, regex=None):
+def add_to_header_includes(meta, fmt, block, warninglevel=None, regex=None):
     """Adds `block` to header-includes field of `meta`.  The block is
     encapsulated in a pandoc RawBlock.
 
@@ -309,9 +315,16 @@ def add_to_header_includes(meta, fmt, block, warninglevel, regex=None):
       meta - the document metadata
       fmt - the format of the block (tex, html, ...)
       block - the block of text to add to the header-includes
+      warninglevel - DEPRECATED
       regex - a regular expression used to check existing header-includes
               in the document metadata for overlap
     """
+
+    # Set the global warning level (DEPRECATED)
+    global _WARNINGLEVEL
+    if warninglevel is not None:
+        _WARNINGLEVEL = warninglevel
+    
     # If pattern is found in the meta-includes then bail out
     if regex and 'header-includes' in meta:
         pattern = re.compile(regex)
@@ -336,7 +349,7 @@ def add_to_header_includes(meta, fmt, block, warninglevel, regex=None):
             """ % str(meta['header-includes']))
         raise RuntimeError(msg)
     # Print the block to stderr at warning level 2
-    if warninglevel == 2:
+    if _WARNINGLEVEL == 2:
         if hasattr(textwrap, 'indent'):
             STDERR.write(textwrap.indent(block, '    '))
         else:
@@ -716,7 +729,7 @@ def _remove_brackets(x, i):
 badlabels = []
 
 @_repeat
-def _process_refs(x, pattern, labels, warninglevel):
+def _process_refs(x, pattern, labels):
     """Searches the element list `x` for the first Cite element with an id
     that either matches the compiled regular expression `pattern` or is found in
     the `labels` list.  Strips surrounding curly braces and adds modifiers to
@@ -765,7 +778,7 @@ def _process_refs(x, pattern, labels, warninglevel):
                 if label in labels:
                     return None  # Forces processing to repeat via @_repeat
 
-            if warninglevel and pattern and \
+            if _WARNINGLEVEL and pattern and \
               pattern.match(label) and label not in badlabels:
                 badlabels.append(label)
                 msg = "\n%s: Bad reference: @%s.\n" % (_FILTERNAME, label)
@@ -774,7 +787,7 @@ def _process_refs(x, pattern, labels, warninglevel):
     return True  # Terminates processing in _repeat decorator
 
 @_compat
-def process_refs_factory(regex, labels, warninglevel):
+def process_refs_factory(regex, labels, warninglevel=None):
     """Returns process_refs(key, value, fmt, meta) action that processes
     text around a reference.  References are encapsulated in pandoc Cite
     elements.
@@ -797,8 +810,13 @@ def process_refs_factory(regex, labels, warninglevel):
 
       regex - regular expression (or compiled pattern) that matches references
       labels - a list of known target labels
-      warninglevel - 0 for no warnings; 1 for critical warnings; 2 for all
+      warninglevel - DEPRECATED
     """
+
+    # Set the global warning level (DEPRECATED)
+    global _WARNINGLEVEL
+    if warninglevel is not None:
+        _WARNINGLEVEL = warninglevel
 
     # Compile the regex if it is a string; otherwise assume it is either a
     # compiled pattern or None.
@@ -811,22 +829,20 @@ def process_refs_factory(regex, labels, warninglevel):
         # all.
 
         if key in ['Para', 'Plain']:
-            _process_refs(value, pattern, labels, warninglevel)
+            _process_refs(value, pattern, labels)
         elif key == 'Image':
-            _process_refs(value[-2], pattern, labels, warninglevel)
+            _process_refs(value[-2], pattern, labels)
         elif key == 'Table':
-            _process_refs(value[-5], pattern, labels, warninglevel)
+            _process_refs(value[-5], pattern, labels)
         elif key == 'Span':
-            _process_refs(value[-1], pattern, labels, warninglevel)
+            _process_refs(value[-1], pattern, labels)
         elif key == 'Emph':
-            _process_refs(value, pattern, labels, warninglevel)
+            _process_refs(value, pattern, labels)
         elif key == 'Strong':
-            _process_refs(value, pattern, labels, warninglevel)
+            _process_refs(value, pattern, labels)
         elif key == 'Cite':
-            _process_refs(value[-2][0]['citationPrefix'], pattern, labels,
-                          warninglevel)
-            _process_refs(value[-2][0]['citationSuffix'], pattern, labels,
-                          warninglevel)
+            _process_refs(value[-2][0]['citationPrefix'], pattern, labels)
+            _process_refs(value[-2][0]['citationSuffix'], pattern, labels)
 
     return process_refs
 
@@ -883,7 +899,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
             target = Target(*target)
 
         # Issue a warning for duplicate targets
-        if warninglevel and target and target.has_duplicate:
+        if _WARNINGLEVEL and target and target.has_duplicate:
             msg = textwrap.dedent("""
                 %s: Referenced label has duplicate: %s
             """ % (_FILTERNAME, label))
@@ -964,7 +980,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
 # pylint: disable=redefined-outer-name
 @_compat
-def attach_attrs_factory(f, warninglevel,
+def attach_attrs_factory(f, warninglevel=None,
                          extract_attrs=extract_attrs,
                          allow_space=False, replace=False):
     """Returns attach_attrs(key, value, fmt, meta) action that reads and
@@ -977,13 +993,18 @@ def attach_attrs_factory(f, warninglevel,
     Parameters:
 
       f - the pandoc constructor for the elements of interest
-      warninglevel - 0 for no warnings; 1 for critical warnings; 2 for all
+      warninglevel - DEPRECATED
       extract_attrs - a function to extract attributes from an element list;
                       defaults to the extract_attrs() function in this module
       allow_space - flags that a space should be allowed between an element and
                     its attributes
       replace - flags that existing attributes should be replaced
     """
+
+    # Set the global warning level (DEPRECATED)
+    global _WARNINGLEVEL
+    if warninglevel is not None:
+        _WARNINGLEVEL = warninglevel
 
     # Get the name of the element from the function
     elname = f.__closure__[0].cell_contents
@@ -998,7 +1019,7 @@ def attach_attrs_factory(f, warninglevel,
                     n += 1
                 try:  # Extract the attributes
                     attrs = extract_attrs(x, n)
-                    if attrs.parse_failed and warninglevel:
+                    if attrs.parse_failed and _WARNINGLEVEL:
                         msg = textwrap.dedent("""\
                             %s: Malformed attributes:
                             %s
