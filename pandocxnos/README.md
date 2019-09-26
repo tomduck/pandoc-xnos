@@ -1,8 +1,8 @@
 
-The pandocxnos library
-======================
+Pandocxnos 2.1.0
+================
 
-The *pandocxnos* library supports the pandoc-[fignos]/[eqnos]/[tablenos]/[secnos] filters.  Below is a short summary of what is available.  More details are given in module and function docstrings.
+The *pandocxnos* package provides library code for the pandoc-xnos filter suite.  Below is a short summary of what is available.  More details are given in the individual module and function docstrings.
 
 [fignos]: https://github.com/tomduck/pandoc-fignos
 [eqnos]: https://github.com/tomduck/pandoc-eqnos
@@ -19,6 +19,7 @@ core.py
   * `STRTYPES` - a list of string types for this python version
   * `STDIN`/`STDOUT`/`STDERR` - streams for use with pandoc 2.x or 3.x
 
+
 ### Utility functions ###
 
   * `init()` - Determines and returns the pandoc version
@@ -28,11 +29,13 @@ core.py
   * `add_to_header_includes()` - Adds header-includes to metadata
   * `cleveref_required()` - Returns True if cleveref usage was found
 
+
 ### Element list functions ###
 
   * `quotify()` - Changes Quoted elements to quoted strings
   * `dollarfy()` - Changes Math elements to dollared strings
   * `extract_attrs()` - Extracts attribute strings
+
 
 ### Actions and their factory functions ###
 
