@@ -1,5 +1,5 @@
 
-Pandocxnos 2.1.1
+Pandocxnos 2.1.2
 ================
 
 The *pandocxnos* package provides library code for the pandoc-xnos filter suite.  Below is a short summary of what is available.  More details are given in the individual module and function docstrings.
@@ -18,11 +18,14 @@ core.py
 
   * `STRTYPES` - a list of string types for this python version
   * `STDIN`/`STDOUT`/`STDERR` - streams for use with pandoc 2.x or 3.x
+  * `WARNINGLEVEL` - set to 0 for no warnings; 1 for critical
+                     warnings; 2 for all warnings
 
 
 ### Utility functions ###
 
-  * `init()` - Determines and returns the pandoc version
+  * `init()` - Must be called.  Sets/resets global variables;
+               determines and returns the pandoc version
   * `check_bool()` - Used to check if a variable is boolean
   * `get_meta()` - Retrieves variables from a document's metadata
   * `elt()` - Used to create pandoc AST elements
