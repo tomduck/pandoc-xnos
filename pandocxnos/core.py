@@ -329,7 +329,7 @@ def add_to_header_includes(meta, fmt, block, warninglevel=None, regex=None):
     assert(warninglevel is None or isinstance(warninglevel, int))
     if warninglevel is not None:
         _WARNINGLEVEL = warninglevel
-        
+
     # If pattern is found in the meta-includes then bail out
     if regex and 'header-includes' in meta:
         pattern = re.compile(regex)
