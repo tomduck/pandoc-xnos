@@ -1,6 +1,7 @@
-pandoc-xnos 2.1.1 (2019-09-26)
+pandoc-xnos 2.1.2 (2019-09-26)
 
     * Fixed "'warninglevel' is not defined" crash.
+    * Made WARNINGLEVEL variable part of the public api.
 
 
 pandoc-xnos 2.1.0 (2019-09-26)
