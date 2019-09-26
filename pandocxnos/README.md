@@ -18,14 +18,14 @@ core.py
 
   * `STRTYPES` - a list of string types for this python version
   * `STDIN`/`STDOUT`/`STDERR` - streams for use with pandoc 2.x or 3.x
-  * `WARNINGLEVEL` - set to 0 for no warnings; 1 for critical
-                     warnings; 2 for all warnings
 
 
 ### Utility functions ###
 
   * `init()` - Must be called.  Sets/resets global variables;
-               determines and returns the pandoc version
+    determines and returns the pandoc version
+  * `set_warning_level()` - Sets the global warning level;
+    0 for no warnings; 1 for critical warnings; 2 for all warnings
   * `check_bool()` - Used to check if a variable is boolean
   * `get_meta()` - Retrieves variables from a document's metadata
   * `elt()` - Used to create pandoc AST elements
