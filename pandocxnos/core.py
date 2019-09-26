@@ -315,16 +315,17 @@ def add_to_header_includes(meta, fmt, block, warninglevel=None, regex=None):
       meta - the document metadata
       fmt - the format of the block (tex, html, ...)
       block - the block of text to add to the header-includes
-      warninglevel - DEPRECATED
+      warninglevel - DEPRECATED (set using init() instead)
       regex - a regular expression used to check existing header-includes
               in the document metadata for overlap
     """
 
     # Set the global warning level (DEPRECATED)
+    # pylint: disable=global-statement
     global _WARNINGLEVEL
     if warninglevel is not None:
         _WARNINGLEVEL = warninglevel
-    
+
     # If pattern is found in the meta-includes then bail out
     if regex and 'header-includes' in meta:
         pattern = re.compile(regex)
@@ -810,10 +811,11 @@ def process_refs_factory(regex, labels, warninglevel=None):
 
       regex - regular expression (or compiled pattern) that matches references
       labels - a list of known target labels
-      warninglevel - DEPRECATED
+      warninglevel - DEPRECATED (set using init() instead)
     """
 
     # Set the global warning level (DEPRECATED)
+    # pylint: disable=global-statement
     global _WARNINGLEVEL
     if warninglevel is not None:
         _WARNINGLEVEL = warninglevel
@@ -993,7 +995,7 @@ def attach_attrs_factory(f, warninglevel=None,
     Parameters:
 
       f - the pandoc constructor for the elements of interest
-      warninglevel - DEPRECATED
+      warninglevel - DEPRECATED (set using init() instead)
       extract_attrs - a function to extract attributes from an element list;
                       defaults to the extract_attrs() function in this module
       allow_space - flags that a space should be allowed between an element and
@@ -1002,6 +1004,7 @@ def attach_attrs_factory(f, warninglevel=None,
     """
 
     # Set the global warning level (DEPRECATED)
+    # pylint: disable=global-statement
     global _WARNINGLEVEL
     if warninglevel is not None:
         _WARNINGLEVEL = warninglevel
