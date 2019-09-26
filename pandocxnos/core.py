@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-__version__ = '2.1.1'
+__version__ = '2.1.2'
 
 
 import os
@@ -66,6 +66,8 @@ else:
     STDIN = sys.stdin
     STDOUT = sys.stdout
     STDERR = sys.stdout
+
+WARNINGLEVEL = 2  # 0 for no warnings; 1 for critical warnings; 2 for all
 
 # Global state-tracking variables
 # pylint: disable=invalid-name
@@ -119,7 +121,6 @@ def _compat(f):
 
 _PANDOCVERSION = None    # A string giving the pandoc version
 _FILTERNAME = None       # The name of the calling filter
-_WARNINGLEVEL = None     # 0 for no warnings; 1 for critical warnings; 2 for all
 
 
 def _get_pandoc_version(pandocversion, doc):
@@ -184,7 +185,7 @@ def _get_pandoc_version(pandocversion, doc):
 
 
 # pylint: disable=too-many-branches
-def init(pandocversion=None, doc=None, warninglevel=2):
+def init(pandocversion=None, doc=None):
     """Initializes library.  This must be called before a filter accesses
     other functions in this library.
 
@@ -207,7 +208,6 @@ def init(pandocversion=None, doc=None, warninglevel=2):
     # pylint: disable=global-statement
     global _PANDOCVERSION
     global _FILTERNAME
-    global _WARNINGLEVEL
     global _cleveref_flag
     global _sec
 
@@ -218,9 +218,6 @@ def init(pandocversion=None, doc=None, warninglevel=2):
     # Save the calling module's name; see https://stackoverflow.com/a/1095621
     frame = inspect.stack()[1][0]
     _FILTERNAME = inspect.getmodule(frame).__name__.replace('_', '-')
-
-    # Save the warning level
-    _WARNINGLEVEL = warninglevel
 
     # Get and return the pandoc version
     _PANDOCVERSION = _get_pandoc_version(pandocversion, doc)
@@ -322,9 +319,9 @@ def add_to_header_includes(meta, fmt, block, warninglevel=None, regex=None):
 
     # Set the global warning level (DEPRECATED)
     # pylint: disable=global-statement
-    global _WARNINGLEVEL
+    global WARNINGLEVEL
     if warninglevel is not None:
-        _WARNINGLEVEL = warninglevel
+        WARNINGLEVEL = warninglevel
 
     # If pattern is found in the meta-includes then bail out
     if regex and 'header-includes' in meta:
@@ -350,7 +347,7 @@ def add_to_header_includes(meta, fmt, block, warninglevel=None, regex=None):
             """ % str(meta['header-includes']))
         raise RuntimeError(msg)
     # Print the block to stderr at warning level 2
-    if _WARNINGLEVEL == 2:
+    if WARNINGLEVEL == 2:
         if hasattr(textwrap, 'indent'):
             STDERR.write(textwrap.indent(block, '    '))
         else:
@@ -779,7 +776,7 @@ def _process_refs(x, pattern, labels):
                 if label in labels:
                     return None  # Forces processing to repeat via @_repeat
 
-            if _WARNINGLEVEL and pattern and \
+            if WARNINGLEVEL and pattern and \
               pattern.match(label) and label not in badlabels:
                 badlabels.append(label)
                 msg = "\n%s: Bad reference: @%s.\n" % (_FILTERNAME, label)
@@ -816,9 +813,9 @@ def process_refs_factory(regex, labels, warninglevel=None):
 
     # Set the global warning level (DEPRECATED)
     # pylint: disable=global-statement
-    global _WARNINGLEVEL
+    global WARNINGLEVEL
     if warninglevel is not None:
-        _WARNINGLEVEL = warninglevel
+        WARNINGLEVEL = warninglevel
 
     # Compile the regex if it is a string; otherwise assume it is either a
     # compiled pattern or None.
@@ -901,7 +898,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
             target = Target(*target)
 
         # Issue a warning for duplicate targets
-        if _WARNINGLEVEL and target and target.has_duplicate:
+        if WARNINGLEVEL and target and target.has_duplicate:
             msg = textwrap.dedent("""
                 %s: Referenced label has duplicate: %s
             """ % (_FILTERNAME, label))
@@ -1005,9 +1002,9 @@ def attach_attrs_factory(f, warninglevel=None,
 
     # Set the global warning level (DEPRECATED)
     # pylint: disable=global-statement
-    global _WARNINGLEVEL
+    global WARNINGLEVEL
     if warninglevel is not None:
-        _WARNINGLEVEL = warninglevel
+        WARNINGLEVEL = warninglevel
 
     # Get the name of the element from the function
     elname = f.__closure__[0].cell_contents
@@ -1022,7 +1019,7 @@ def attach_attrs_factory(f, warninglevel=None,
                     n += 1
                 try:  # Extract the attributes
                     attrs = extract_attrs(x, n)
-                    if attrs.parse_failed and _WARNINGLEVEL:
+                    if attrs.parse_failed and WARNINGLEVEL:
                         msg = textwrap.dedent("""\
                             %s: Malformed attributes:
                             %s
