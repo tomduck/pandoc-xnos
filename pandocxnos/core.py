@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-__version__ = '2.1.2'
+__version__ = '2.2.0'
 
 
 import os
@@ -1124,7 +1124,7 @@ def insert_secnos_factory(f):
             # Only insert if attributes are attached.  Images always have
             # attributes for pandoc >= 1.16.
             assert len(value) <= n+1
-            if (name == 'Image' and len(value) == 3) or \
+            if (name == 'Image' and len(value) == 3) or name == 'Div' or \
               len(value) == n+1:
                 # Make sure value[0] represents attributes
                 assert isinstance(value[0][0], STRTYPES)
@@ -1155,7 +1155,8 @@ def delete_secnos_factory(f):
         # attributes for pandoc >= 1.16.
         if key == name:
             assert len(value) <= n+1
-            if (name == 'Image' and len(value) == 3) or len(value) == n+1:
+            if (name == 'Image' and len(value) == 3) or name == 'Div' or \
+              len(value) == n+1:
 
                 # Make sure value[0] represents attributes
                 assert isinstance(value[0][0], STRTYPES)

@@ -1,3 +1,9 @@
+pandoc-xnos 2.2.0 (2019-10-27)
+
+    * Fix to allow insert_secnos_factory() and delete_secnos_factory()
+      operate on Div elements.
+
+
 pandoc-xnos 2.1.2 (2019-09-26)
 
     * Fixed "'warninglevel' is not defined" crash.
