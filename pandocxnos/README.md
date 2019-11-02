@@ -1,5 +1,5 @@
 
-Pandocxnos 2.2.1
+Pandocxnos 2.2.2
 ================
 
 The *pandocxnos* package provides library code for the pandoc-xnos filter suite.  Below is a short summary of what is available.  More details are given in the individual module and function docstrings.

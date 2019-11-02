@@ -1,4 +1,4 @@
-pandoc-xnos 2.2.1 (2019-11-02)
+pandoc-xnos 2.2.2 (2019-11-02)
 
     * Enable insert_secnos_factory() and delete_secnos_factory()
       to operate on Span elements (PR #10).
