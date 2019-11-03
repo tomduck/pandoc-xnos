@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-__version__ = '2.2.2'
+__version__ = '2.3.0'
 
 
 import os
@@ -250,6 +250,7 @@ def check_bool(v):
 # command line or in a document.  The get_meta() function makes no
 # distinction.
 
+# pylint: disable=too-many-return-statements
 def get_meta(meta, name):
     """Retrieves the metadata variable `name` from the `meta` dict."""
     assert name in meta
@@ -267,6 +268,17 @@ def get_meta(meta, name):
                 return False
         return stringify(data['c'])
     if data['t'] == 'MetaList':
+        try:  # Process MetaList of MetaMaps
+            ret = []
+            for v in data['c']:
+                assert v['t'] == 'MetaMap'
+                entry = {}
+                for key in v['c']:
+                    entry[key] = stringify(v['c'][key])
+                ret.append(entry)
+            return ret
+        except AssertionError:
+            pass
         return [stringify(v['c']) for v in data['c']]
     if data['t'] == 'MetaMap':
         ret = {}
