@@ -41,6 +41,7 @@ from .pandocattributes import PandocAttributes
 
 # pylint: disable=too-many-lines
 
+NON_BREAKING_SPACE = " "
 
 #=============================================================================
 # Globals
@@ -966,7 +967,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
                   if _PANDOCVERSION < '1.16' else \
                   Link(['', [], []], [elem], ['%s#%s' % (prefix, label), ''])
 
-            ret = ([Str(refname), Space()] if use_cleveref else []) + [elem]
+            ret = ([Str(refname + NON_BREAKING_SPACE)] if use_cleveref else []) + [elem]
 
         # If the Cite was square-bracketed then wrap everything in a span
         s = stringify(value[-1])
