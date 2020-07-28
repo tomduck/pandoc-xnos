@@ -1,5 +1,5 @@
 
-PANDOC = pandoc
+PANDOC = pandoc-2.8.1
 
 FLAGS = --standalone --top-level-division=section --number-sections --filter pandoc-xnos
 

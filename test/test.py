@@ -2,7 +2,7 @@
 
 """Unit tests for pandoc-xnos."""
 
-# Copyright 2016-2019 Thomas J. Duck.
+# Copyright 2016-2020 Thomas J. Duck.
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -35,10 +35,11 @@ from pandocxnos import attach_attrs_factory, detach_attrs_factory
 from pandocxnos import insert_secnos_factory
 from pandocxnos import repair_refs, process_refs_factory, replace_refs_factory
 
-PANDOCVERSION = '2.7'
+PANDOCVERSION = '2.8.1'
+PANDOC = 'pandoc-2.8.1'
 PANDOC1p15 = 'pandoc-1.15.2'  # pylint: disable=invalid-name
 
-PANDOC_API_VERSION = '1,17,5,4'
+PANDOC_API_VERSION = '1,20'
 
 
 #-----------------------------------------------------------------------------
@@ -63,7 +64,7 @@ class TestXnos(unittest.TestCase):
         # Check src against current pandoc
         md = subprocess.Popen(('echo', ''), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json -M foo=bar'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json -M foo=bar').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         expected = 'bar'
@@ -84,7 +85,7 @@ class TestXnos(unittest.TestCase):
         md = subprocess.Popen(('echo', '---\nfoo: bar\n...'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         expected = 'bar'
@@ -105,7 +106,7 @@ class TestXnos(unittest.TestCase):
         md = subprocess.Popen(('echo', '---\nfoo:\n  - bar\n  - baz\n...'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         expected = ['bar', 'baz']
@@ -120,13 +121,13 @@ class TestXnos(unittest.TestCase):
         ## test.md: ---\nfoo: True\n... ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks": [], "pandoc-api-version": [1, 17, 5, 4], "meta": {"foo": {"t": "MetaBool", "c": True}}}''')
+        src = eval(r'''{"blocks": [], "pandoc-api-version": [%s], "meta": {"foo": {"t": "MetaBool", "c": True}}}'''%PANDOC_API_VERSION)
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nfoo: True\n...'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(),
+            (PANDOC+' -t json').split(),
             stdin=md.stdout).strip().decode("utf-8").replace('true', 'True'))
         self.assertEqual(src, output)
 
@@ -142,17 +143,17 @@ class TestXnos(unittest.TestCase):
         ## test.md: ---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$ {#eq:1}\n ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}, {"t": "Space"}, {"t": "Str", "c": "{#eq:1}"}]}], "pandoc-api-version": [1, 17, 5, 4], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
+        src = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}, {"t": "Space"}, {"t": "Str", "c": "{#eq:1}"}]}], "pandoc-api-version": [%s], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}'''%PANDOC_API_VERSION)
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$ {#eq:1}\n'), stdout=subprocess.PIPE)
 
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(),
+            (PANDOC+' -t json').split(),
             stdin=md.stdout).strip().decode("utf-8").replace('true', 'True'))
         self.assertEqual(src, output)
 
-        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [["eq:1", [], [["secno", 1]]], {"t": "DisplayMath"}, " x "]}, {"t": "Space"}]}], "pandoc-api-version": [1, 17, 5, 4], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
+        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [["eq:1", [], [["secno", 1]]], {"t": "DisplayMath"}, " x "]}, {"t": "Space"}]}], "pandoc-api-version": [%s], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}'''%PANDOC_API_VERSION)
 
         # Make the comparison
         meta = src['meta']
@@ -169,17 +170,17 @@ class TestXnos(unittest.TestCase):
         ## test.md: ---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$\n ##
 
         # Command: pandoc test.md -t json
-        src = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [1, 17, 5, 4], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
+        src = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [%s], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}'''%PANDOC_API_VERSION)
 
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '---\nxnos-number-sections: True\n...\n\n# Title\n\n$$ x $$\n'), stdout=subprocess.PIPE)
 
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(),
+            (PANDOC+' -t json').split(),
             stdin=md.stdout).strip().decode("utf-8").replace('true', 'True'))
         self.assertEqual(src, output)
 
-        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [1, 17, 5, 4], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}''')
+        expected = eval(r'''{"blocks": [{"t": "Header", "c": [1, ["title", [], []], [{"t": "Str", "c": "Title"}]]}, {"t": "Para", "c": [{"t": "Math", "c": [{"t": "DisplayMath"}, " x "]}]}], "pandoc-api-version": [%s], "meta": {"xnos-number-sections": {"t": "MetaBool", "c": True}}}'''%PANDOC_API_VERSION)
 
         # Make the comparison
         meta = src['meta']
@@ -211,7 +212,7 @@ class TestXnos(unittest.TestCase):
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '"test"'), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -f markdown+smart -t json'.split(),
+            (PANDOC+' -f markdown+smart -t json').split(),
             stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
@@ -221,7 +222,7 @@ class TestXnos(unittest.TestCase):
         # Check expected against current pandoc
         md = subprocess.Popen(('echo', '"test"'), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -f markdown-smart -t json'.split(),
+            (PANDOC+' -f markdown-smart -t json').split(),
             stdin=md.stdout).strip())
         self.assertEqual(expected, output)
 
@@ -241,7 +242,7 @@ class TestXnos(unittest.TestCase):
         md = subprocess.Popen(('echo', "This is 'test 2'."),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -f markdown+smart -t json'.split(),
+            (PANDOC+' -f markdown+smart -t json').split(),
             stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
@@ -252,7 +253,7 @@ class TestXnos(unittest.TestCase):
         md = subprocess.Popen(('echo', "This is 'test 2'."),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -f markdown-smart -t json'.split(),
+            (PANDOC+' -f markdown-smart -t json').split(),
             stdin=md.stdout).strip())
         self.assertEqual(expected, output)
 
@@ -272,7 +273,7 @@ class TestXnos(unittest.TestCase):
         md = subprocess.Popen(('echo', r'$\frac{1}{2}$'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Hand-coded
@@ -294,7 +295,7 @@ class TestXnos(unittest.TestCase):
         md = subprocess.Popen(('echo', 'Test {#eq:id .class tag="foo"}.'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Hand-coded
@@ -316,7 +317,7 @@ class TestXnos(unittest.TestCase):
         md = subprocess.Popen(('echo', 'Test {#eq:id .class tag="foo"}.'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -f markdown+smart -t json'.split(),\
+            (PANDOC+' -f markdown+smart -t json').split(),\
               stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
@@ -474,7 +475,7 @@ class TestXnos(unittest.TestCase):
         md = subprocess.Popen(('echo', 'As shown in @fig:one.'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(),
+            (PANDOC+' -t json').split(),
             stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
@@ -498,7 +499,7 @@ class TestXnos(unittest.TestCase):
         # Check src against current pandoc
         md = subprocess.Popen(('echo', '(@eq:one)'), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(),
+            (PANDOC+' -t json').split(),
             stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
@@ -521,7 +522,7 @@ class TestXnos(unittest.TestCase):
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'See {@tbl:1}.'), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Hand-coded (braces stripped, attributes added)
@@ -543,7 +544,7 @@ class TestXnos(unittest.TestCase):
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'See +@eq:1.'), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Hand-coded (modifier extracted, attributes added)
@@ -565,7 +566,7 @@ class TestXnos(unittest.TestCase):
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'See {+@tbl:1}.'), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Hand-coded (braces stripped, modifier extracted, attributes added)
@@ -587,7 +588,7 @@ class TestXnos(unittest.TestCase):
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'See xxx{+@tbl:1}xxx.'), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Hand-coded (braces stripped, modifier extracted, attributes added)
@@ -609,7 +610,7 @@ class TestXnos(unittest.TestCase):
         # Check src against current pandoc
         md = subprocess.Popen(('echo', 'See [+@eq:1].'), stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Hand-coded (modifier extracted, attributes added)
@@ -633,7 +634,7 @@ class TestXnos(unittest.TestCase):
             ('echo', '{+@tbl:one}-{@tbl:four} provide the data.'),
             stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Hand-coded
@@ -667,7 +668,7 @@ class TestXnos(unittest.TestCase):
         # Generate expected using current pandoc
         md = subprocess.Popen(('echo', '@fig:1:'), stdout=subprocess.PIPE)
         expected = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
 
         # Make the comparison
         process_refs = process_refs_factory(None, ['fig:1'], 0)
@@ -732,7 +733,7 @@ class TestXnos(unittest.TestCase):
         md = subprocess.Popen(('echo', '$$ y = f(x) $${#eq:1 tag="B.1"}'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(src, output)
 
         # Hand-coded (attributes deleted)
@@ -759,7 +760,7 @@ class TestXnos(unittest.TestCase):
         md = subprocess.Popen(('echo', '$$ y = f(x) $$'),
                               stdout=subprocess.PIPE)
         output = eval(subprocess.check_output(
-            'pandoc -t json'.split(), stdin=md.stdout).strip())
+            (PANDOC+' -t json').split(), stdin=md.stdout).strip())
         self.assertEqual(expected, output)
 
         # Make the comparison
