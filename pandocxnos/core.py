@@ -848,18 +848,14 @@ def process_refs_factory(regex, labels, warninglevel=None):
         # References may occur in a variety of places; we must process them
         # all.
 
-        if key in ['Para', 'Plain']:
+        if key in ['Para', 'Plain', 'Emph', 'Strong']:
             _process_refs(value, pattern, labels)
+        elif key in ['Span', 'Header']:
+            _process_refs(value[-1], pattern, labels)
         elif key == 'Image':
             _process_refs(value[-2], pattern, labels)
         elif key == 'Table':
             _process_refs(value[-5], pattern, labels)
-        elif key == 'Span':
-            _process_refs(value[-1], pattern, labels)
-        elif key == 'Emph':
-            _process_refs(value, pattern, labels)
-        elif key == 'Strong':
-            _process_refs(value, pattern, labels)
         elif key == 'Cite':
             _process_refs(value[-2][0]['citationPrefix'], pattern, labels)
             _process_refs(value[-2][0]['citationSuffix'], pattern, labels)
