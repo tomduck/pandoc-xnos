@@ -222,6 +222,11 @@ def init(pandocversion=None, doc=None):
     return _PANDOCVERSION
 
 
+def version(v):
+    """Converts a version string into a tuple appropriate for comparisons."""
+    return tuple(int(x) for x in v.split('.'))
+
+
 # set_warning_level() --------------------------------------------------------
 def set_warning_level(n):
     """0 for no warnings; 1 for critical warnings; 2 for all warnings"""
@@ -553,7 +558,11 @@ def join_strings(key, value, fmt=None, meta=None):
     elif key == 'Image':
         _join_strings(value[-2])
     elif key == 'Table':
-        _join_strings(value[-5])
+        if version(_PANDOCVERSION) < version('2.10'):
+            _join_strings(value[-5])
+        else:
+            _join_strings(value[-5]['c'][1][0]['c'])
+
 
 
 # repair_refs() -------------------------------------------------------------
@@ -572,7 +581,7 @@ def _is_broken_ref(key1, value1, key2, value2):
     if key1 != 'Link' or key2 != 'Str':
         return False
     # Assemble the parts
-    n = 0 if _PANDOCVERSION < '1.16' else 1
+    n = 0 if version(_PANDOCVERSION) < version('1.16') else 1
 
     if isinstance(value1[n][0]['c'], list):
         # Occurs when there is quoted text in an actual link.  This is not
@@ -598,7 +607,7 @@ def _repair_refs(x):
                           x[i+1]['t'], x[i+1]['c'] if 'c' in x[i+1] else []):
 
             # Get the reference string
-            n = 0 if _PANDOCVERSION < '1.16' else 1
+            n = 0 if version(_PANDOCVERSION) < version('1.16') else 1
             s = x[i]['c'][n][0]['c'] + x[i+1]['c']
 
             # Chop it into pieces.  Note that the prefix and suffix may be
@@ -636,7 +645,7 @@ def repair_refs(key, value, fmt, meta):  # pylint: disable=unused-argument
     function replaces the mess with the Cite and Str elements we normally
     get.  Call this before any reference processing."""
 
-    if _PANDOCVERSION >= '1.18':
+    if version(_PANDOCVERSION) >= version('1.18'):
         return
 
     # The problem spans multiple elements, and so can only be identified in
@@ -855,7 +864,10 @@ def process_refs_factory(regex, labels, warninglevel=None):
         elif key == 'Image':
             _process_refs(value[-2], pattern, labels)
         elif key == 'Table':
-            _process_refs(value[-5], pattern, labels)
+            if version(_PANDOCVERSION) < version('2.10'):
+                _process_refs(value[-5], pattern, labels)
+            else:
+                _process_refs(value[-5]['c'][1][0]['c'], pattern, labels)
         elif key == 'Cite':
             _process_refs(value[-2][0]['citationPrefix'], pattern, labels)
             _process_refs(value[-2][0]['citationSuffix'], pattern, labels)
@@ -959,7 +971,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
 
                 elem = elt('Link', 2)([elem],
                                       ['%s#%s' % (prefix, label), '']) \
-                  if _PANDOCVERSION < '1.16' else \
+                  if version(_PANDOCVERSION) < version('1.16') else \
                   Link(['', [], []], [elem], ['%s#%s' % (prefix, label), ''])
 
             ret = ([Str(refname), Space()] if use_cleveref else []) + [elem]
@@ -1130,10 +1142,16 @@ def insert_secnos_factory(f):
         if key == name:
 
             # Only insert if attributes are attached.  Images always have
-            # attributes for pandoc >= 1.16. Same for Spans.
+            # attributes for pandoc >= 1.16. Same for Spans.  Tables always
+            # have attributes for pandoc >= 10.1.
             assert len(value) <= n+1
-            if (name == 'Image' and len(value) == 3) or name == 'Div' or \
-                name == 'Span' or len(value) == n+1:
+            # pylint: disable=too-many-boolean-expressions
+            if (name == 'Image' and len(value) == 3) or \
+              name == 'Div' or \
+              name == 'Span' or \
+              (name == 'Table' and len(value) == 6) or \
+              len(value) == n+1:
+
                 # Make sure value[0] represents attributes
                 assert isinstance(value[0][0], STRTYPES)
                 assert isinstance(value[0][1], list)
@@ -1160,11 +1178,16 @@ def delete_secnos_factory(f):
         """Deletes section numbers from elements attributes."""
 
         # Only delete if attributes are attached.   Images always have
-        # attributes for pandoc >= 1.16. Same for Spans.
+        # attributes for pandoc >= 1.16. Same for Spans.    Tables always
+            # have attributes for pandoc >= 10.1.
         if key == name:
             assert len(value) <= n+1
-            if (name == 'Image' and len(value) == 3) or name == 'Div' or \
-                name == 'Span' or len(value) == n+1:
+            # pylint: disable=too-many-boolean-expressions
+            if (name == 'Image' and len(value) == 3) or \
+              name == 'Div' or \
+              name == 'Span' or \
+              (name == 'Table' and len(value) == 6) or \
+              len(value) == n+1:
 
                 # Make sure value[0] represents attributes
                 assert isinstance(value[0][0], STRTYPES)
