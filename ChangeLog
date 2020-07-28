@@ -2,6 +2,7 @@ pandoc-xnos 2.4.0 (unreleased)
 
     * Handle attributed tables for pandoc >= 2.10.
     * Added version() function to aid version string comparisons.
+    * Use nonbreaking spaces in references (Issue #14).
 
 
 pandoc-xnos 2.3.0 (2019-11-03)
