@@ -1,6 +1,6 @@
 """core.py: library code for the pandoc-xnos filter suite."""
 
-# Copyright 2015-2019 Thomas J. Duck.
+# Copyright 2015-2020 Thomas J. Duck.
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-__version__ = '2.3.0'
+__version__ = '2.4.0'
 
 
 import os

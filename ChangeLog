@@ -1,3 +1,9 @@
+pandoc-xnos 2.4.0 (unreleased)
+
+    * Handle attributed tables for pandoc >= 2.10.
+    * Added version() function to aid version string comparisons.
+
+
 pandoc-xnos 2.3.0 (2019-11-03)
 
     * Allow get_meta() to process MetaLists of MetaMaps
