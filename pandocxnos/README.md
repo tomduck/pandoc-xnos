@@ -24,6 +24,8 @@ core.py
 
   * `init()` - Must be called.  Sets/resets global variables;
     determines and returns the pandoc version
+  * `version()` - Converts a version string into a tuple.  This is
+    useful for simple version number comparisons.
   * `set_warning_level()` - Sets the global warning level;
     0 for no warnings; 1 for critical warnings; 2 for all warnings
   * `check_bool()` - Used to check if a variable is boolean
