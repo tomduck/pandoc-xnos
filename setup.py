@@ -64,8 +64,8 @@ setup(
 # Check that the pandoc-xnos script is on the PATH
 if not shutil.which('pandoc-xnos'):
     msg = """
-          ERROR: `pandoc-xnos` script not found.  You will need to find
-          the script and ensure it is on your PATH.  Please file an Issue at
+          ERROR: `pandoc-xnos` script not found. This will need to 
+          be corrected.  If you need help, please file an Issue at
           https://github.com/tomduck/pandoc-xnos/issues.\n"""
     print(textwrap.dedent(msg))
     sys.exit(-1)
