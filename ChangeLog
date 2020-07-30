@@ -1,3 +1,10 @@
+pandoc-xnos 2.4.1 (2020-07-30)
+
+    * Fixed "Failed reading: not a valid json value" error
+      affecting python 2 users (pandoc-tablenos Issue #17 and
+      pandoc-eqnos Issue #45).
+
+
 pandoc-xnos 2.4.0 (2020-07-30)
 
     * Handle attributed tables for pandoc >= 2.10.
