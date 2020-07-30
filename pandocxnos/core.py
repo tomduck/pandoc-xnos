@@ -65,7 +65,7 @@ else:
     # See: https://docs.python.org/2/howto/unicode.html.
     STDIN = sys.stdin
     STDOUT = sys.stdout
-    STDERR = sys.stdout
+    STDERR = sys.stderr
 
 # Global state-tracking variables
 # pylint: disable=invalid-name
