@@ -1,4 +1,4 @@
-pandoc-xnos 2.4.0 (unreleased)
+pandoc-xnos 2.4.0 (2020-07-30)
 
     * Handle attributed tables for pandoc >= 2.10.
     * Added version() function to aid version string comparisons.
