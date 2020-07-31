@@ -60,8 +60,8 @@ See https://www.python.org/dev/peps/pep-0440/ for numbering conventions, includi
     
 Tagging  (update the version number):
 
-    git tag -a 2.4.1 -m "New release."
-    git push origin 2.4.1
+    git tag -a 2.4.2 -m "New release."
+    git push origin 2.4.2
 
 
 ### Distributing ###
@@ -74,7 +74,7 @@ Creating source and binary distributions:
     
 Uploading to pypi (update the version number):
 
-    twine upload dist/pandoc-xnos-2.4.1.tar.gz \
-                   dist/pandoc_xnos-2.4.1-py3-none-any.whl
+    twine upload dist/pandoc-xnos-2.4.2.tar.gz \
+                   dist/pandoc_xnos-2.4.2-py3-none-any.whl
 
 (see https://pypi.python.org/pypi/twine).
