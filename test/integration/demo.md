@@ -25,6 +25,12 @@ Table: Foo. {#tbl:1}
 
 Reference to @sec:title-2.
 
+An uncaptioned table:
+
+X Y
+- -
+T F
+
 
 Subtitle 1 {-}
 ----------
