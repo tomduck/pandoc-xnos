@@ -17,7 +17,8 @@ core.py
 ### Globals ###
 
   * `STRTYPES` - a list of string types for this python version
-  * `STDIN`/`STDOUT`/`STDERR` - streams for use with pandoc 2.x or 3.x
+  * `STDIN`/`STDOUT`/`STDERR` - streams for use with python 2.x or 3.x
+  * `NBSP` - nonbreaking space for use with python 2.x or 3.x
 
 
 ### Utility functions ###

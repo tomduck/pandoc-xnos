@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-__version__ = '2.4.2'
+__version__ = '2.4.3'
 
 
 import os
@@ -66,6 +66,9 @@ else:
     STDIN = sys.stdin
     STDOUT = sys.stdout
     STDERR = sys.stderr
+
+# Non-breaking space
+NBSP = '\u00A0' if sys.version_info > (3,) else '\xc2\xa0'
 
 # Global state-tracking variables
 # pylint: disable=invalid-name
@@ -975,7 +978,7 @@ def replace_refs_factory(references, use_cleveref_default, use_eqref,
                   if version(_PANDOCVERSION) < version('1.16') else \
                   Link(['', [], []], [elem], ['%s#%s' % (prefix, label), ''])
 
-            ret = ([Str(refname + ' ')] if use_cleveref else []) + [elem]
+            ret = ([Str(refname + NBSP)] if use_cleveref else []) + [elem]
 
         # If the Cite was square-bracketed then wrap everything in a span
         s = stringify(value[-1])
