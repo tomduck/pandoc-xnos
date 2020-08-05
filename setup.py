@@ -17,9 +17,6 @@
 
 import re
 import io
-import textwrap
-import sys
-import shutil
 
 from setuptools import setup
 
@@ -60,12 +57,3 @@ setup(
         'Programming Language :: Python'
         ],
 )
-
-# Check that the pandoc-xnos script is on the PATH
-if not shutil.which('pandoc-xnos'):
-    msg = """
-          ERROR: `pandoc-xnos` script not found. This will need to 
-          be corrected.  If you need help, please file an Issue at
-          https://github.com/tomduck/pandoc-xnos/issues.\n"""
-    print(textwrap.dedent(msg))
-    sys.exit(-1)
