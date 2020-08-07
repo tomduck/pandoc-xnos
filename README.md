@@ -36,7 +36,7 @@ Contents
 Installation
 ------------
 
-Pandoc-xnos requires [python], a programming language that comes pre-installed on macOS and linux.  It is easily installed on Windows -- see [here](https://realpython.com/installing-python/).  Either python 2.7 or 3.x will do.
+The Pandoc-xnos filters require [python].  It is easily installed -- see [here](https://realpython.com/installing-python/). <sup>[1](#footnote1)</sup>  Either python 2.7 or 3.x will do.
 
 The pandoc-xnos filter suite may be installed using the shell command
 
@@ -45,7 +45,7 @@ The pandoc-xnos filter suite may be installed using the shell command
 
 and upgraded by appending `--upgrade` to the above command.
 
-Pip is a program that downloads and installs software from the Python Package Index, [PyPI].  It normally comes installed with a python distribution.<sup>[2](#footnote2)</sup>
+Pip is a program that downloads and installs software from the Python Package Index, [PyPI].
 
 Instructions for installing from source are given in [DEVELOPERS.md].
 
@@ -72,3 +72,10 @@ Getting Help
 If you have any difficulties with pandoc-xnos, or would like to see a new feature, then please submit a report to our [Issues tracker].
 
 [Issues tracker]: https://github.com/tomduck/pandoc-xnos/issues
+
+
+----
+
+**Footnotes**
+
+<a name="footnote1">1</a>: For MacOS, my preferred install method is to use the Installer package [available from python.org](https://www.python.org/downloads/).
