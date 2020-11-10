@@ -36,7 +36,7 @@ from pandocxnos import insert_secnos_factory
 from pandocxnos import repair_refs, process_refs_factory, replace_refs_factory
 
 PANDOCVERSION = '2.8.1'
-PANDOC = 'pandoc-2.11.0.4'
+PANDOC = 'pandoc-2.11.1.1'
 PANDOC1p15 = 'pandoc-1.15.2'  # pylint: disable=invalid-name
 PANDOC_API_VERSION = '1,22'
 
