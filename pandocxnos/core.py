@@ -869,9 +869,13 @@ def process_refs_factory(regex, labels, warninglevel=None):
         elif key == 'Table':
             if version(_PANDOCVERSION) < version('2.10'):
                 _process_refs(value[-5], pattern, labels)
-            else:
+            elif version(_PANDOCVERSION) < version('2.11'):
                 if value[-5]['c'][1]:
                     _process_refs(value[-5]['c'][1][0]['c'], pattern, labels)
+            else:
+                if value[-5][1]:
+                    _process_refs(value[-5][1][0]['c'], pattern, labels)
+
         elif key == 'Cite':
             _process_refs(value[-2][0]['citationPrefix'], pattern, labels)
             _process_refs(value[-2][0]['citationSuffix'], pattern, labels)
@@ -882,7 +886,8 @@ def process_refs_factory(regex, labels, warninglevel=None):
 # replace_refs_factory() ------------------------------------------------------
 
 # Type for target metadata
-Target = collections.namedtuple('Target', ['num', 'secno', 'has_duplicate'])
+Target = collections.namedtuple('Target', ['num', 'secno', 'has_duplicate',
+                                           'name'])
 Target.__new__.__defaults__ = (None,) * len(Target._fields)
 
 # pylint: disable=too-many-arguments,unused-argument
