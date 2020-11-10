@@ -1,3 +1,9 @@
+pandoc-xnos 2.5.0 (2020-11-10)
+
+    * Updated for pandoc api 1.22 (pandoc-fignos Issue #85,
+      pandoc-tablenos Issue #23)
+
+
 pandoc-xnos 2.4.3 (2020-08-04)
 
     * Use nonbreaking spaces in references (Issue #14).
