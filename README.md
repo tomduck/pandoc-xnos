@@ -63,7 +63,13 @@ The pandoc-xnos filter suite may be applied using the
 
 option with pandoc.  It is also possible to apply the filters individually.
 
-Any use of `--filter pandoc-citeproc` or `--bibliography=FILE` should come *after* the `pandoc-xnos` filter call.
+Any use of `--filter pandoc-citeproc` or `--bibliography=FILE` should come *after* the `pandoc-xnos` filter call. If you're using a defaults.yml file use the filter form of citeproc:
+```
+filters:
+  - pandoc-xnos
+  - citeproc
+```
+and do not include `citeproc: true` anywhere in the yml file as this will cause citeproc to complain that it cannot find your figure references. 
 
 
 Getting Help
